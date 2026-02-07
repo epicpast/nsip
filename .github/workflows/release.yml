@@ -34,7 +34,7 @@ jobs:
       - name: Generate changelog
         id: changelog
         # v4.5.0
-        uses: orhun/git-cliff-action@e615672902de82edb33eddcb803a1295fc409525
+        uses: orhun/git-cliff-action@e16f179f0be49ecdfe63753837f20b9531642772
         with:
           config: cliff.toml
           args: --latest --strip header
@@ -42,7 +42,7 @@ jobs:
       - name: Create GitHub Release
         id: create_release
         # v2.0.3
-        uses: softprops/action-gh-release@e798e6a1ede8d07b74ac4cdac6bdfa4cc1653907
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
           tag_name: ${{ github.ref }}
           name: Release ${{ steps.get_version.outputs.version }}
