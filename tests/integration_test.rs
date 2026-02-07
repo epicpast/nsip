@@ -1,61 +1,45 @@
-//! Integration tests for `nsip`.
+//! Integration tests for NSIP Search API client.
 
-use nsip::{Config, Error, Result, add, divide};
+use nsip::{Error, NsipClient, SearchCriteria};
 
 #[test]
-fn test_add_integration() {
-    // Test basic addition
-    assert_eq!(add(1, 2), 3);
-    assert_eq!(add(-5, 5), 0);
-
-    // Test boundary conditions
-    assert_eq!(add(i64::MAX, 0), i64::MAX);
-    assert_eq!(add(i64::MIN, 0), i64::MIN);
+fn test_client_creation() {
+    let client = NsipClient::new();
+    // Should create successfully
+    assert!(std::any::type_name_of_val(&client).contains("NsipClient"));
 }
 
 #[test]
-fn test_divide_integration() {
-    // Test successful division
-    assert_eq!(divide(100, 10).unwrap(), 10);
-    assert_eq!(divide(-100, 10).unwrap(), -10);
-    assert_eq!(divide(100, -10).unwrap(), -10);
-    assert_eq!(divide(-100, -10).unwrap(), 10);
-
-    // Test integer division truncation
-    assert_eq!(divide(7, 3).unwrap(), 2);
-    assert_eq!(divide(-7, 3).unwrap(), -2);
+fn test_client_with_custom_url() {
+    let client = NsipClient::with_base_url("https://example.com");
+    // Should create successfully with custom URL
+    assert!(std::any::type_name_of_val(&client).contains("NsipClient"));
 }
 
 #[test]
-fn test_divide_by_zero() {
-    let result = divide(42, 0);
-    assert!(result.is_err());
-    assert!(
-        matches!(result, Err(Error::InvalidInput(ref msg)) if msg.contains("zero")),
-        "Expected InvalidInput error with message containing 'zero'"
-    );
+fn test_search_criteria_builder() {
+    let criteria = SearchCriteria::new()
+        .with_breed_group("Sheep")
+        .with_status("Active")
+        .with_query("test")
+        .with_page(1)
+        .with_per_page(20);
+
+    assert_eq!(criteria.breed_group, Some("Sheep".to_string()));
+    assert_eq!(criteria.status, Some("Active".to_string()));
+    assert_eq!(criteria.query, Some("test".to_string()));
+    assert_eq!(criteria.page, Some(1));
+    assert_eq!(criteria.per_page, Some(20));
 }
 
 #[test]
-fn test_config_builder_pattern() {
-    let config = Config::new()
-        .with_verbose(true)
-        .with_max_retries(10)
-        .with_timeout(120);
-
-    assert!(config.verbose);
-    assert_eq!(config.max_retries, 10);
-    assert_eq!(config.timeout_secs, 120);
-}
-
-#[test]
-fn test_config_clone() {
-    let config1 = Config::new().with_verbose(true);
-    let config2 = config1.clone();
-
-    assert_eq!(config1.verbose, config2.verbose);
-    assert_eq!(config1.max_retries, config2.max_retries);
-    assert_eq!(config1.timeout_secs, config2.timeout_secs);
+fn test_search_criteria_default() {
+    let criteria = SearchCriteria::default();
+    assert!(criteria.breed_group.is_none());
+    assert!(criteria.status.is_none());
+    assert!(criteria.query.is_none());
+    assert!(criteria.page.is_none());
+    assert!(criteria.per_page.is_none());
 }
 
 #[test]
@@ -66,26 +50,26 @@ fn test_error_types() {
     assert!(display.contains("invalid input"));
     assert!(display.contains("test message"));
 
+    // Test ApiError
+    let err = Error::ApiError("API failed".to_string());
+    let display = format!("{err}");
+    assert!(display.contains("API error"));
+    assert!(display.contains("API failed"));
+
+    // Test ParseError
+    let err = Error::ParseError("parse failed".to_string());
+    let display = format!("{err}");
+    assert!(display.contains("parse error"));
+    assert!(display.contains("parse failed"));
+
     // Test OperationFailed error
     let err = Error::OperationFailed {
-        operation: "read".to_string(),
-        cause: "file not found".to_string(),
+        operation: "fetch".to_string(),
+        cause: "network error".to_string(),
     };
     let display = format!("{err}");
-    assert!(display.contains("read"));
-    assert!(display.contains("file not found"));
-}
-
-/// Helper function demonstrating Result handling patterns.
-fn process_numbers(a: i64, b: i64) -> Result<i64> {
-    let sum = add(a, b);
-    divide(sum, 2)
-}
-
-#[test]
-fn test_result_chaining() {
-    let result = process_numbers(10, 6);
-    assert_eq!(result.unwrap(), 8);
+    assert!(display.contains("fetch"));
+    assert!(display.contains("network error"));
 }
 
 mod property_tests {
@@ -94,26 +78,26 @@ mod property_tests {
 
     proptest! {
         #[test]
-        fn add_is_commutative(a in any::<i32>(), b in any::<i32>()) {
-            let a = i64::from(a);
-            let b = i64::from(b);
-            prop_assert_eq!(add(a, b), add(b, a));
-        }
+        fn search_criteria_builder_preserves_values(
+            breed_group in any::<Option<String>>(),
+            status in any::<Option<String>>(),
+            query in any::<Option<String>>(),
+        ) {
+            let mut criteria = SearchCriteria::new();
 
-        #[test]
-        fn add_zero_is_identity(n in any::<i64>()) {
-            prop_assert_eq!(add(n, 0), n);
-            prop_assert_eq!(add(0, n), n);
-        }
+            if let Some(bg) = breed_group.clone() {
+                criteria = criteria.with_breed_group(bg);
+            }
+            if let Some(s) = status.clone() {
+                criteria = criteria.with_status(s);
+            }
+            if let Some(q) = query.clone() {
+                criteria = criteria.with_query(q);
+            }
 
-        #[test]
-        fn divide_by_one_is_identity(n in any::<i64>()) {
-            prop_assert_eq!(divide(n, 1).unwrap(), n);
-        }
-
-        #[test]
-        fn divide_by_nonzero_succeeds(dividend in any::<i64>(), divisor in any::<i64>().prop_filter("non-zero", |&x| x != 0)) {
-            prop_assert!(divide(dividend, divisor).is_ok());
+            prop_assert_eq!(criteria.breed_group, breed_group);
+            prop_assert_eq!(criteria.status, status);
+            prop_assert_eq!(criteria.query, query);
         }
     }
 }
