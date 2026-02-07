@@ -55,16 +55,17 @@ async fn main() -> Result<(), nsip::Error> {
 
     // Search for animals
     let criteria = SearchCriteria::new()
-        .with_breed_group("Sheep")
-        .with_page(1)
-        .with_per_page(20);
-    
-    let results = client.search_animals(&criteria).await?;
-    println!("Found {} animals", results.total);
+        .with_breed_id(640)
+        .with_status("CURRENT");
+
+    let results = client
+        .search_animals(0, 15, Some(640), None, None, Some(&criteria))
+        .await?;
+    println!("Found {} animals", results.total_count);
 
     // Get details for a specific animal
-    let animal = client.details("12345").await?;
-    println!("Animal: {} ({})", animal.name, animal.id);
+    let animal = client.animal_details("LPN_ID_HERE").await?;
+    println!("Animal: {}", animal.lpn_id);
 
     Ok(())
 }
@@ -75,26 +76,32 @@ async fn main() -> Result<(), nsip::Error> {
 The `nsip` CLI provides several commands for interacting with the NSIP Search API:
 
 ```bash
+# Get database last-updated date
+nsip date-updated
+
 # List breed groups
 nsip breed-groups
 
 # List animal statuses
 nsip statuses
 
-# List trait ranges
-nsip trait-ranges
+# Get trait ranges for a breed
+nsip trait-ranges 640
 
 # Search for animals
-nsip search --breed-group Sheep --status Active --page 1
+nsip search --breed-id 640 --status CURRENT --page 0 --page-size 15
 
 # Get animal details
-nsip details <animal-id>
+nsip details <lpn-id>
 
 # Get animal lineage
-nsip lineage <animal-id>
+nsip lineage <lpn-id>
 
 # Get animal progeny
-nsip progeny <animal-id>
+nsip progeny <lpn-id>
+
+# Get full profile (details + lineage + progeny)
+nsip profile <lpn-id>
 
 # Start MCP server mode
 nsip mcp
@@ -106,13 +113,15 @@ nsip mcp
 
 | Method | Description |
 |--------|-------------|
+| `date_last_updated()` | Get database last-updated date |
 | `breed_groups()` | List available breed groups |
 | `statuses()` | List available animal statuses |
-| `trait_ranges()` | List available trait ranges |
-| `search_animals(&criteria)` | Search for animals |
-| `details(animal_id)` | Get animal details |
-| `lineage(animal_id)` | Get animal lineage |
-| `progeny(animal_id)` | Get animal progeny |
+| `trait_ranges(breed_id)` | Get trait ranges for a breed |
+| `search_animals(page, page_size, breed_id, sorted_trait, reverse, criteria)` | Search for animals |
+| `animal_details(search_string)` | Get animal details |
+| `lineage(lpn_id)` | Get animal lineage |
+| `progeny(lpn_id, page, page_size)` | Get animal progeny |
+| `search_by_lpn(lpn_id)` | Get full profile (concurrent) |
 
 ### Data Types
 
@@ -120,10 +129,12 @@ nsip mcp
 |------|-------------|
 | `NsipClient` | Main API client |
 | `SearchCriteria` | Search parameters with builder pattern |
-| `Animal` | Animal data structure |
-| `BreedGroup` | Breed group information |
-| `Lineage` | Animal lineage/ancestry |
-| `Progeny` | Animal offspring |
+| `AnimalDetails` | Detailed animal record with traits and contact info |
+| `AnimalProfile` | Combined details + lineage + progeny |
+| `BreedGroup` | Breed group with nested breeds |
+| `Lineage` | Animal lineage/ancestry tree |
+| `Progeny` | Paginated animal offspring |
+| `SearchResults` | Paginated search results |
 | `Error` | Error type for operations |
 | `Result<T>` | Type alias for `Result<T, Error>` |
 
