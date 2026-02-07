@@ -1,6 +1,6 @@
 [package]
 name = "nsip"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.92"
 description = "NSIP Search API client for nsipsearch.nsip.org/api"
@@ -40,6 +40,8 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
+clap_complete = "4.5"
+clap_mangen = "0.2"
 
 # MCP server
 rmcp = { version = "0.14", features = ["server", "transport-io"] }

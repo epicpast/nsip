@@ -125,3 +125,19 @@ publish-dry:
 # Generate changelog for the latest release
 changelog:
     git-cliff --latest --strip header
+
+# === Shell Completions & Man Pages ===
+
+# Generate shell completions for all supported shells
+completions:
+    @mkdir -p completions
+    cargo run -- completions bash > completions/nsip.bash
+    cargo run -- completions zsh > completions/_nsip
+    cargo run -- completions fish > completions/nsip.fish
+    @echo "Completions generated in completions/"
+
+# Generate man pages for all commands
+man:
+    @mkdir -p man
+    cargo run -- man-pages --out-dir man/
+    @echo "Man pages generated in man/"
