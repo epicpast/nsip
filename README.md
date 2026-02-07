@@ -12,14 +12,16 @@
 [![Security: gitleaks](https://img.shields.io/badge/security-gitleaks-blue?logo=git&logoColor=white)](https://github.com/gitleaks/gitleaks)
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot)](https://docs.github.com/en/code-security/dependabot)
 
-A Rust template crate with modern tooling and best practices.
+NSIP Search API client for querying livestock data from nsipsearch.nsip.org/api.
 
 ## Features
 
-- **Type-safe error handling** with `thiserror` for clear error types
-- **Builder pattern** for configuration with compile-time const functions
-- **Comprehensive testing** including unit, integration, and property-based tests
-- **Modern tooling** with clippy pedantic lints and cargo-deny supply chain security
+- **Type-safe API client** with comprehensive error handling
+- **Search functionality** for animals by breed group, status, and other criteria
+- **Detailed animal information** including lineage and progeny
+- **MCP (Model Context Protocol) integration** for AI assistant compatibility
+- **CLI tool** with multiple subcommands for easy interaction
+- **Async/await support** with tokio runtime
 - **Full documentation** with examples in all public APIs
 
 ## Installation
@@ -39,51 +41,105 @@ cargo add nsip
 
 ## Quick Start
 
-```rust
-use nsip::{add, divide, Config};
+```rust,no_run
+use nsip::{NsipClient, SearchCriteria};
 
-fn main() -> Result<(), nsip::Error> {
-    // Basic arithmetic
-    let sum = add(2, 3);
-    println!("2 + 3 = {}", sum);
+#[tokio::main]
+async fn main() -> Result<(), nsip::Error> {
+    // Create a new client
+    let client = NsipClient::new();
 
-    // Safe division with error handling
-    let quotient = divide(10, 2)?;
-    println!("10 / 2 = {}", quotient);
+    // List available breed groups
+    let breed_groups = client.breed_groups().await?;
+    println!("Available breed groups: {}", breed_groups.len());
 
-    // Using configuration builder
-    let config = Config::new()
-        .with_verbose(true)
-        .with_max_retries(5)
-        .with_timeout(60);
+    // Search for animals
+    let criteria = SearchCriteria::new()
+        .with_breed_group("Sheep")
+        .with_page(1)
+        .with_per_page(20);
+    
+    let results = client.search_animals(&criteria).await?;
+    println!("Found {} animals", results.total);
 
-    println!("Config: verbose={}, retries={}, timeout={}s",
-        config.verbose, config.max_retries, config.timeout_secs);
+    // Get details for a specific animal
+    let animal = client.details("12345").await?;
+    println!("Animal: {} ({})", animal.name, animal.id);
 
     Ok(())
 }
 ```
 
+## CLI Usage
+
+The `nsip` CLI provides several commands for interacting with the NSIP Search API:
+
+```bash
+# List breed groups
+nsip breed-groups
+
+# List animal statuses
+nsip statuses
+
+# List trait ranges
+nsip trait-ranges
+
+# Search for animals
+nsip search --breed-group Sheep --status Active --page 1
+
+# Get animal details
+nsip details <animal-id>
+
+# Get animal lineage
+nsip lineage <animal-id>
+
+# Get animal progeny
+nsip progeny <animal-id>
+
+# Start MCP server mode
+nsip mcp
+```
+
 ## API Overview
 
-### Functions
+### Client Methods
 
-| Function | Description |
-|----------|-------------|
-| `add(a, b)` | Adds two numbers |
-| `divide(a, b)` | Divides with error handling |
+| Method | Description |
+|--------|-------------|
+| `breed_groups()` | List available breed groups |
+| `statuses()` | List available animal statuses |
+| `trait_ranges()` | List available trait ranges |
+| `search_animals(&criteria)` | Search for animals |
+| `details(animal_id)` | Get animal details |
+| `lineage(animal_id)` | Get animal lineage |
+| `progeny(animal_id)` | Get animal progeny |
 
-### Types
+### Data Types
 
 | Type | Description |
 |------|-------------|
-| `Config` | Configuration with builder pattern |
+| `NsipClient` | Main API client |
+| `SearchCriteria` | Search parameters with builder pattern |
+| `Animal` | Animal data structure |
+| `BreedGroup` | Breed group information |
+| `Lineage` | Animal lineage/ancestry |
+| `Progeny` | Animal offspring |
 | `Error` | Error type for operations |
 | `Result<T>` | Type alias for `Result<T, Error>` |
 
-## Getting Started
+## MCP Integration
 
-**New to this template?** See the [Getting Started Guide](docs/template/GETTING-STARTED.md) for a step-by-step walkthrough from "Use this template" to your first CI pass.
+The library includes MCP (Model Context Protocol) support for integration with AI assistants:
+
+```rust,ignore
+// Start the MCP server on stdio
+nsip::mcp::serve_stdio().await?;
+```
+
+The MCP protocol exposes the following tools when running `nsip mcp`:
+- `search` - Search for animals with filters
+- `details` - Get detailed animal information
+- `lineage` - Get animal lineage/ancestry
 
 ## Development
 
