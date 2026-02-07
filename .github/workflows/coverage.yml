@@ -1,0 +1,113 @@
+name: Code Coverage
+
+on:
+  pull_request:
+  # schedule:
+  #   - cron: '0 0 * * 1'  # Weekly on Monday
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+
+      - name: Cache dependencies
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-coverage-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69 # v2.67.25
+        with:
+          tool: cargo-llvm-cov@0.6.14
+
+      - name: Generate coverage
+        run: |
+          cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+          cargo llvm-cov --all-features --workspace --html --output-dir coverage-html
+          cargo llvm-cov --all-features --workspace --json --output-path coverage.json
+
+      - name: Parse coverage percentage
+        id: coverage
+        run: |
+          COVERAGE=$(cargo llvm-cov --all-features --workspace --summary-only | grep -oP 'TOTAL\s+\d+\.\d+%' | grep -oP '\d+\.\d+' || echo "0")
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Coverage: ${COVERAGE}%"
+
+      - name: Generate coverage report
+        run: |
+          echo "# Code Coverage Report" > coverage-report.md
+          echo "" >> coverage-report.md
+          echo "**Overall Coverage:** ${{ steps.coverage.outputs.percentage }}%" >> coverage-report.md
+          echo "" >> coverage-report.md
+          echo "## Summary" >> coverage-report.md
+          echo "" >> coverage-report.md
+          echo "\`\`\`" >> coverage-report.md
+          cargo llvm-cov --all-features --workspace --summary-only >> coverage-report.md
+          echo "\`\`\`" >> coverage-report.md
+          echo "" >> coverage-report.md
+          echo "Full HTML report available in CI artifacts." >> coverage-report.md
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@7f8b4b4bde536c465e797be725718b88c5d95e0e # v5.1.2
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: coverage-report
+          path: |
+            coverage-report.md
+            coverage-html/
+            lcov.info
+            coverage.json
+          retention-days: 30
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('coverage-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=${{ steps.coverage.outputs.percentage }}
+          THRESHOLD=80
+          
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "⚠️ Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
+            echo "Consider adding more tests to improve coverage."
+          else
+            echo "✅ Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%"
+          fi

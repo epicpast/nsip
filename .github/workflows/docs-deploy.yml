@@ -1,0 +1,117 @@
+name: Deploy Documentation
+
+on:
+  # push:
+  #   branches: [main, master]
+  #   paths:
+  #     - 'docs/**'
+  #     - 'src/**/*.rs'
+  #     - 'Cargo.toml'
+  # release:
+  #   types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+        with:
+          toolchain: stable
+
+      - name: Build rustdoc
+        run: |
+          cargo doc --no-deps --all-features
+          echo '<meta http-equiv="refresh" content="0; url=rust_template">' > target/doc/index.html
+
+      - name: Install mdBook
+        uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69 # v2.67.25
+        with:
+          tool: mdbook@0.4.40
+
+      - name: Build mdBook (if exists)
+        run: |
+          if [ -f "book.toml" ]; then
+            mdbook build
+            mkdir -p target/doc/book
+            cp -r book/* target/doc/book/
+          fi
+
+      - name: Create index page
+        run: |
+          cat > target/doc/landing.html << 'HTML'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>rust-template Documentation</title>
+              <style>
+                  body { font-family: sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+                  h1 { color: #333; }
+                  .section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+                  a { color: #0066cc; text-decoration: none; }
+                  a:hover { text-decoration: underline; }
+              </style>
+          </head>
+          <body>
+              <h1>rust-template Documentation</h1>
+              
+              <div class="section">
+                  <h2>API Documentation</h2>
+                  <p><a href="rust_template/index.html">Browse API docs</a></p>
+              </div>
+              
+              <div class="section">
+                  <h2>Guides</h2>
+                  <ul>
+                      <li><a href="book/index.html">User Guide</a> (if mdBook configured)</li>
+                      <li><a href="https://github.com/${{ github.repository }}/tree/main/docs">Documentation Directory</a></li>
+                  </ul>
+              </div>
+              
+              <div class="section">
+                  <h2>Resources</h2>
+                  <ul>
+                      <li><a href="https://github.com/${{ github.repository }}">GitHub Repository</a></li>
+                      <li><a href="https://crates.io/crates/rust_template">crates.io</a></li>
+                  </ul>
+              </div>
+          </body>
+          </html>
+          HTML
+          cp target/doc/landing.html target/doc/index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: target/doc
+
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-docs
+    
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

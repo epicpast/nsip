@@ -1,0 +1,50 @@
+name: Contributor Recognition
+
+on:
+  # schedule:
+  #   - cron: '0 0 1 * *'  # Monthly on 1st
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-contributors:
+    name: Update Contributors List
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Generate contributors
+        run: |
+          echo "# Contributors" > CONTRIBUTORS.md
+          echo "" >> CONTRIBUTORS.md
+          echo "Thank you to all our contributors!" >> CONTRIBUTORS.md
+          echo "" >> CONTRIBUTORS.md
+          
+          git log --format='%aN <%aE>' | sort -u | grep -v 'github-actions\|dependabot' | while read line; do
+            echo "- $line" >> CONTRIBUTORS.md
+          done
+          
+          echo "" >> CONTRIBUTORS.md
+          echo "## Statistics" >> CONTRIBUTORS.md
+          echo "" >> CONTRIBUTORS.md
+          echo "- Total contributors: $(git log --format='%aN' | sort -u | grep -v 'github-actions\|dependabot' | wc -l)" >> CONTRIBUTORS.md
+          echo "- Total commits: $(git rev-list --count HEAD)" >> CONTRIBUTORS.md
+          echo "- First commit: $(git log --reverse --format='%ai' | head -1)" >> CONTRIBUTORS.md
+          echo "- Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> CONTRIBUTORS.md
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if ! git diff --quiet CONTRIBUTORS.md; then
+            git add CONTRIBUTORS.md
+            git commit -m "chore: update contributors list [skip ci]"
+            git push
+          fi

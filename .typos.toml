@@ -1,0 +1,23 @@
+# typos spell checker configuration
+# https://github.com/crate-ci/typos
+
+[default]
+extend-ignore-re = [
+    # Ignore git SHAs (40 hex characters)
+    "[0-9a-f]{40}",
+    # Ignore UUIDs
+    "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+]
+
+[files]
+extend-exclude = [
+    "target/",
+    "*.lock",
+    "*.svg",
+    ".git/",
+]
+
+[default.extend-words]
+# Add project-specific dictionary entries
+# Format: incorrect = "correct"
+# Example: "foobar" = "foobar"

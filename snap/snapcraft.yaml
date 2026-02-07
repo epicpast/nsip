@@ -1,0 +1,33 @@
+name: rust-template
+base: core22
+version: git
+summary: Modern Rust project template with production-ready tooling
+description: |
+  A comprehensive Rust project template featuring:
+  - Modern CI/CD workflows
+  - Security scanning and vulnerability detection
+  - Code quality metrics and testing
+  - Multi-platform support
+  - Container and package distribution
+
+grade: stable
+confinement: strict
+
+apps:
+  rust-template:
+    command: bin/rust-template
+    plugs:
+      - home
+      - network
+
+parts:
+  rust-template:
+    plugin: rust
+    source: .
+    rust-channel: stable
+    rust-features: []
+    build-packages:
+      - pkg-config
+      - libssl-dev
+    stage-packages:
+      - libssl3

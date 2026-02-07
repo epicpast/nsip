@@ -1,0 +1,87 @@
+
+name: Signed Releases
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  sign-assets:
+    name: Sign Release Assets
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download ${{ github.event.release.tag_name }} \
+            --repo ${{ github.repository }} \
+            --pattern '*'
+
+      - name: Sign assets with Cosign
+        run: |
+          for file in *; do
+            if [[ -f "$file" && "$file" != *.sig ]]; then
+              echo "Signing $file"
+              cosign sign-blob --yes "$file" > "${file}.sig"
+            fi
+          done
+
+      - name: Generate checksums
+        run: |
+          sha256sum * | grep -v '\.sig' > SHA256SUMS
+          sha512sum * | grep -v '\.sig' > SHA512SUMS
+
+      - name: Sign checksums
+        run: |
+          cosign sign-blob --yes SHA256SUMS > SHA256SUMS.sig
+          cosign sign-blob --yes SHA512SUMS > SHA512SUMS.sig
+
+      - name: Upload signatures
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} \
+            --repo ${{ github.repository }} \
+            --clobber \
+            *.sig SHA256SUMS SHA512SUMS
+
+      - name: Update release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat >> release_notes.md << 'NOTES'
+          
+          ## Verification
+          
+          All release assets are signed with [Sigstore Cosign](https://github.com/sigstore/cosign).
+          
+          ### Verify signatures:
+          
+          ```bash
+          # Install cosign
+          brew install cosign  # or download from GitHub
+          
+          # Verify asset signature
+          cosign verify-blob \
+            --signature <file>.sig \
+            --certificate-identity-regexp=".*" \
+            --certificate-oidc-issuer-regexp=".*" \
+            <file>
+          
+          # Verify checksums
+          sha256sum --check SHA256SUMS
+          ```
+          NOTES
+          
+          gh release edit ${{ github.event.release.tag_name }} \
+            --repo ${{ github.repository }} \
+            --notes-file release_notes.md

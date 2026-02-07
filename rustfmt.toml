@@ -1,0 +1,69 @@
+# rustfmt configuration
+# https://rust-lang.github.io/rustfmt/
+
+# --- Stable options (work on stable Rust) ---
+
+# Edition to use for parsing
+edition = "2024"
+
+# Maximum width of each line
+max_width = 100
+
+# Number of spaces per tab
+tab_spaces = 4
+
+# Use spaces instead of tabs
+hard_tabs = false
+
+# Use field init shorthand (e.g., `Point { x, y }` instead of `Point { x: x, y: y }`)
+use_field_init_shorthand = true
+
+# Reorder imports and modules alphabetically
+reorder_imports = true
+reorder_modules = true
+
+# Newline style
+newline_style = "Unix"
+
+# Add trailing comma after last match arm in a multi-line block
+match_block_trailing_comma = true
+
+# Max element width before breaking short arrays into multiple lines
+short_array_element_width_threshold = 10
+
+# Single-line let-else style
+single_line_let_else_max_width = 50
+
+# --- Unstable options (require nightly rustfmt) ---
+# To use these, run: cargo +nightly fmt
+# Uncomment when running nightly, or use a separate rustfmt-nightly.toml.
+#
+# version = "Two"
+# indent_style = "Block"
+# fn_single_line = false
+# where_single_line = false
+# format_strings = false
+# wrap_comments = true
+# comment_width = 100
+# normalize_doc_attributes = true
+# format_code_in_doc_comments = true
+# empty_item_single_line = true
+# struct_lit_single_line = true
+# struct_field_align_threshold = 0
+# format_macro_bodies = true
+# format_macro_matchers = true
+# imports_granularity = "Crate"
+# group_imports = "StdExternalCrate"
+# trailing_comma = "Vertical"
+# trailing_semicolon = true
+# match_arm_blocks = true
+# brace_style = "SameLineWhere"
+# control_brace_style = "AlwaysSameLine"
+# reorder_impl_items = true
+# hex_literal_case = "Upper"
+# space_before_colon = false
+# space_after_colon = true
+# spaces_around_ranges = false
+# type_punctuation_density = "Wide"
+# error_on_line_overflow = false
+# error_on_unformatted = false

@@ -1,0 +1,22 @@
+# Gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "Gitleaks Configuration for rust-template"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for false positives"
+paths = [
+    '''docs/.*\.md''',
+    '''\.typos\.toml''',
+]
+
+regexes = [
+    # Ignore example/placeholder values
+    '''YOUR_TOKEN_HERE''',
+    '''EXAMPLE_SECRET''',
+    # Ignore git commit SHAs (40 hex chars)
+    '''[0-9a-f]{40}''',
+]

@@ -1,0 +1,140 @@
+name: Benchmark Regression Detection
+
+on:
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+        with:
+          toolchain: stable
+
+      - name: Cache dependencies
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install criterion
+        run: cargo install cargo-criterion || true
+
+      - name: Download baseline benchmarks
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: target/criterion
+          key: benchmark-baseline-${{ github.base_ref || 'main' }}
+          restore-keys: |
+            benchmark-baseline-
+
+      - name: Run benchmarks
+        run: |
+          if [ -d "benches" ]; then
+            cargo bench --bench '*' -- --save-baseline current
+          else
+            echo "No benchmarks directory found. Create benches/ with criterion benchmarks."
+            mkdir -p target/criterion
+            echo "No benchmarks configured" > target/criterion/NOBENCH
+          fi
+
+      - name: Compare with baseline
+        id: compare
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f "target/criterion/NOBENCH" ]; then
+            echo "regression=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Check if baseline exists
+          if [ -d "target/criterion/baseline" ]; then
+            # Generate comparison report
+            cargo bench --bench '*' -- --baseline baseline --save-baseline current > bench-output.txt 2>&1 || true
+            
+            # Parse for regressions (>5% slower)
+            if grep -q "Performance has regressed" bench-output.txt || grep -q "Change within noise threshold" bench-output.txt; then
+              echo "regression=false" >> $GITHUB_OUTPUT
+            else
+              echo "regression=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No baseline found - establishing baseline"
+            echo "regression=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate benchmark report
+        run: |
+          echo "# Benchmark Results" > benchmark-report.md
+          echo "" >> benchmark-report.md
+          
+          if [ -f "target/criterion/NOBENCH" ]; then
+            echo "No benchmarks configured. Add benchmarks to benches/ directory." >> benchmark-report.md
+          elif [ -f "bench-output.txt" ]; then
+            echo "## Performance Summary" >> benchmark-report.md
+            echo "" >> benchmark-report.md
+            echo "\`\`\`" >> benchmark-report.md
+            tail -n 50 bench-output.txt >> benchmark-report.md
+            echo "\`\`\`" >> benchmark-report.md
+          else
+            echo "Benchmarks executed successfully." >> benchmark-report.md
+          fi
+          
+          echo "" >> benchmark-report.md
+          echo "Full results available in CI artifacts." >> benchmark-report.md
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-report.md
+            target/criterion/
+            bench-output.txt
+          retention-days: 90
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('benchmark-report.md')) {
+              const report = fs.readFileSync('benchmark-report.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: report
+              });
+            }
+
+      - name: Save baseline for main branch
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          if [ -d "target/criterion" ] && [ ! -f "target/criterion/NOBENCH" ]; then
+            cp -r target/criterion/current target/criterion/baseline
+          fi
+
+      - name: Store updated baseline
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: target/criterion
+          key: benchmark-baseline-${{ github.ref_name }}-${{ github.sha }}

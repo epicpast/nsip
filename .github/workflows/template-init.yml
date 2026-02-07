@@ -1,0 +1,97 @@
+---
+name: Template Init
+
+# Runs on first push after creating a repo from this template.
+# Replaces rust_template / rust-template / zircote with the new repo's values.
+# Becomes a no-op once Cargo.toml no longer contains 'name = "rust_template"'.
+"on":
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  init:
+    name: Initialize from template
+    runs-on: ubuntu-latest
+    if: github.repository != 'zircote/rust-template'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Check if init is needed
+        id: check
+        run: |
+          if grep -q 'name = "rust_template"' Cargo.toml; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "Already initialized — skipping."
+          fi
+
+      - name: Derive new names
+        if: steps.check.outputs.needed == 'true'
+        id: names
+        env:
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          OWNER="${REPO_FULL%%/*}"
+          REPO="${REPO_FULL##*/}"
+          CRATE="$(echo "$REPO" | tr '-' '_')"
+          echo "owner=$OWNER"   >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO"     >> "$GITHUB_OUTPUT"
+          echo "crate=$CRATE"   >> "$GITHUB_OUTPUT"
+          echo "Renaming: zircote -> $OWNER"
+          echo "Renaming: rust-template -> $REPO"
+          echo "Renaming: rust_template -> $CRATE"
+
+      - name: Replace template references
+        if: steps.check.outputs.needed == 'true'
+        env:
+          OWNER: ${{ steps.names.outputs.owner }}
+          REPO: ${{ steps.names.outputs.repo }}
+          CRATE: ${{ steps.names.outputs.crate }}
+        run: |
+          # Files to transform (skip .github/workflows/, .git/, binaries)
+          FILES=$(find . \
+            -type f \
+            ! -path './.git/*' \
+            ! -path './.github/workflows/*' \
+            ! -name '*.png' \
+            ! -name '*.jpg' \
+            ! -name '*.ico' \
+            ! -name 'Cargo.lock')
+
+          # Order matters: full path first, then org, then crate names
+          for f in $FILES; do
+            sed -i \
+              -e "s|zircote/rust-template|${OWNER}/${REPO}|g" \
+              -e "s|zircote/rust_template|${OWNER}/${CRATE}|g" \
+              -e "s|zircote|${OWNER}|g" \
+              -e "s|rust-template|${REPO}|g" \
+              -e "s|rust_template|${CRATE}|g" \
+              "$f" 2>/dev/null || true
+          done
+
+      - name: Regenerate Cargo.lock
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          rustup default stable
+          cargo generate-lockfile
+
+      - name: Commit changes
+        if: steps.check.outputs.needed == 'true'
+        env:
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: initialize from rust-template for ${REPO_FULL}"
+            git push
+          fi

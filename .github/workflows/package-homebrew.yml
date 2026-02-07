@@ -1,0 +1,90 @@
+name: Homebrew Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to package'
+        required: true
+      dry_run:
+        description: 'Dry run (do not push)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  homebrew:
+    name: Update Homebrew Formula
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout homebrew tap
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ github.repository_owner }}/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Get release info
+        id: release
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Download source archive
+          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/v${VERSION}.tar.gz"
+          echo "tarball_url=$TARBALL_URL" >> $GITHUB_OUTPUT
+          
+          # Calculate SHA256
+          curl -sL "$TARBALL_URL" | sha256sum | awk '{print $1}' > sha256.txt
+          SHA256=$(cat sha256.txt)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Generate formula
+        run: |
+          cat > homebrew-tap/Formula/rust-template.rb << 'FORMULA'
+          class RustTemplate < Formula
+            desc "Modern Rust project template with production-ready tooling"
+            homepage "https://github.com/${{ github.repository }}"
+            url "${{ steps.release.outputs.tarball_url }}"
+            sha256 "${{ steps.release.outputs.sha256 }}"
+            license "MIT"
+            version "${{ steps.release.outputs.version }}"
+
+            depends_on "rust" => :build
+
+            def install
+              system "cargo", "install", *std_cargo_args
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/rust-template --version")
+            end
+          end
+          FORMULA
+
+      - name: Commit and push formula
+        if: github.event.inputs.dry_run != 'true'
+        working-directory: homebrew-tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add Formula/rust-template.rb
+          git commit -m "rust-template: update to ${{ steps.release.outputs.version }}"
+          git push
+
+      - name: Show formula (dry run)
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "Generated formula (dry run - not pushed):"
+          cat homebrew-tap/Formula/rust-template.rb

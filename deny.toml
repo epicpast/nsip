@@ -1,0 +1,81 @@
+# cargo-deny configuration
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+# Target platforms to check
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+all-features = false
+no-default-features = false
+
+[output]
+feature-depth = 1
+
+[advisories]
+version = 2
+# Check for security advisories
+# All advisory types (vulnerability, unmaintained, unsound, notice, yanked) default to deny
+ignore = []
+
+[licenses]
+version = 2
+# Confidence threshold for license detection
+confidence-threshold = 0.8
+
+# List of allowed licenses (SPDX identifiers)
+# All licenses not listed here are automatically denied
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "MPL-2.0",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+    "CC0-1.0",
+    "BSL-1.0",
+    "0BSD",
+]
+
+# License exceptions for specific crates
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+
+[bans]
+# Deny multiple versions of the same crate
+multiple-versions = "warn"
+# Deny wildcard dependencies
+wildcards = "deny"
+# Highlight the crate with the highest version
+highlight = "all"
+
+# Deny specific problematic crates
+deny = [
+    { name = "openssl", wrappers = [], reason = "Use rustls for TLS instead" },
+    { name = "atty", wrappers = [], reason = "Use std::io::IsTerminal instead (available in Rust 1.70+)" },
+]
+
+skip = []
+skip-tree = []
+
+[sources]
+# Deny crates from unknown sources
+unknown-registry = "deny"
+unknown-git = "deny"
+
+# Allow crates.io
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+
+# Allow specific git repositories (add as needed)
+allow-git = []

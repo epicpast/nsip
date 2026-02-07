@@ -1,0 +1,55 @@
+
+name: Nightly Builds
+
+on:
+  # schedule:
+  #   - cron: '0 2 * * *'  # 2 AM daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  nightly:
+    name: Build Nightly Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust nightly
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+        with:
+          toolchain: nightly
+
+      - name: Build nightly
+        run: cargo +nightly build --release --all-features
+
+      - name: Package binary
+        run: |
+          cd target/release
+          tar czf rust-template-nightly-linux-x64.tar.gz rust-template
+          shasum -a 256 rust-template-nightly-linux-x64.tar.gz > rust-template-nightly-linux-x64.tar.gz.sha256
+
+      - name: Delete old nightly release
+        run: gh release delete nightly --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create nightly release
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.2.0
+        with:
+          tag_name: nightly
+          name: Nightly Build
+          prerelease: true
+          body: |
+            Automated nightly build from latest main branch.
+            
+            ⚠️ **Warning:** Nightly builds may be unstable.
+            
+            Built from commit: ${{ github.sha }}
+            Build date: ${{ github.event.repository.updated_at }}
+          files: |
+            target/release/rust-template-nightly-*.tar.gz
+            target/release/rust-template-nightly-*.sha256

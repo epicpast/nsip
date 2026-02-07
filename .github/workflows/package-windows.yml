@@ -1,0 +1,57 @@
+name: Windows MSI Installer
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  msi:
+    name: Build Windows MSI Installer
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+        with:
+          toolchain: stable
+
+      - name: Install cargo-wix
+        run: cargo install cargo-wix
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Create WiX configuration
+        shell: pwsh
+        run: |
+          cargo wix init
+          # Customize wix/main.wxs if needed
+
+      - name: Build MSI installer
+        run: cargo wix --nocapture
+
+      - name: Rename installer
+        shell: pwsh
+        run: |
+          $version = (Get-Content Cargo.toml | Select-String 'version = "(.+)"').Matches.Groups[1].Value
+          Move-Item target/wix/rust-template-*.msi target/wix/rust-template-$version-x64.msi
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: windows-msi
+          path: target/wix/*.msi
+          retention-days: 90
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.2.0
+        with:
+          files: target/wix/*.msi

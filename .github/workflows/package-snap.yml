@@ -1,0 +1,44 @@
+name: Snap Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snap:
+    name: Build Snap Package
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Build snap
+        uses: snapcore/action-build@3bdaa03e89fbf4598ba4c501055a582c77b6a75a # v1.3.0
+        id: build
+
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: snap-package
+          path: ${{ steps.build.outputs.snap }}
+          retention-days: 90
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.2.0
+        with:
+          files: ${{ steps.build.outputs.snap }}
+
+      - name: Publish to Snap Store
+        if: github.event_name == 'release' && github.ref == 'refs/heads/main'
+        uses: snapcore/action-publish@2f62f3ca778de25a88f1e29edb6ec4e763e53eef # v1.2.0
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable

@@ -1,0 +1,135 @@
+name: Fuzz Testing
+
+on:
+  # schedule:
+  #   - cron: '0 2 * * *'  # Daily at 2 AM
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Fuzz duration in seconds'
+        required: false
+        default: '300'
+      target:
+        description: 'Specific fuzz target to run'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  fuzz:
+    name: Fuzz Testing with cargo-fuzz
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust nightly
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+        with:
+          toolchain: nightly
+
+      - name: Install cargo-fuzz
+        uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69 # v2.67.25
+        with:
+          tool: cargo-fuzz@0.12.0
+
+      - name: Cache fuzz corpus
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: fuzz/corpus
+          key: ${{ runner.os }}-fuzz-corpus-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-fuzz-corpus-
+
+      - name: Initialize fuzz directory if needed
+        run: |
+          if [ ! -d "fuzz" ]; then
+            cargo fuzz init
+            echo "Fuzz directory initialized. Add fuzz targets to fuzz/fuzz_targets/"
+          fi
+
+      - name: List fuzz targets
+        id: targets
+        run: |
+          if [ -d "fuzz/fuzz_targets" ]; then
+            TARGETS=$(ls fuzz/fuzz_targets/*.rs 2>/dev/null | xargs -n1 basename | sed 's/\.rs$//' || echo "")
+            echo "targets=$TARGETS" >> $GITHUB_OUTPUT
+            echo "Found targets: $TARGETS"
+          else
+            echo "targets=" >> $GITHUB_OUTPUT
+            echo "No fuzz targets found"
+          fi
+
+      - name: Run fuzz tests
+        if: steps.targets.outputs.targets != ''
+        run: |
+          DURATION="${{ github.event.inputs.duration || '300' }}"
+          TARGET="${{ github.event.inputs.target }}"
+          
+          mkdir -p fuzz-results
+          
+          if [ -n "$TARGET" ]; then
+            echo "Running fuzz target: $TARGET for ${DURATION}s"
+            timeout ${DURATION}s cargo fuzz run $TARGET -- -max_total_time=${DURATION} || true
+          else
+            for target in ${{ steps.targets.outputs.targets }}; do
+              echo "Running fuzz target: $target for ${DURATION}s"
+              timeout ${DURATION}s cargo fuzz run $target -- -max_total_time=${DURATION} || true
+            done
+          fi
+
+      - name: Check for crashes
+        if: steps.targets.outputs.targets != ''
+        id: crashes
+        run: |
+          if [ -d "fuzz/artifacts" ] && [ "$(ls -A fuzz/artifacts 2>/dev/null)" ]; then
+            echo "crashes=true" >> $GITHUB_OUTPUT
+            echo "# Fuzz Testing Crashes Detected" > fuzz-report.md
+            echo "" >> fuzz-report.md
+            for artifact in fuzz/artifacts/*/*; do
+              if [ -f "$artifact" ]; then
+                echo "## Crash: $(basename $(dirname $artifact))" >> fuzz-report.md
+                echo "File: $artifact" >> fuzz-report.md
+                echo "\`\`\`" >> fuzz-report.md
+                xxd -l 256 "$artifact" >> fuzz-report.md || cat "$artifact" >> fuzz-report.md
+                echo "\`\`\`" >> fuzz-report.md
+                echo "" >> fuzz-report.md
+              fi
+            done
+          else
+            echo "crashes=false" >> $GITHUB_OUTPUT
+            echo "# Fuzz Testing - No Crashes" > fuzz-report.md
+            echo "All fuzz targets completed successfully." >> fuzz-report.md
+          fi
+
+      - name: Upload fuzz artifacts
+        if: always() && steps.targets.outputs.targets != ''
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: fuzz-results
+          path: |
+            fuzz-report.md
+            fuzz/artifacts/
+            fuzz/corpus/
+          retention-days: 90
+
+      - name: Create issue on crash
+        if: steps.crashes.outputs.crashes == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('fuzz-report.md', 'utf8');
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Fuzz Testing: Crashes detected on ${new Date().toISOString().split('T')[0]}`,
+              body: report,
+              labels: ['bug', 'fuzz-testing', 'security']
+            });

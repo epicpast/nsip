@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Rust
+target/
+**/*.rs.bk
+# Cargo.lock - needed for reproducible Docker builds
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Tests
+tests/
+benches/
+
+# Misc
+.env
+.env.*
+*.log

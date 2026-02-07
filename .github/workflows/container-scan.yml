@@ -1,0 +1,60 @@
+---
+name: Container Security Scan
+
+"on":
+  # push:
+  #   branches: [main, master]
+  # pull_request:
+  #   branches: [main, master]
+  # schedule:
+  #   - cron: "0 0 * * 0"  # Weekly on Sundays
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # v6.0.2
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Build Docker image for scanning
+        run: docker build -t rust-template:scan .
+
+      - name: Run Trivy vulnerability scanner
+        # master
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac
+        with:
+          image-ref: rust-template:scan
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-container
+
+      - name: Generate human-readable report
+        # master
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac
+        with:
+          image-ref: rust-template:scan
+          format: table
+          output: trivy-report.txt
+
+      - name: Upload scan report
+        # v4.6.2
+        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5
+        if: always()
+        with:
+          name: trivy-scan-report
+          path: trivy-report.txt
+          retention-days: 30

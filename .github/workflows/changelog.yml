@@ -1,0 +1,62 @@
+---
+name: Changelog
+
+"on":
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # v6.0.2
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        # v4.5.0
+        uses: orhun/git-cliff-action@e615672902de82edb33eddcb803a1295fc409525
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Commit changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if git diff --quiet CHANGELOG.md 2>/dev/null; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          REPO="${{ github.repository }}"
+          API_PATH="repos/${REPO}/contents/CHANGELOG.md"
+          CONTENT=$(base64 -i CHANGELOG.md)
+          SHA=$(gh api "$API_PATH" \
+            --jq '.sha' 2>/dev/null || echo "")
+
+          MSG="docs: update CHANGELOG.md for ${TAG_NAME}"
+          ARGS=(
+            -f "message=${MSG}"
+            -f "content=${CONTENT}"
+            -f "branch=main"
+          )
+          if [ -n "$SHA" ]; then
+            ARGS+=(-f "sha=${SHA}")
+          fi
+
+          gh api "$API_PATH" \
+            --method PUT "${ARGS[@]}"
+          echo "Changelog updated via GitHub API"

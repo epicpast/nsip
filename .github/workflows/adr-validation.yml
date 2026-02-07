@@ -1,0 +1,74 @@
+---
+name: ADR Validation
+
+"on":
+  pull_request:
+    paths:
+      - 'docs/adr/**'
+  push:
+    branches: [main, master]
+    paths:
+      - 'docs/adr/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate ADRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Validate ADR Format
+        # main
+        uses: zircote/adrscope@f5b56af9f5ebe72a480770ff9389fcc46345cb66
+        with:
+          command: validate
+          adr-path: docs/adr
+
+      - name: Get ADR Statistics
+        # main
+        uses: zircote/adrscope@f5b56af9f5ebe72a480770ff9389fcc46345cb66
+        with:
+          command: stats
+          adr-path: docs/adr
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        # v7.0.1
+        uses: >-
+          actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        with:
+          script: |
+            const fs = require('fs');
+            const statsFile = 'adr-stats.json';
+
+            if (!fs.existsSync(statsFile)) {
+              console.log('No stats file generated');
+              return;
+            }
+
+            const stats = JSON.parse(fs.readFileSync(statsFile, 'utf8'));
+
+            const comment = `## ADR Validation Results
+
+            📊 **Statistics:**
+            - Total ADRs: ${stats.total || 0}
+            - Accepted: ${stats.accepted || 0}
+            - Proposed: ${stats.proposed || 0}
+            - Deprecated: ${stats.deprecated || 0}
+            - Superseded: ${stats.superseded || 0}
+
+            ✅ All ADRs validated successfully!`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
