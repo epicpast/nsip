@@ -20,32 +20,36 @@ pub struct NsipServer {
 /// Parameters for searching animals.
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct SearchParams {
-    /// Breed group to filter by.
-    #[schemars(description = "Breed group to filter by")]
-    pub breed_group: Option<String>,
+    /// Breed group ID to filter by.
+    #[schemars(description = "Breed group ID to filter by")]
+    pub breed_group_id: Option<i64>,
+
+    /// Breed ID to filter by.
+    #[schemars(description = "Breed ID to filter by")]
+    pub breed_id: Option<i64>,
 
     /// Animal status to filter by.
-    #[schemars(description = "Animal status to filter by")]
+    #[schemars(description = "Animal status to filter by (e.g. CURRENT, SOLD, DEAD)")]
     pub status: Option<String>,
 
-    /// Search query string.
-    #[schemars(description = "Search query string")]
-    pub query: Option<String>,
+    /// Gender filter.
+    #[schemars(description = "Gender filter (Male, Female, Both)")]
+    pub gender: Option<String>,
 
-    /// Page number for pagination.
-    #[schemars(description = "Page number for pagination")]
+    /// Page number for pagination (0-indexed).
+    #[schemars(description = "Page number for pagination (0-indexed)")]
     pub page: Option<u32>,
 
-    /// Number of results per page.
-    #[schemars(description = "Number of results per page")]
-    pub per_page: Option<u32>,
+    /// Number of results per page (1-100).
+    #[schemars(description = "Number of results per page (1-100)")]
+    pub page_size: Option<u32>,
 }
 
 /// Parameters for getting animal details or lineage.
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct AnimalIdParams {
-    /// Unique identifier of the animal.
-    #[schemars(description = "Unique identifier of the animal")]
+    /// LPN ID or registration number of the animal.
+    #[schemars(description = "LPN ID or registration number of the animal")]
     pub animal_id: String,
 }
 
@@ -73,25 +77,32 @@ impl NsipServer {
     ) -> Result<CallToolResult, McpError> {
         let mut criteria = SearchCriteria::new();
 
-        if let Some(bg) = params.breed_group {
-            criteria = criteria.with_breed_group(bg);
+        if let Some(bg) = params.breed_group_id {
+            criteria = criteria.with_breed_group_id(bg);
+        }
+        if let Some(bid) = params.breed_id {
+            criteria = criteria.with_breed_id(bid);
         }
         if let Some(s) = params.status {
             criteria = criteria.with_status(s);
         }
-        if let Some(q) = params.query {
-            criteria = criteria.with_query(q);
+        if let Some(g) = params.gender {
+            criteria = criteria.with_gender(g);
         }
-        if let Some(p) = params.page {
-            criteria = criteria.with_page(p);
-        }
-        if let Some(pp) = params.per_page {
-            criteria = criteria.with_per_page(pp);
-        }
+
+        let page = params.page.unwrap_or(0);
+        let page_size = params.page_size.unwrap_or(15);
 
         let results = self
             .client
-            .search_animals(&criteria)
+            .search_animals(
+                page,
+                page_size,
+                params.breed_id,
+                None,
+                None,
+                Some(&criteria),
+            )
             .await
             .map_err(|e| McpError::internal_error(format!("Search failed: {e}"), None))?;
 
@@ -107,10 +118,11 @@ impl NsipServer {
         &self,
         Parameters(params): Parameters<AnimalIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        let animal =
-            self.client.details(&params.animal_id).await.map_err(|e| {
-                McpError::internal_error(format!("Failed to fetch details: {e}"), None)
-            })?;
+        let animal = self
+            .client
+            .animal_details(&params.animal_id)
+            .await
+            .map_err(|e| McpError::internal_error(format!("Failed to fetch details: {e}"), None))?;
 
         let json = serde_json::to_string_pretty(&animal)
             .map_err(|e| McpError::internal_error(format!("Serialization failed: {e}"), None))?;
@@ -159,22 +171,15 @@ impl ServerHandler for NsipServer {
 pub async fn serve_stdio() -> crate::Result<()> {
     use rmcp::{ServiceExt, transport::stdio};
 
-    let service =
-        NsipServer::new()
-            .serve(stdio())
-            .await
-            .map_err(|e| crate::Error::OperationFailed {
-                operation: "mcp_serve".to_string(),
-                cause: format!("{e}"),
-            })?;
+    let service = NsipServer::new()
+        .serve(stdio())
+        .await
+        .map_err(|e| crate::Error::Connection(format!("MCP server failed to start: {e}")))?;
 
     service
         .waiting()
         .await
-        .map_err(|e| crate::Error::OperationFailed {
-            operation: "mcp_serve".to_string(),
-            cause: format!("{e}"),
-        })?;
+        .map_err(|e| crate::Error::Connection(format!("MCP server error: {e}")))?;
 
     Ok(())
 }

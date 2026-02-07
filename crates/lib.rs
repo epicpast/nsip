@@ -8,32 +8,50 @@ pub mod models;
 
 pub use client::NsipClient;
 pub use models::{
-    Animal, BreedGroup, Lineage, Progeny, SearchCriteria, SearchResponse, Status, TraitRange,
+    AnimalDetails, AnimalProfile, Breed, BreedGroup, ContactInfo, DateLastUpdated, Lineage,
+    LineageAnimal, Progeny, ProgenyAnimal, SearchCriteria, SearchResults, Trait, TraitRange,
+    TraitRangeFilter,
 };
 
 /// Error type for NSIP operations.
+///
+/// Maps to the Python exception hierarchy:
+/// - [`Error::Validation`] — `NSIPValidationError`
+/// - [`Error::Api`] — `NSIPAPIError`
+/// - [`Error::NotFound`] — `NSIPNotFoundError`
+/// - [`Error::Timeout`] — `NSIPTimeoutError`
+/// - [`Error::Connection`] — `NSIPConnectionError`
+/// - [`Error::Parse`] — deserialization failures
 #[derive(Error, Debug)]
 pub enum Error {
-    /// Invalid input was provided.
-    #[error("invalid input: {0}")]
-    InvalidInput(String),
+    /// Invalid input parameters (validation failure).
+    #[error("validation error: {0}")]
+    Validation(String),
 
-    /// An API request failed.
-    #[error("API error: {0}")]
-    ApiError(String),
-
-    /// Failed to parse API response.
-    #[error("parse error: {0}")]
-    ParseError(String),
-
-    /// An operation failed.
-    #[error("operation '{operation}' failed: {cause}")]
-    OperationFailed {
-        /// The operation that failed.
-        operation: String,
-        /// The underlying cause.
-        cause: String,
+    /// The API returned a non-success HTTP status.
+    #[error("API error (HTTP {status}): {message}")]
+    Api {
+        /// HTTP status code.
+        status: u16,
+        /// Human-readable error message.
+        message: String,
     },
+
+    /// The requested resource was not found (HTTP 404).
+    #[error("not found: {0}")]
+    NotFound(String),
+
+    /// The request timed out.
+    #[error("request timed out: {0}")]
+    Timeout(String),
+
+    /// Failed to connect to the API.
+    #[error("connection error: {0}")]
+    Connection(String),
+
+    /// Failed to parse the API response.
+    #[error("parse error: {0}")]
+    Parse(String),
 }
 
 /// Result type alias for NSIP operations.

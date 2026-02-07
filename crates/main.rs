@@ -21,54 +21,74 @@ struct Cli {
 /// Available CLI commands.
 #[derive(Subcommand, Debug)]
 enum Commands {
+    /// Get the date when the database was last updated.
+    DateUpdated,
+
     /// List all available breed groups.
     BreedGroups,
 
     /// List all available animal statuses.
     Statuses,
 
-    /// List available trait ranges.
-    TraitRanges,
+    /// Get trait ranges for a specific breed.
+    TraitRanges {
+        /// Breed ID to query trait ranges for.
+        breed_id: i64,
+    },
 
     /// Search for animals.
     Search {
-        /// Breed group to filter by.
+        /// Breed ID to filter by.
         #[arg(short, long)]
-        breed_group: Option<String>,
+        breed_id: Option<i64>,
 
         /// Animal status to filter by.
         #[arg(short, long)]
         status: Option<String>,
 
-        /// Search query string.
+        /// Gender filter (Male, Female, Both).
         #[arg(short, long)]
-        query: Option<String>,
+        gender: Option<String>,
 
-        /// Page number for pagination.
-        #[arg(short, long, default_value = "1")]
+        /// Page number (0-indexed).
+        #[arg(short, long, default_value = "0")]
         page: u32,
 
-        /// Number of results per page.
-        #[arg(long, default_value = "20")]
-        per_page: u32,
+        /// Number of results per page (1-100).
+        #[arg(long, default_value = "15")]
+        page_size: u32,
     },
 
     /// Get detailed information about a specific animal.
     Details {
-        /// Unique identifier of the animal.
-        animal_id: String,
+        /// LPN ID or registration number of the animal.
+        search_string: String,
     },
 
     /// Get lineage (ancestry) information for a specific animal.
     Lineage {
-        /// Unique identifier of the animal.
-        animal_id: String,
+        /// LPN ID of the animal.
+        lpn_id: String,
     },
 
     /// Get progeny (offspring) information for a specific animal.
     Progeny {
-        /// Unique identifier of the animal.
-        animal_id: String,
+        /// LPN ID of the animal.
+        lpn_id: String,
+
+        /// Page number (0-indexed).
+        #[arg(short, long, default_value = "0")]
+        page: u32,
+
+        /// Number of results per page.
+        #[arg(long, default_value = "10")]
+        page_size: u32,
+    },
+
+    /// Get full profile (details + lineage + progeny) for an animal.
+    Profile {
+        /// LPN ID of the animal.
+        lpn_id: String,
     },
 
     /// Start the MCP server for AI assistant integration.
@@ -82,13 +102,21 @@ async fn run() -> Result<(), nsip::Error> {
     let client = NsipClient::new();
 
     match cli.command {
+        Commands::DateUpdated => {
+            let updated = client.date_last_updated().await?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&updated.data).unwrap_or_default()
+            );
+        },
+
         Commands::BreedGroups => {
-            let breed_groups = client.breed_groups().await?;
+            let groups = client.breed_groups().await?;
             println!("Breed Groups:");
-            for bg in breed_groups {
-                println!("  {} ({})", bg.name, bg.id);
-                if let Some(desc) = &bg.description {
-                    println!("    {desc}");
+            for bg in groups {
+                println!("  {} (ID: {})", bg.name, bg.id);
+                for breed in &bg.breeds {
+                    println!("    - {} (ID: {})", breed.name, breed.id);
                 }
             }
         },
@@ -97,118 +125,84 @@ async fn run() -> Result<(), nsip::Error> {
             let statuses = client.statuses().await?;
             println!("Animal Statuses:");
             for status in statuses {
-                println!("  {} ({})", status.name, status.id);
+                println!("  {status}");
             }
         },
 
-        Commands::TraitRanges => {
-            let trait_ranges = client.trait_ranges().await?;
-            println!("Trait Ranges:");
-            for tr in trait_ranges {
-                let unit = tr.unit.as_deref().unwrap_or("");
-                println!(
-                    "  {}: {}{} - {}{}",
-                    tr.trait_name, tr.min_value, unit, tr.max_value, unit
-                );
-            }
+        Commands::TraitRanges { breed_id } => {
+            let ranges = client.trait_ranges(breed_id).await?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&ranges).unwrap_or_default()
+            );
         },
 
         Commands::Search {
-            breed_group,
+            breed_id,
             status,
-            query,
+            gender,
             page,
-            per_page,
+            page_size,
         } => {
-            let mut criteria = SearchCriteria::new()
-                .with_page(page)
-                .with_per_page(per_page);
-
-            if let Some(bg) = breed_group {
-                criteria = criteria.with_breed_group(bg);
+            let mut criteria = SearchCriteria::new();
+            if let Some(bid) = breed_id {
+                criteria = criteria.with_breed_id(bid);
             }
             if let Some(s) = status {
                 criteria = criteria.with_status(s);
             }
-            if let Some(q) = query {
-                criteria = criteria.with_query(q);
+            if let Some(g) = gender {
+                criteria = criteria.with_gender(g);
             }
 
-            let results = client.search_animals(&criteria).await?;
+            let results = client
+                .search_animals(page, page_size, breed_id, None, None, Some(&criteria))
+                .await?;
+
             println!(
-                "Search Results (page {}/{}, total: {}):",
-                results.page,
-                results.total.div_ceil(results.per_page as usize),
-                results.total
+                "Search Results (page {}, page_size {}, total: {}):",
+                results.page, results.page_size, results.total_count
             );
 
-            for animal in results.animals {
-                println!("\n  {} ({})", animal.name, animal.id);
-                if let Some(breed) = animal.breed {
-                    println!("    Breed: {breed}");
-                }
-                if let Some(status) = animal.status {
-                    println!("    Status: {status}");
-                }
-                if let Some(birth_date) = animal.birth_date {
-                    println!("    Birth Date: {birth_date}");
-                }
+            for animal in &results.results {
+                println!("  {}", serde_json::to_string(animal).unwrap_or_default());
             }
         },
 
-        Commands::Details { animal_id } => {
-            let animal = client.details(&animal_id).await?;
-            println!("Animal Details:");
-            println!("  ID: {}", animal.id);
-            println!("  Name: {}", animal.name);
-
-            if let Some(breed) = animal.breed {
-                println!("  Breed: {breed}");
-            }
-            if let Some(breed_group) = animal.breed_group {
-                println!("  Breed Group: {breed_group}");
-            }
-            if let Some(status) = animal.status {
-                println!("  Status: {status}");
-            }
-            if let Some(birth_date) = animal.birth_date {
-                println!("  Birth Date: {birth_date}");
-            }
-            if let Some(sex) = animal.sex {
-                println!("  Sex: {sex}");
-            }
-            if let Some(sire) = animal.sire {
-                println!("  Sire: {sire}");
-            }
-            if let Some(dam) = animal.dam {
-                println!("  Dam: {dam}");
-            }
+        Commands::Details { search_string } => {
+            let details = client.animal_details(&search_string).await?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&details).unwrap_or_default()
+            );
         },
 
-        Commands::Lineage { animal_id } => {
-            let lineage = client.lineage(&animal_id).await?;
-            println!("Lineage for Animal ID: {}", lineage.animal_id);
-            println!("\nAncestors:");
-
-            for ancestor in lineage.ancestors {
-                println!("  {} ({})", ancestor.name, ancestor.id);
-                if let Some(breed) = ancestor.breed {
-                    println!("    Breed: {breed}");
-                }
-            }
+        Commands::Lineage { lpn_id } => {
+            let lineage = client.lineage(&lpn_id).await?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&lineage).unwrap_or_default()
+            );
         },
 
-        Commands::Progeny { animal_id } => {
-            let progeny = client.progeny(&animal_id).await?;
-            println!("Progeny for Animal ID: {}", progeny.animal_id);
-            println!("\nOffspring:");
+        Commands::Progeny {
+            lpn_id,
+            page,
+            page_size,
+        } => {
+            let progeny = client.progeny(&lpn_id, page, page_size).await?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&progeny).unwrap_or_default()
+            );
+        },
 
-            for offspring in progeny.offspring {
-                println!("  {} ({})", offspring.name, offspring.id);
-                if let Some(breed) = offspring.breed {
-                    println!("    Breed: {breed}");
-                }
-            }
+        Commands::Profile { lpn_id } => {
+            let profile = client.search_by_lpn(&lpn_id).await?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&profile).unwrap_or_default()
+            );
         },
 
         Commands::Mcp => {
