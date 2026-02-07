@@ -42,15 +42,15 @@ sudo mv cosign-linux-amd64 /usr/local/bin/cosign
 **Verify Asset:**
 ```bash
 # Download release and signature
-wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template
-wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template.sig
+wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip
+wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip.sig
 
 # Verify signature
 cosign verify-blob \
-  --signature rust-template.sig \
+  --signature nsip.sig \
   --certificate-identity-regexp=".*" \
   --certificate-oidc-issuer-regexp=".*" \
-  rust-template
+  nsip
 ```
 
 **Verify Checksums:**
@@ -105,7 +105,7 @@ The workflow automatically generates **SLSA Level 3** provenance:
   "_type": "https://in-toto.io/Statement/v0.1",
   "subject": [
     {
-      "name": "rust-template",
+      "name": "nsip",
       "digest": {
         "sha256": "abc123..."
       }
@@ -153,14 +153,14 @@ sudo mv slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier
 **Verify Artifact:**
 ```bash
 # Download binary and provenance
-wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template
-wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template.intoto.jsonl
+wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip
+wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip.intoto.jsonl
 
 # Verify provenance
 slsa-verifier verify-artifact \
-  --provenance-path rust-template.intoto.jsonl \
+  --provenance-path nsip.intoto.jsonl \
   --source-uri github.com/USER/REPO \
-  rust-template
+  nsip
 ```
 
 **Output:**
@@ -183,10 +183,10 @@ def install
   signature_url = "#{url}.sig"
   resource("signature").stage do
     system "cosign", "verify-blob",
-           "--signature", "rust-template.sig",
+           "--signature", "nsip.sig",
            "--certificate-identity-regexp", ".*",
            "--certificate-oidc-issuer-regexp", ".*",
-           bin/"rust-template"
+           bin/"nsip"
   end
 end
 ```
@@ -195,13 +195,13 @@ end
 
 ```dockerfile
 # Verify binary before adding to image
-RUN wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template && \
-    wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template.sig && \
+RUN wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip && \
+    wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip.sig && \
     cosign verify-blob \
-      --signature rust-template.sig \
+      --signature nsip.sig \
       --certificate-identity-regexp=".*" \
       --certificate-oidc-issuer-regexp=".*" \
-      rust-template
+      nsip
 ```
 
 ## Advanced Configuration
@@ -223,7 +223,7 @@ For organizations with existing PKI:
 
 **Verify GPG:**
 ```bash
-gpg --verify rust-template.asc rust-template
+gpg --verify nsip.asc nsip
 ```
 
 ### Multiple Signatures
@@ -232,13 +232,13 @@ gpg --verify rust-template.asc rust-template
 - name: Sign with multiple methods
   run: |
     # Cosign (keyless)
-    cosign sign-blob --yes rust-template > rust-template.cosign.sig
+    cosign sign-blob --yes nsip > nsip.cosign.sig
 
     # GPG (traditional)
-    gpg --detach-sign --armor rust-template
+    gpg --detach-sign --armor nsip
 
     # Minisign (simple)
-    minisign -Sm rust-template
+    minisign -Sm nsip
 ```
 
 ## Security Best Practices
@@ -274,11 +274,11 @@ gpg --verify rust-template.asc rust-template
 ```bash
 # Check certificate details
 cosign verify-blob \
-  --signature rust-template.sig \
+  --signature nsip.sig \
   --certificate-identity-regexp=".*" \
   --certificate-oidc-issuer-regexp=".*" \
   --debug \
-  rust-template
+  nsip
 ```
 
 **Common issues:**
@@ -291,10 +291,10 @@ cosign verify-blob \
 ```bash
 # Verbose verification
 slsa-verifier verify-artifact \
-  --provenance-path rust-template.intoto.jsonl \
+  --provenance-path nsip.intoto.jsonl \
   --source-uri github.com/USER/REPO \
   --print-provenance \
-  rust-template
+  nsip
 ```
 
 **Common issues:**
@@ -310,7 +310,7 @@ All Cosign signatures logged to Rekor:
 
 ```bash
 # Search Rekor for signatures
-rekor-cli search --artifact rust-template
+rekor-cli search --artifact nsip
 
 # Get entry details
 rekor-cli get --uuid <uuid>
@@ -322,9 +322,9 @@ rekor-cli get --uuid <uuid>
 
 ```bash
 # Extract provenance fields
-cat rust-template.intoto.jsonl | jq '.predicate.builder.id'
-cat rust-template.intoto.jsonl | jq '.predicate.metadata.buildStartedOn'
-cat rust-template.intoto.jsonl | jq '.predicate.materials[0].uri'
+cat nsip.intoto.jsonl | jq '.predicate.builder.id'
+cat nsip.intoto.jsonl | jq '.predicate.metadata.buildStartedOn'
+cat nsip.intoto.jsonl | jq '.predicate.materials[0].uri'
 ```
 
 ### Compliance Reports

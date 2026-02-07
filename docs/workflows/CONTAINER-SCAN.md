@@ -34,15 +34,15 @@ brew install trivy
 curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
 # Build and scan image
-docker build -t rust-template:local .
-trivy image rust-template:local
+docker build -t nsip:local .
+trivy image nsip:local
 
 # Scan specific severity
-trivy image --severity HIGH,CRITICAL rust-template:local
+trivy image --severity HIGH,CRITICAL nsip:local
 
 # Output formats
-trivy image --format json rust-template:local > scan.json
-trivy image --format sarif rust-template:local > scan.sarif
+trivy image --format json nsip:local > scan.json
+trivy image --format sarif nsip:local > scan.sarif
 ```
 
 ### CI Scanning
@@ -145,8 +145,8 @@ cargo update
 cargo audit
 
 # Rebuild image
-docker build -t rust-template:patched .
-trivy image rust-template:patched
+docker build -t nsip:patched .
+trivy image nsip:patched
 ```
 
 ### Accept Risk
@@ -184,7 +184,7 @@ trivy image --clear-cache
 Check vulnerability details:
 
 ```bash
-trivy image --format json rust-template:local | jq '.Results[].Vulnerabilities[] | select(.VulnerabilityID=="CVE-2021-12345")'
+trivy image --format json nsip:local | jq '.Results[].Vulnerabilities[] | select(.VulnerabilityID=="CVE-2021-12345")'
 ```
 
 Add to `.trivyignore` if confirmed false positive.

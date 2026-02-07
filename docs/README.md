@@ -1,6 +1,6 @@
 # Documentation Index
 
-> All documentation for the rust_template project.
+> All documentation for the nsip project.
 
 ## Template Adoption Guides
 

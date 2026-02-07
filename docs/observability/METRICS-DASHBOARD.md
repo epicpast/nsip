@@ -27,18 +27,18 @@ Track project health, downloads, performance, and usage metrics.
 **API Access:**
 ```bash
 # Get crate info
-curl https://crates.io/api/v1/crates/rust-template
+curl https://crates.io/api/v1/crates/nsip
 
 # Get download stats
-curl https://crates.io/api/v1/crates/rust-template/downloads
+curl https://crates.io/api/v1/crates/nsip/downloads
 ```
 
 **Response:**
 ```json
 {
   "crate": {
-    "id": "rust-template",
-    "name": "rust-template",
+    "id": "nsip",
+    "name": "nsip",
     "downloads": 12345,
     "recent_downloads": 1234
   },
@@ -59,17 +59,17 @@ curl https://crates.io/api/v1/crates/rust-template/downloads
 
 **API Access:**
 ```bash
-curl https://hub.docker.com/v2/repositories/username/rust-template/
+curl https://hub.docker.com/v2/repositories/username/nsip/
 
 # Pull statistics
-curl https://hub.docker.com/v2/repositories/username/rust-template/stats/
+curl https://hub.docker.com/v2/repositories/username/nsip/stats/
 ```
 
 ### 4. GitHub Packages
 
 **Package registry metrics:**
 ```bash
-gh api /users/USERNAME/packages/container/rust-template
+gh api /users/USERNAME/packages/container/nsip
 ```
 
 ### 5. CI/CD Metrics
@@ -99,11 +99,11 @@ gh api repos/USER/REPO/actions/workflows/ci.yml/runs \
 [![codecov](https://codecov.io/gh/USER/REPO/branch/main/graph/badge.svg)](https://codecov.io/gh/USER/REPO)
 
 <!-- crates.io -->
-[![Crates.io](https://img.shields.io/crates/v/rust-template)](https://crates.io/crates/rust-template)
-[![Downloads](https://img.shields.io/crates/d/rust-template)](https://crates.io/crates/rust-template)
+[![Crates.io](https://img.shields.io/crates/v/nsip)](https://crates.io/crates/nsip)
+[![Downloads](https://img.shields.io/crates/d/nsip)](https://crates.io/crates/nsip)
 
 <!-- Docker -->
-[![Docker Pulls](https://img.shields.io/docker/pulls/username/rust-template)](https://hub.docker.com/r/username/rust-template)
+[![Docker Pulls](https://img.shields.io/docker/pulls/username/nsip)](https://hub.docker.com/r/username/nsip)
 
 <!-- Dependencies -->
 [![Deps.rs](https://deps.rs/repo/github/USER/REPO/status.svg)](https://deps.rs/repo/github/USER/REPO)
@@ -253,7 +253,7 @@ def get_crate_stats(crate_name):
     }
 
 # Store in time-series database or CSV
-stats = get_crate_stats("rust-template")
+stats = get_crate_stats("nsip")
 with open("downloads.json", "a") as f:
     json.dump(stats, f)
     f.write("\n")
@@ -398,7 +398,7 @@ jobs:
           # Weekly Report
 
           ## Downloads
-          $(curl -s https://crates.io/api/v1/crates/rust-template | jq -r '.crate | "Total: \(.downloads), Recent: \(.recent_downloads)"')
+          $(curl -s https://crates.io/api/v1/crates/nsip | jq -r '.crate | "Total: \(.downloads), Recent: \(.recent_downloads)"')
 
           ## Issues
           Open: $(gh issue list --state open --json id | jq '. | length')

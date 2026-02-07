@@ -1,6 +1,6 @@
 # Customization Guide
 
-This guide covers how to customize the `rust-template` beyond the initial setup. For basic configuration (renaming the crate, updating metadata), see the main README.
+This guide covers how to customize the `nsip` beyond the initial setup. For basic configuration (renaming the crate, updating metadata), see the main README.
 
 ---
 
@@ -24,7 +24,7 @@ This guide covers how to customize the `rust-template` beyond the initial setup.
 Create a new file under `crates/`. For example, `crates/parser.rs`:
 
 ```rust
-//! Parser module for rust_template.
+//! Parser module for nsip.
 
 use crate::{Error, Result};
 
@@ -45,11 +45,11 @@ use crate::{Error, Result};
 /// # Examples
 ///
 /// ```rust
-/// use rust_template::parser::parse;
+/// use nsip::parser::parse;
 ///
 /// let result = parse("valid input")?;
 /// assert!(!result.is_empty());
-/// # Ok::<(), rust_template::Error>(())
+/// # Ok::<(), nsip::Error>(())
 /// ```
 pub fn parse(input: &str) -> Result<String> {
     if input.is_empty() {
@@ -90,7 +90,7 @@ pub mod parser;
 Create or extend a file in `tests/`. For example, `tests/parser_test.rs`:
 
 ```rust
-use rust_template::parser::parse;
+use nsip::parser::parse;
 
 #[test]
 fn test_parse_integration() {
@@ -127,7 +127,7 @@ Your `crates/lib.rs` should look like this after cleanup:
 
 use thiserror::Error;
 
-/// Error type for `rust_template` operations.
+/// Error type for `nsip` operations.
 #[derive(Error, Debug)]
 pub enum Error {
     /// Invalid input was provided.
@@ -144,7 +144,7 @@ pub enum Error {
     },
 }
 
-/// Result type alias for `rust_template` operations.
+/// Result type alias for `nsip` operations.
 pub type Result<T> = std::result::Result<T, Error>;
 
 // Add your modules and public API here.
@@ -155,13 +155,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 If you keep a binary target, rewrite `crates/main.rs` to remove references to the example functions:
 
 ```rust
-//! Binary entry point for `rust_template`.
+//! Binary entry point for `nsip`.
 
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
 use std::process::ExitCode;
 
-fn run() -> Result<(), rust_template::Error> {
+fn run() -> Result<(), nsip::Error> {
     // Your application logic here
     Ok(())
 }
@@ -202,7 +202,7 @@ If your crate is library-only, remove the binary configuration:
    ```toml
    # Delete these lines:
    [[bin]]
-   name = "rust_template"
+   name = "nsip"
    path = "crates/main.rs"
    ```
 
@@ -214,11 +214,11 @@ Add extra `[[bin]]` sections to `Cargo.toml`:
 
 ```toml
 [[bin]]
-name = "rust_template"
+name = "nsip"
 path = "crates/main.rs"
 
 [[bin]]
-name = "rust_template_cli"
+name = "nsip_cli"
 path = "crates/cli.rs"
 ```
 
@@ -241,7 +241,7 @@ members = [
 edition = "2024"
 rust-version = "1.92"
 license = "MIT"
-repository = "https://github.com/zircote/rust-template"
+repository = "https://github.com/zircote/nsip"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -260,7 +260,7 @@ Each member crate then has its own `Cargo.toml` that inherits workspace settings
 
 ```toml
 [package]
-name = "rust_template_core"
+name = "nsip_core"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -516,8 +516,8 @@ Add a new entry to the `matrix.include` array in `release.yml`:
 ```yaml
 - os: ubuntu-latest
   target: x86_64-unknown-linux-musl
-  artifact_name: rust_template
-  asset_name: rust_template-linux-musl-amd64
+  artifact_name: nsip
+  asset_name: nsip-linux-musl-amd64
 ```
 
 For musl targets, you will also need to install the musl toolchain:
@@ -538,8 +538,8 @@ Delete the corresponding entry from `matrix.include`. For example, to drop Windo
 # Delete this block:
 - os: windows-latest
   target: x86_64-pc-windows-msvc
-  artifact_name: rust_template.exe
-  asset_name: rust_template-windows-amd64.exe
+  artifact_name: nsip.exe
+  asset_name: nsip-windows-amd64.exe
 ```
 
 Also remove the target from `deny.toml`'s `[graph].targets` list so supply chain checks stay aligned.
@@ -577,9 +577,9 @@ RUN apt-get update && \
 RUN useradd --create-home appuser
 USER appuser
 
-COPY --from=builder /app/target/release/rust_template /usr/local/bin/rust_template
+COPY --from=builder /app/target/release/nsip /usr/local/bin/nsip
 
-ENTRYPOINT ["/usr/local/bin/rust_template"]
+ENTRYPOINT ["/usr/local/bin/nsip"]
 ```
 
 Distroless is preferred for production because it contains no shell or package manager, reducing the attack surface. Use Debian slim if you need to debug inside the container or require additional runtime dependencies.

@@ -47,7 +47,7 @@ cargo fuzz init
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rust_template::parse;
+use nsip::parse;
 
 fuzz_target!(|data: &[u8]| {
     // Convert bytes to string

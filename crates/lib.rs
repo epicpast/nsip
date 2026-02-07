@@ -2,7 +2,7 @@
 
 use thiserror::Error;
 
-/// Error type for `rust_template` operations.
+/// Error type for `nsip` operations.
 #[derive(Error, Debug)]
 pub enum Error {
     /// Invalid input was provided.
@@ -19,7 +19,7 @@ pub enum Error {
     },
 }
 
-/// Result type alias for `rust_template` operations.
+/// Result type alias for `nsip` operations.
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Adds two numbers together.
@@ -36,7 +36,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// # Examples
 ///
 /// ```rust
-/// use rust_template::add;
+/// use nsip::add;
 ///
 /// assert_eq!(add(2, 3), 5);
 /// assert_eq!(add(-1, 1), 0);
@@ -64,7 +64,7 @@ pub const fn add(a: i64, b: i64) -> i64 {
 /// # Examples
 ///
 /// ```rust
-/// use rust_template::divide;
+/// use nsip::divide;
 ///
 /// assert_eq!(divide(10, 2).unwrap(), 5);
 /// assert!(divide(10, 0).is_err());

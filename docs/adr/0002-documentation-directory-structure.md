@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-As the rust_template project grew to include 30+ CI/CD workflows, security tooling, release automation, and AI coding agent support, the documentation expanded organically. Files were spread across multiple subdirectories (`docs/workflows/`, `docs/security/`, `docs/distribution/`, `docs/testing/`, `docs/ux/`, `docs/observability/`) without a clear organizing principle.
+As the nsip project grew to include 30+ CI/CD workflows, security tooling, release automation, and AI coding agent support, the documentation expanded organically. Files were spread across multiple subdirectories (`docs/workflows/`, `docs/security/`, `docs/distribution/`, `docs/testing/`, `docs/ux/`, `docs/observability/`) without a clear organizing principle.
 
 This created two problems:
 

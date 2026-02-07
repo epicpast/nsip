@@ -272,10 +272,10 @@ git diff --name-only main | grep '\.rs$' | xargs cargo llvm-cov --include-ffi
 
 ```bash
 # Generate profdata for analysis
-cargo llvm-cov --no-report --profdata-output rust_template.profdata
+cargo llvm-cov --no-report --profdata-output nsip.profdata
 
 # Analyze with llvm-profdata
-llvm-profdata show rust_template.profdata
+llvm-profdata show nsip.profdata
 ```
 
 ### Doc Test Coverage

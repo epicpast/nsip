@@ -11,7 +11,7 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via [GitHub Security Advisories](https://github.com/zircote/rust-template/security/advisories/new).
+Instead, please report them via [GitHub Security Advisories](https://github.com/zircote/nsip/security/advisories/new).
 
 ### What to Include
 
@@ -37,7 +37,7 @@ We follow responsible disclosure practices:
 
 ### Scope
 
-This policy applies to the rust_template crate and its published artifacts. Third-party dependencies
+This policy applies to the nsip crate and its published artifacts. Third-party dependencies
 are managed via `cargo-deny` and audited regularly through our CI pipeline.
 
 ## Security Measures

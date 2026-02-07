@@ -1,12 +1,12 @@
 # Getting Started
 
-> You just created a repository from **zircote/rust-template**. This guide walks you through every step from creation to your first green CI run.
+> You just created a repository from **zircote/nsip**. This guide walks you through every step from creation to your first green CI run.
 
 ---
 
 ## 1. Create Your Repository
 
-- [ ] Go to [zircote/rust-template](https://github.com/zircote/rust-template) and click **"Use this template"** > **"Create a new repository"**.
+- [ ] Go to [zircote/nsip](https://github.com/zircote/nsip) and click **"Use this template"** > **"Create a new repository"**.
 - [ ] Choose an **owner** (your user or an organization).
 - [ ] Name your repository (e.g., `my-awesome-crate`).
 - [ ] Select **Public** or **Private** visibility.
@@ -22,17 +22,17 @@ Once your repository is created and the first push lands on `main`, the **Templa
 
 | Template placeholder | Replaced with | Example |
 |---|---|---|
-| `zircote/rust-template` | `your-org/your-repo` | `acme/my-awesome-crate` |
+| `zircote/nsip` | `your-org/your-repo` | `acme/my-awesome-crate` |
 | `zircote` | your GitHub owner | `acme` |
-| `rust-template` | your repository name | `my-awesome-crate` |
-| `rust_template` | your crate name (underscored) | `my_awesome_crate` |
+| `nsip` | your repository name | `my-awesome-crate` |
+| `nsip` | your crate name (underscored) | `my_awesome_crate` |
 
 **What to expect:**
 
 - [ ] The workflow takes roughly **1 minute** to complete.
-- [ ] It creates a commit titled `chore: initialize from rust-template for <owner>/<repo>`.
+- [ ] It creates a commit titled `chore: initialize from nsip for <owner>/<repo>`.
 - [ ] After the commit, `Cargo.toml`, `README.md`, documentation links, and all other references point to your project.
-- [ ] The workflow becomes a **no-op** on subsequent pushes (it checks whether `Cargo.toml` still contains `rust_template`).
+- [ ] The workflow becomes a **no-op** on subsequent pushes (it checks whether `Cargo.toml` still contains `nsip`).
 
 > **What copies and what doesn't?** Files copy; settings don't. See [GitHub Template Features](GITHUB-TEMPLATE-FEATURES.md) for the full breakdown of what transfers when you use a template repository.
 

@@ -50,7 +50,7 @@ cat sbom.json | jq '.packages[] | {name, version, licenseConcluded}'
 
 ```bash
 # Download from GitHub release
-wget https://github.com/zircote/rust-template/releases/download/v0.1.0/sbom-spdx.json
+wget https://github.com/zircote/nsip/releases/download/v0.1.0/sbom-spdx.json
 
 # Analyze with SBOM tools
 sbom-tool validate sbom-spdx.json
@@ -77,7 +77,7 @@ The generated SBOM includes:
   "SPDXID": "SPDXRef-DOCUMENT",
   "packages": [
     {
-      "name": "rust_template",
+      "name": "nsip",
       "versionInfo": "0.1.0",
       "licenseConcluded": "MIT",
       "supplier": "Organization: zircote"
@@ -85,7 +85,7 @@ The generated SBOM includes:
   ],
   "relationships": [
     {
-      "spdxElementId": "SPDXRef-rust_template",
+      "spdxElementId": "SPDXRef-nsip",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-dependency"
     }

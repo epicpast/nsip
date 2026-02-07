@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This document provides comprehensive deployment instructions for the rust-template project.
+This document provides comprehensive deployment instructions for the nsip project.
 
 ## Overview
 
@@ -85,27 +85,27 @@ Pushing the tag automatically triggers:
 
 ### GitHub Releases
 
-**Access:** https://github.com/zircote/rust-template/releases
+**Access:** https://github.com/zircote/nsip/releases
 
 **Artifacts:**
-- `rust_template-linux-amd64` - Linux x86_64
-- `rust_template-linux-arm64` - Linux ARM64
-- `rust_template-macos-amd64` - macOS x86_64
-- `rust_template-macos-arm64` - macOS ARM64 (Apple Silicon)
-- `rust_template-windows-amd64.exe` - Windows x86_64
+- `nsip-linux-amd64` - Linux x86_64
+- `nsip-linux-arm64` - Linux ARM64
+- `nsip-macos-amd64` - macOS x86_64
+- `nsip-macos-arm64` - macOS ARM64 (Apple Silicon)
+- `nsip-windows-amd64.exe` - Windows x86_64
 
 **Download Example:**
 
 ```bash
 # Linux
-wget https://github.com/zircote/rust-template/releases/download/v0.1.0/rust_template-linux-amd64
-chmod +x rust_template-linux-amd64
-./rust_template-linux-amd64 --version
+wget https://github.com/zircote/nsip/releases/download/v0.1.0/nsip-linux-amd64
+chmod +x nsip-linux-amd64
+./nsip-linux-amd64 --version
 ```
 
 ### Docker (GitHub Container Registry)
 
-**Registry:** ghcr.io/zircote/rust-template
+**Registry:** ghcr.io/zircote/nsip
 
 **Supported Platforms:**
 - linux/amd64
@@ -115,15 +115,15 @@ chmod +x rust_template-linux-amd64
 
 ```bash
 # Latest version
-docker pull ghcr.io/zircote/rust-template:latest
-docker run --rm ghcr.io/zircote/rust-template:latest --version
+docker pull ghcr.io/zircote/nsip:latest
+docker run --rm ghcr.io/zircote/nsip:latest --version
 
 # Specific version
-docker pull ghcr.io/zircote/rust-template:v0.1.0
-docker run --rm ghcr.io/zircote/rust-template:v0.1.0 --version
+docker pull ghcr.io/zircote/nsip:v0.1.0
+docker run --rm ghcr.io/zircote/nsip:v0.1.0 --version
 
 # With volumes
-docker run --rm -v $(pwd):/data ghcr.io/zircote/rust-template:latest
+docker run --rm -v $(pwd):/data ghcr.io/zircote/nsip:latest
 ```
 
 **Image Details:**
@@ -134,26 +134,26 @@ docker run --rm -v $(pwd):/data ghcr.io/zircote/rust-template:latest
 
 ### crates.io
 
-**Package:** https://crates.io/crates/rust_template
+**Package:** https://crates.io/crates/nsip
 
 **Install:**
 
 ```bash
 # Latest version
-cargo install rust_template
+cargo install nsip
 
 # Specific version
-cargo install rust_template@0.1.0
+cargo install nsip@0.1.0
 
 # From source
-cargo install --git https://github.com/zircote/rust-template
+cargo install --git https://github.com/zircote/nsip
 ```
 
 **Use in Project:**
 
 ```toml
 [dependencies]
-rust_template = "0.1"
+nsip = "0.1"
 ```
 
 ## Versioning
@@ -204,7 +204,7 @@ gh release delete v0.2.0
 Images are immutable; use previous version tags:
 
 ```bash
-docker pull ghcr.io/zircote/rust-template:v0.1.0
+docker pull ghcr.io/zircote/nsip:v0.1.0
 ```
 
 ### crates.io
@@ -228,7 +228,7 @@ docker pull ghcr.io/zircote/rust-template:v0.1.0
 ### GitHub Actions
 
 Monitor workflow runs:
-- Actions tab: https://github.com/zircote/rust-template/actions
+- Actions tab: https://github.com/zircote/nsip/actions
 
 ### Security Audits
 

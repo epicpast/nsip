@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-As `rust_template` grows, we need a way to document important architectural decisions and their rationale. Without documentation, decisions can be lost over time, leading to:
+As `nsip` grows, we need a way to document important architectural decisions and their rationale. Without documentation, decisions can be lost over time, leading to:
 
 - Repeated discussions on already-settled topics
 - Loss of context about why certain approaches were chosen

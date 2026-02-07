@@ -1,6 +1,6 @@
 # CI Troubleshooting
 
-Common CI failure patterns and fixes for rust-template. Use this runbook when a workflow fails on a pull request or push to `main`.
+Common CI failure patterns and fixes for nsip. Use this runbook when a workflow fails on a pull request or push to `main`.
 
 ---
 
@@ -8,7 +8,7 @@ Common CI failure patterns and fixes for rust-template. Use this runbook when a 
 
 ### Reading Workflow Logs
 
-1. Go to **Actions**: https://github.com/zircote/rust-template/actions
+1. Go to **Actions**: https://github.com/zircote/nsip/actions
 2. Click the failed workflow run
 3. Click the failed job (red X)
 4. Expand the failed step to see the full log
@@ -418,13 +418,13 @@ Secrets needed:
 
 ```bash
 # Build for current platform only
-docker build -t rust-template:test .
+docker build -t nsip:test .
 
 # Run the test image
-docker run --rm rust-template:test --version
+docker run --rm nsip:test --version
 
 # Build for multiple platforms (requires buildx)
-docker buildx build --platform linux/amd64,linux/arm64 -t rust-template:test .
+docker buildx build --platform linux/amd64,linux/arm64 -t nsip:test .
 ```
 
 ---

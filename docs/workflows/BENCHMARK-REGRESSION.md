@@ -33,7 +33,7 @@ benches/
 
 ```rust
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use rust_template::expensive_function;
+use nsip::expensive_function;
 
 fn benchmark_expensive_function(c: &mut Criterion) {
     c.bench_function("expensive_function", |b| {

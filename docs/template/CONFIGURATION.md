@@ -1,6 +1,6 @@
 # Template Configuration Guide
 
-> How to configure your new repository after creating it from the rust-template.
+> How to configure your new repository after creating it from the nsip.
 
 This guide covers every customization point in the template, from automatic placeholder replacement to editor and AI assistant configuration.
 
@@ -14,17 +14,17 @@ The `template-init.yml` workflow runs automatically on the first push to `main` 
 
 | Placeholder | Replaced With | Example |
 |-------------|---------------|---------|
-| `zircote/rust-template` | `your-org/your-repo` (full path) | `acme/my-cli` |
-| `zircote/rust_template` | `your-org/your_crate` (full path, underscored) | `acme/my_cli` |
+| `zircote/nsip` | `your-org/your-repo` (full path) | `acme/my-cli` |
+| `zircote/nsip` | `your-org/your_crate` (full path, underscored) | `acme/my_cli` |
 | `zircote` | Your GitHub org or username | `acme` |
-| `rust-template` | Your repo name (hyphenated) | `my-cli` |
-| `rust_template` | Your crate name (underscored) | `my_cli` |
+| `nsip` | Your repo name (hyphenated) | `my-cli` |
+| `nsip` | Your crate name (underscored) | `my_cli` |
 
 ### How It Works
 
 1. You click **"Use this template"** on GitHub.
 2. You push to `main` (or the initial commit triggers the workflow).
-3. The workflow detects `name = "rust_template"` in `Cargo.toml`.
+3. The workflow detects `name = "nsip"` in `Cargo.toml`.
 4. It runs `sed` replacements across all eligible files.
 5. It regenerates `Cargo.lock` and commits the result.
 
@@ -54,11 +54,11 @@ find . -type f \
   ! -name '*.png' ! -name '*.jpg' ! -name '*.ico' \
   ! -name 'Cargo.lock' \
   -exec sed -i '' \
-    -e "s|zircote/rust-template|${OWNER}/${REPO}|g" \
-    -e "s|zircote/rust_template|${OWNER}/${CRATE}|g" \
+    -e "s|zircote/nsip|${OWNER}/${REPO}|g" \
+    -e "s|zircote/nsip|${OWNER}/${CRATE}|g" \
     -e "s|zircote|${OWNER}|g" \
-    -e "s|rust-template|${REPO}|g" \
-    -e "s|rust_template|${CRATE}|g" \
+    -e "s|nsip|${REPO}|g" \
+    -e "s|nsip|${CRATE}|g" \
     {} +
 
 cargo generate-lockfile
@@ -72,15 +72,15 @@ After placeholder replacement runs, review and update these fields in `Cargo.tom
 
 | Field | Default | Action |
 |-------|---------|--------|
-| `name` | `rust_template` | Auto-replaced by `template-init` |
+| `name` | `nsip` | Auto-replaced by `template-init` |
 | `version` | `0.1.0` | Update for releases |
 | `edition` | `2024` | Leave as-is unless you need an older edition |
 | `rust-version` | `1.92` | Update if changing MSRV (see section 6) |
 | `authors` | `["Your Name <you@example.com>"]` | Replace with your name and email |
 | `description` | `"A Rust template crate..."` | Replace with your crate's description |
-| `repository` | `https://github.com/zircote/rust-template` | Auto-replaced by `template-init` |
-| `homepage` | `https://github.com/zircote/rust-template` | Auto-replaced by `template-init` |
-| `documentation` | `https://docs.rs/rust_template` | Auto-replaced by `template-init` |
+| `repository` | `https://github.com/zircote/nsip` | Auto-replaced by `template-init` |
+| `homepage` | `https://github.com/zircote/nsip` | Auto-replaced by `template-init` |
+| `documentation` | `https://docs.rs/nsip` | Auto-replaced by `template-init` |
 | `license` | `MIT` | Change if using a different license |
 | `keywords` | `["template", "rust", "example"]` | Replace with up to 5 relevant keywords |
 | `categories` | `["development-tools"]` | Replace with applicable [crate categories](https://crates.io/category_slugs) |

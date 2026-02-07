@@ -32,14 +32,14 @@ RUN cargo build --release
 FROM gcr.io/distroless/cc-debian12:latest
 
 # Copy binary from builder
-COPY --from=builder /app/target/release/rust_template /usr/local/bin/rust_template
+COPY --from=builder /app/target/release/nsip /usr/local/bin/nsip
 
 # Set non-root user
 USER nonroot:nonroot
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ["/usr/local/bin/rust_template", "--version"]
+    CMD ["/usr/local/bin/nsip", "--version"]
 
 # Run the binary
-ENTRYPOINT ["/usr/local/bin/rust_template"]
+ENTRYPOINT ["/usr/local/bin/nsip"]

@@ -1,4 +1,4 @@
-name: rust-template
+name: nsip
 base: core22
 version: git
 summary: Modern Rust project template with production-ready tooling
@@ -14,14 +14,14 @@ grade: stable
 confinement: strict
 
 apps:
-  rust-template:
-    command: bin/rust-template
+  nsip:
+    command: bin/nsip
     plugs:
       - home
       - network
 
 parts:
-  rust-template:
+  nsip:
     plugin: rust
     source: .
     rust-channel: stable

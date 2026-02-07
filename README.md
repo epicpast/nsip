@@ -1,12 +1,12 @@
-# `rust_template`
+# `nsip`
 
 <!-- Badges -->
-[![GitHub Template](https://img.shields.io/badge/template-zircote%2Frust--template-blue?logo=github)](https://github.com/zircote/rust-template)
-[![CI](https://github.com/zircote/rust-template/actions/workflows/ci.yml/badge.svg)](https://github.com/zircote/rust-template/actions/workflows/ci.yml)
-[![Crates.io](https://img.shields.io/crates/v/rust_template.svg?logo=rust&logoColor=white)](https://crates.io/crates/rust_template)
-[![Documentation](https://docs.rs/rust_template/badge.svg)](https://docs.rs/rust_template)
+[![GitHub Template](https://img.shields.io/badge/template-zircote%2Frust--template-blue?logo=github)](https://github.com/zircote/nsip)
+[![CI](https://github.com/zircote/nsip/actions/workflows/ci.yml/badge.svg)](https://github.com/zircote/nsip/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/nsip.svg?logo=rust&logoColor=white)](https://crates.io/crates/nsip)
+[![Documentation](https://docs.rs/nsip/badge.svg)](https://docs.rs/nsip)
 [![Rust Version](https://img.shields.io/badge/rust-1.92%2B-dea584?logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/zircote/rust-template/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/zircote/nsip/blob/main/LICENSE)
 [![Clippy](https://img.shields.io/badge/linting-clippy-orange?logo=rust&logoColor=white)](https://github.com/rust-lang/rust-clippy)
 [![cargo-deny](https://img.shields.io/badge/security-cargo--deny-blue?logo=rust&logoColor=white)](https://github.com/EmbarkStudios/cargo-deny)
 [![Security: gitleaks](https://img.shields.io/badge/security-gitleaks-blue?logo=git&logoColor=white)](https://github.com/gitleaks/gitleaks)
@@ -28,21 +28,21 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rust_template = "0.1"
+nsip = "0.1"
 ```
 
 Or use cargo add:
 
 ```bash
-cargo add rust_template
+cargo add nsip
 ```
 
 ## Quick Start
 
 ```rust
-use rust_template::{add, divide, Config};
+use nsip::{add, divide, Config};
 
-fn main() -> Result<(), rust_template::Error> {
+fn main() -> Result<(), nsip::Error> {
     // Basic arithmetic
     let sum = add(2, 3);
     println!("2 + 3 = {}", sum);
@@ -96,8 +96,8 @@ fn main() -> Result<(), rust_template::Error> {
 
 ```bash
 # Clone the repository
-git clone https://github.com/zircote/rust-template.git
-cd rust-template
+git clone https://github.com/zircote/nsip.git
+cd nsip
 
 # Build
 cargo build
@@ -228,11 +228,11 @@ Pull and run the container:
 
 ```bash
 # Pull latest
-docker pull ghcr.io/zircote/rust-template:latest
+docker pull ghcr.io/zircote/nsip:latest
 
 # Run specific version
-docker pull ghcr.io/zircote/rust-template:v0.1.0
-docker run --rm ghcr.io/zircote/rust-template:v0.1.0 --version
+docker pull ghcr.io/zircote/nsip:v0.1.0
+docker run --rm ghcr.io/zircote/nsip:v0.1.0 --version
 ```
 
 ## MSRV Policy
@@ -250,7 +250,7 @@ Please also review:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/zircote/rust-template/blob/main/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/zircote/nsip/blob/main/LICENSE) file for details.
 
 ## Acknowledgments
 

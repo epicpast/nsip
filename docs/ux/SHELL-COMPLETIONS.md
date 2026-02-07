@@ -24,7 +24,7 @@ use clap_complete::{generate, Shell};
 use std::io;
 
 #[derive(Parser, Debug)]
-#[command(name = "rust-template")]
+#[command(name = "nsip")]
 #[command(about = "Modern Rust project template")]
 #[command(version)]
 pub struct Cli {
@@ -44,7 +44,7 @@ pub struct Cli {
 impl Cli {
     pub fn generate_completions(shell: Shell) {
         let mut cmd = Self::command();
-        generate(shell, &mut cmd, "rust-template", &mut io::stdout());
+        generate(shell, &mut cmd, "nsip", &mut io::stdout());
     }
 }
 ```
@@ -75,10 +75,10 @@ fn main() {
 
 ```bash
 # Generate completions
-rust-template --completions bash > ~/.local/share/bash-completion/completions/rust-template
+nsip --completions bash > ~/.local/share/bash-completion/completions/nsip
 
 # Or system-wide
-sudo rust-template --completions bash > /etc/bash_completion.d/rust-template
+sudo nsip --completions bash > /etc/bash_completion.d/nsip
 
 # Reload
 source ~/.bashrc
@@ -86,7 +86,7 @@ source ~/.bashrc
 
 **Test:**
 ```bash
-rust-template --<TAB>
+nsip --<TAB>
 # Shows: --config --verbose --help --version --completions
 ```
 
@@ -94,7 +94,7 @@ rust-template --<TAB>
 
 ```bash
 # Generate completions
-rust-template --completions zsh > ~/.zsh/completions/_rust-template
+nsip --completions zsh > ~/.zsh/completions/_nsip
 
 # Add to .zshrc if not already
 echo 'fpath=(~/.zsh/completions $fpath)' >> ~/.zshrc
@@ -106,7 +106,7 @@ source ~/.zshrc
 
 **Test:**
 ```bash
-rust-template --<TAB>
+nsip --<TAB>
 # Shows completion menu with descriptions
 ```
 
@@ -114,7 +114,7 @@ rust-template --<TAB>
 
 ```bash
 # Generate completions
-rust-template --completions fish > ~/.config/fish/completions/rust-template.fish
+nsip --completions fish > ~/.config/fish/completions/nsip.fish
 
 # Reload (automatic in most cases)
 fish -c 'fish_update_completions'
@@ -122,7 +122,7 @@ fish -c 'fish_update_completions'
 
 **Test:**
 ```bash
-rust-template --<TAB>
+nsip --<TAB>
 # Shows completions with descriptions
 ```
 
@@ -130,10 +130,10 @@ rust-template --<TAB>
 
 ```powershell
 # Generate completions
-rust-template --completions powershell | Out-File -FilePath $PROFILE\..\rust-template.ps1
+nsip --completions powershell | Out-File -FilePath $PROFILE\..\nsip.ps1
 
 # Add to profile
-Add-Content $PROFILE '. "$PSScriptRoot\rust-template.ps1"'
+Add-Content $PROFILE '. "$PSScriptRoot\nsip.ps1"'
 
 # Reload
 . $PROFILE
@@ -141,7 +141,7 @@ Add-Content $PROFILE '. "$PSScriptRoot\rust-template.ps1"'
 
 **Test:**
 ```powershell
-rust-template --<TAB>
+nsip --<TAB>
 # Shows completion suggestions
 ```
 
@@ -149,10 +149,10 @@ rust-template --<TAB>
 
 ```bash
 # Generate completions
-rust-template --completions elvish > ~/.elvish/lib/rust-template.elv
+nsip --completions elvish > ~/.elvish/lib/nsip.elv
 
 # Add to rc.elv
-echo 'use rust-template' >> ~/.elvish/rc.elv
+echo 'use nsip' >> ~/.elvish/rc.elv
 ```
 
 ## Package Integration
@@ -166,9 +166,9 @@ def install
   system "cargo", "install", *std_cargo_args
 
   # Generate completions
-  bash_completion.install "completions/rust-template.bash"
-  zsh_completion.install "completions/_rust-template"
-  fish_completion.install "completions/rust-template.fish"
+  bash_completion.install "completions/nsip.bash"
+  zsh_completion.install "completions/_nsip"
+  fish_completion.install "completions/nsip.fish"
 end
 ```
 
@@ -179,7 +179,7 @@ def install
   system "cargo", "install", *std_cargo_args
 
   # Generate at install time
-  generate_completions_from_executable(bin/"rust-template", "--completions")
+  generate_completions_from_executable(bin/"nsip", "--completions")
 end
 ```
 
@@ -190,10 +190,10 @@ end
 ```toml
 [package.metadata.deb]
 assets = [
-    ["target/release/rust-template", "usr/bin/", "755"],
-    ["completions/rust-template.bash", "usr/share/bash-completion/completions/", "644"],
-    ["completions/_rust-template", "usr/share/zsh/vendor-completions/", "644"],
-    ["completions/rust-template.fish", "usr/share/fish/vendor_completions.d/", "644"],
+    ["target/release/nsip", "usr/bin/", "755"],
+    ["completions/nsip.bash", "usr/share/bash-completion/completions/", "644"],
+    ["completions/_nsip", "usr/share/zsh/vendor-completions/", "644"],
+    ["completions/nsip.fish", "usr/share/fish/vendor_completions.d/", "644"],
 ]
 ```
 
@@ -214,7 +214,7 @@ fn main() {
     let mut cmd = Cli::command();
 
     for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::PowerShell] {
-        generate_to(shell, &mut cmd, "rust-template", &outdir).unwrap();
+        generate_to(shell, &mut cmd, "nsip", &outdir).unwrap();
     }
 
     println!("cargo:rerun-if-changed=src/cli.rs");
@@ -250,7 +250,7 @@ struct Cli {
 
 **Completions automatically include subcommands:**
 ```bash
-rust-template <TAB>
+nsip <TAB>
 # Shows: init, build, help
 ```
 
@@ -309,13 +309,13 @@ struct Cli {
 
 ```bash
 # Bash
-complete -p rust-template
+complete -p nsip
 
 # Zsh
-which _rust-template
+which _nsip
 
 # Fish
-complete -C rust-template
+complete -C nsip
 ```
 
 ### Automated Testing
@@ -333,7 +333,7 @@ mod tests {
 
         for shell in [Shell::Bash, Shell::Zsh, Shell::Fish] {
             let mut buf = Vec::new();
-            generate(shell, &mut cmd, "rust-template", &mut buf);
+            generate(shell, &mut cmd, "nsip", &mut buf);
             assert!(!buf.is_empty(), "Generated empty completions for {:?}", shell);
         }
     }
@@ -351,7 +351,7 @@ dpkg -l bash-completion  # Debian/Ubuntu
 rpm -q bash-completion   # Fedora/RHEL
 
 # Verify completion file
-cat ~/.local/share/bash-completion/completions/rust-template
+cat ~/.local/share/bash-completion/completions/nsip
 ```
 
 **Zsh:**

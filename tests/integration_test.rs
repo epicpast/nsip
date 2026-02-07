@@ -1,6 +1,6 @@
-//! Integration tests for `rust_template`.
+//! Integration tests for `nsip`.
 
-use rust_template::{Config, Error, Result, add, divide};
+use nsip::{Config, Error, Result, add, divide};
 
 #[test]
 fn test_add_integration() {

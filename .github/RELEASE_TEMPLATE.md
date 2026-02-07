@@ -8,22 +8,22 @@
 
 Download pre-built binaries for your platform:
 
-- **Linux (x86_64)**: `rust_template-linux-amd64`
-- **Linux (ARM64)**: `rust_template-linux-arm64`
-- **macOS (x86_64)**: `rust_template-macos-amd64`
-- **macOS (ARM64)**: `rust_template-macos-arm64`
-- **Windows (x86_64)**: `rust_template-windows-amd64.exe`
+- **Linux (x86_64)**: `nsip-linux-amd64`
+- **Linux (ARM64)**: `nsip-linux-arm64`
+- **macOS (x86_64)**: `nsip-macos-amd64`
+- **macOS (ARM64)**: `nsip-macos-arm64`
+- **Windows (x86_64)**: `nsip-windows-amd64.exe`
 
 ### Cargo
 
 ```bash
-cargo install rust_template@VERSION
+cargo install nsip@VERSION
 ```
 
 ### Docker
 
 ```bash
-docker pull ghcr.io/zircote/rust-template:VERSION
+docker pull ghcr.io/zircote/nsip:VERSION
 ```
 
 ## Verification
@@ -35,10 +35,10 @@ docker pull ghcr.io/zircote/rust-template:VERSION
 ### Docker Image
 
 ```bash
-docker pull ghcr.io/zircote/rust-template:VERSION
-docker run --rm ghcr.io/zircote/rust-template:VERSION --version
+docker pull ghcr.io/zircote/nsip:VERSION
+docker run --rm ghcr.io/zircote/nsip:VERSION --version
 ```
 
 ## Full Changelog
 
-See [CHANGELOG.md](https://github.com/zircote/rust-template/blob/main/CHANGELOG.md) for complete details.
+See [CHANGELOG.md](https://github.com/zircote/nsip/blob/main/CHANGELOG.md) for complete details.

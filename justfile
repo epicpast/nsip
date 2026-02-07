@@ -1,4 +1,4 @@
-# justfile — local CI parity for rust_template
+# justfile — local CI parity for nsip
 # Run `just` to list all available recipes.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]

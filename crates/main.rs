@@ -1,17 +1,17 @@
-//! Binary entry point for `rust_template`.
+//! Binary entry point for `nsip`.
 
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
 use std::process::ExitCode;
 
-use rust_template::{Config, add, divide};
+use nsip::{Config, add, divide};
 
 /// Runs the application logic.
-fn run() -> Result<(), rust_template::Error> {
+fn run() -> Result<(), nsip::Error> {
     let config = Config::new().with_verbose(true);
 
     if config.verbose {
-        eprintln!("Running rust_template with verbose mode enabled");
+        eprintln!("Running nsip with verbose mode enabled");
     }
 
     let sum = add(2, 3);

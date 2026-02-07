@@ -39,7 +39,7 @@ fn main() {
     let mut buffer = Vec::new();
     man.render(&mut buffer).unwrap();
 
-    fs::write(man_dir.join("rust-template.1"), buffer).unwrap();
+    fs::write(man_dir.join("nsip.1"), buffer).unwrap();
 
     println!("cargo:rerun-if-changed=src/cli.rs");
 }
@@ -57,7 +57,7 @@ use clap::Parser;
 /// This tool provides a comprehensive starting point for Rust projects,
 /// including CI/CD workflows, security scanning, and multi-platform support.
 #[derive(Parser, Debug)]
-#[command(name = "rust-template")]
+#[command(name = "nsip")]
 #[command(author = "Your Name <email@example.com>")]
 #[command(version)]
 #[command(about, long_about = None)]
@@ -91,7 +91,7 @@ pub struct Cli {
 cargo build --release
 
 # Copy man page
-sudo cp target/release/build/rust-template-*/out/man/rust-template.1 \
+sudo cp target/release/build/nsip-*/out/man/nsip.1 \
      /usr/local/share/man/man1/
 
 # Update man database
@@ -105,7 +105,7 @@ sudo mandb
 mkdir -p ~/.local/share/man/man1
 
 # Copy man page
-cp target/release/build/rust-template-*/out/man/rust-template.1 \
+cp target/release/build/nsip-*/out/man/nsip.1 \
    ~/.local/share/man/man1/
 
 # Add to MANPATH in ~/.bashrc or ~/.zshrc
@@ -118,7 +118,7 @@ mandb ~/.local/share/man
 ### View Man Page
 
 ```bash
-man rust-template
+man nsip
 ```
 
 ## Package Integration
@@ -130,8 +130,8 @@ man rust-template
 ```toml
 [package.metadata.deb]
 assets = [
-    ["target/release/rust-template", "usr/bin/", "755"],
-    ["target/release/build/rust-template-*/out/man/rust-template.1", "usr/share/man/man1/", "644"],
+    ["target/release/nsip", "usr/bin/", "755"],
+    ["target/release/build/nsip-*/out/man/nsip.1", "usr/share/man/man1/", "644"],
 ]
 ```
 
@@ -142,8 +142,8 @@ assets = [
 ```toml
 [package.metadata.generate-rpm]
 assets = [
-    { source = "target/release/rust-template", dest = "/usr/bin/", mode = "755" },
-    { source = "target/release/build/rust-template-*/out/man/rust-template.1", dest = "/usr/share/man/man1/", mode = "644" },
+    { source = "target/release/nsip", dest = "/usr/bin/", mode = "755" },
+    { source = "target/release/build/nsip-*/out/man/nsip.1", dest = "/usr/share/man/man1/", mode = "644" },
 ]
 ```
 
@@ -154,7 +154,7 @@ def install
   system "cargo", "install", *std_cargo_args
 
   # Install man page
-  man1.install "target/release/build/rust-template-*/out/man/rust-template.1"
+  man1.install "target/release/build/nsip-*/out/man/nsip.1"
 end
 ```
 
@@ -171,13 +171,13 @@ fn main() {
 
     // Section 1: User commands
     let man1 = Man::new(cmd.clone()).section("1");
-    fs::write("man/rust-template.1", man1.render()).unwrap();
+    fs::write("man/nsip.1", man1.render()).unwrap();
 
     // Section 5: File formats (config)
     let man5 = Man::new(cmd.clone())
         .section("5")
-        .title("rust-template.conf");
-    fs::write("man/rust-template.conf.5", man5.render()).unwrap();
+        .title("nsip.conf");
+    fs::write("man/nsip.conf.5", man5.render()).unwrap();
 }
 ```
 
@@ -206,11 +206,11 @@ fn main() {
 
     // Main command
     let man = Man::new(cmd.clone());
-    fs::write("man/rust-template.1", man.render()).unwrap();
+    fs::write("man/nsip.1", man.render()).unwrap();
 
     // Subcommands
     for subcmd in cmd.get_subcommands() {
-        let name = format!("rust-template-{}", subcmd.get_name());
+        let name = format!("nsip-{}", subcmd.get_name());
         let man = Man::new(subcmd.clone()).title(&name);
         fs::write(format!("man/{}.1", name), man.render()).unwrap();
     }
@@ -218,9 +218,9 @@ fn main() {
 ```
 
 **Results in:**
-- `rust-template.1` - Main command
-- `rust-template-init.1` - Init subcommand
-- `rust-template-build.1` - Build subcommand
+- `nsip.1` - Main command
+- `nsip-init.1` - Init subcommand
+- `nsip-build.1` - Build subcommand
 
 ### Custom Sections
 
@@ -233,11 +233,11 @@ let mut man = Man::new(cmd);
 let examples = vec![
     roman("Basic usage:"),
     roman(""),
-    roman("    rust-template --config myconfig.toml"),
+    roman("    nsip --config myconfig.toml"),
     roman(""),
     roman("Verbose mode:"),
     roman(""),
-    roman("    rust-template -vvv"),
+    roman("    nsip -vvv"),
 ];
 
 man.push_examples(&examples);
@@ -262,20 +262,20 @@ man.push_examples(&examples);
 /// # Examples
 ///
 /// Basic usage:
-///     rust-template --config config.toml
+///     nsip --config config.toml
 ///
 /// Verbose mode:
-///     rust-template -vvv
+///     nsip -vvv
 ///
 /// # See Also
 ///
-/// Related documentation at https://docs.rs/rust-template
+/// Related documentation at https://docs.rs/nsip
 ///
 /// # Bugs
 ///
-/// Report bugs at https://github.com/user/rust-template/issues
+/// Report bugs at https://github.com/user/nsip/issues
 #[derive(Parser)]
-#[command(after_help = "EXAMPLES:\n    rust-template --config config.toml\n\nSEE ALSO:\n    https://docs.rs/rust-template")]
+#[command(after_help = "EXAMPLES:\n    nsip --config config.toml\n\nSEE ALSO:\n    https://docs.rs/nsip")]
 pub struct Cli {
     // ...
 }
@@ -310,8 +310,8 @@ pub option: String,
 ```rust
 /// Example usage:
 ///
-///     rust-template --config config.toml
-///     rust-template --verbose
+///     nsip --config config.toml
+///     nsip --verbose
 #[arg(long)]
 pub option: bool,
 ```
@@ -328,7 +328,7 @@ cargo build
 find target -name "*.1"
 
 # View
-man target/release/build/rust-template-*/out/man/rust-template.1
+man target/release/build/nsip-*/out/man/nsip.1
 ```
 
 ### Lint Man Page
@@ -339,7 +339,7 @@ sudo apt install groff  # Debian/Ubuntu
 brew install groff      # macOS
 
 # Check for errors
-groff -man -Tutf8 rust-template.1
+groff -man -Tutf8 nsip.1
 ```
 
 ### Automated Testing
@@ -348,7 +348,7 @@ groff -man -Tutf8 rust-template.1
 #[test]
 fn verify_man_page() {
     let out_dir = std::env::var("OUT_DIR").unwrap();
-    let man_file = format!("{}/man/rust-template.1", out_dir);
+    let man_file = format!("{}/man/nsip.1", out_dir);
     assert!(std::path::Path::new(&man_file).exists());
 }
 ```
@@ -359,31 +359,31 @@ fn verify_man_page() {
 
 ```bash
 # View directly
-man target/release/build/rust-template-*/out/man/rust-template.1
+man target/release/build/nsip-*/out/man/nsip.1
 
 # Or add to MANPATH temporarily
-export MANPATH="$PWD/target/release/build/rust-template-*/out/man:$MANPATH"
-man rust-template
+export MANPATH="$PWD/target/release/build/nsip-*/out/man:$MANPATH"
+man nsip
 ```
 
 ### HTML Generation
 
 ```bash
 # Convert to HTML
-groff -man -Thtml rust-template.1 > rust-template.html
+groff -man -Thtml nsip.1 > nsip.html
 
 # Or use pandoc
-pandoc rust-template.1 -o rust-template.html
+pandoc nsip.1 -o nsip.html
 ```
 
 ### PDF Generation
 
 ```bash
 # Convert to PDF
-groff -man -Tpdf rust-template.1 > rust-template.pdf
+groff -man -Tpdf nsip.1 > nsip.pdf
 
 # Or via PostScript
-groff -man -Tps rust-template.1 | ps2pdf - rust-template.pdf
+groff -man -Tps nsip.1 | ps2pdf - nsip.pdf
 ```
 
 ## Best Practices
@@ -402,7 +402,7 @@ groff -man -Tps rust-template.1 | ps2pdf - rust-template.pdf
 
 ```bash
 # Check installation
-man -w rust-template
+man -w nsip
 
 # Verify MANPATH
 echo $MANPATH
@@ -415,10 +415,10 @@ sudo mandb
 
 ```bash
 # Check for groff errors
-groff -man -Tutf8 -ww rust-template.1
+groff -man -Tutf8 -ww nsip.1
 
 # Validate
-man --warnings rust-template
+man --warnings nsip
 ```
 
 ### Build Failures

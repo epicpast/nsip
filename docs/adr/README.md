@@ -1,6 +1,6 @@
 # Architectural Decision Records
 
-This directory contains Architectural Decision Records (ADRs) for the `rust_template` project.
+This directory contains Architectural Decision Records (ADRs) for the `nsip` project.
 
 ## What is an ADR?
 

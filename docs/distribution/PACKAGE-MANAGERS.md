@@ -19,10 +19,10 @@ Automated package generation for multiple platforms and package managers.
 brew tap zircote/tap
 
 # Install
-brew install rust-template
+brew install nsip
 
 # Update
-brew upgrade rust-template
+brew upgrade nsip
 ```
 
 **Setup Requirements:**
@@ -34,41 +34,41 @@ brew upgrade rust-template
 
 ```bash
 # Download from releases
-wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template_0.1.0_amd64.deb
+wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip_0.1.0_amd64.deb
 
 # Install
-sudo dpkg -i rust-template_0.1.0_amd64.deb
+sudo dpkg -i nsip_0.1.0_amd64.deb
 
 # Install dependencies if needed
 sudo apt-get install -f
 ```
 
 **Package Contents:**
-- Binary: `/usr/bin/rust-template`
+- Binary: `/usr/bin/nsip`
 - Man pages: `/usr/share/man/man1/`
-- Documentation: `/usr/share/doc/rust-template/`
+- Documentation: `/usr/share/doc/nsip/`
 
 ### RPM (Fedora/RHEL/CentOS)
 
 ```bash
 # Download from releases
-wget https://github.com/USER/REPO/releases/download/v0.1.0/rust-template-0.1.0-1.x86_64.rpm
+wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip-0.1.0-1.x86_64.rpm
 
 # Install
-sudo rpm -i rust-template-0.1.0-1.x86_64.rpm
+sudo rpm -i nsip-0.1.0-1.x86_64.rpm
 
 # Or with dnf
-sudo dnf install ./rust-template-0.1.0-1.x86_64.rpm
+sudo dnf install ./nsip-0.1.0-1.x86_64.rpm
 ```
 
 ### Snap (Universal Linux)
 
 ```bash
 # Install from Snap Store
-sudo snap install rust-template
+sudo snap install nsip
 
 # Or install from file
-sudo snap install rust-template_0.1.0_amd64.snap --dangerous
+sudo snap install nsip_0.1.0_amd64.snap --dangerous
 ```
 
 **Snap Confinement:** `strict` - Limited system access for security
@@ -81,16 +81,16 @@ sudo snap install rust-template_0.1.0_amd64.snap --dangerous
 
 ```powershell
 # Download MSI from releases
-# https://github.com/USER/REPO/releases/download/v0.1.0/rust-template-0.1.0-x64.msi
+# https://github.com/USER/REPO/releases/download/v0.1.0/nsip-0.1.0-x64.msi
 
 # Install via GUI or command line
-msiexec /i rust-template-0.1.0-x64.msi
+msiexec /i nsip-0.1.0-x64.msi
 
 # Silent install
-msiexec /i rust-template-0.1.0-x64.msi /quiet
+msiexec /i nsip-0.1.0-x64.msi /quiet
 ```
 
-**Install Location:** `C:\Program Files\rust-template\`
+**Install Location:** `C:\Program Files\nsip\`
 
 ## Configuration
 
@@ -110,8 +110,8 @@ depends = "$auto"
 section = "utility"
 priority = "optional"
 assets = [
-    ["target/release/rust-template", "usr/bin/", "755"],
-    ["README.md", "usr/share/doc/rust-template/", "644"],
+    ["target/release/nsip", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/nsip/", "644"],
 ]
 ```
 
@@ -121,10 +121,10 @@ Add to `Cargo.toml`:
 
 ```toml
 [package.metadata.generate-rpm]
-name = "rust-template"
+name = "nsip"
 assets = [
-    { source = "target/release/rust-template", dest = "/usr/bin/", mode = "755" },
-    { source = "README.md", dest = "/usr/share/doc/rust-template/", mode = "644" },
+    { source = "target/release/nsip", dest = "/usr/bin/", mode = "755" },
+    { source = "README.md", dest = "/usr/share/doc/nsip/", mode = "644" },
 ]
 
 [package.metadata.generate-rpm.requires]
@@ -136,7 +136,7 @@ assets = [
 Edit `snap/snapcraft.yaml`:
 
 ```yaml
-name: rust-template
+name: nsip
 base: core22
 version: git
 summary: One-line summary
@@ -148,8 +148,8 @@ grade: stable  # or 'devel' for development
 confinement: strict  # or 'classic' for full system access
 
 apps:
-  rust-template:
-    command: bin/rust-template
+  nsip:
+    command: bin/nsip
     plugs:
       - home
       - network
@@ -167,7 +167,7 @@ Create `wix/main.wxs` after running `cargo wix init`:
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product
         Id='*'
-        Name='rust-template'
+        Name='nsip'
         UpgradeCode='YOUR-GUID-HERE'
         Manufacturer='Your Company'
         Language='1033'
@@ -182,9 +182,9 @@ Create `wix/main.wxs` after running `cargo wix init`:
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='ProgramFiles64Folder'>
-                <Directory Id='APPLICATIONFOLDER' Name='rust-template'>
+                <Directory Id='APPLICATIONFOLDER' Name='nsip'>
                     <Component Id='MainExecutable'>
-                        <File Source='target\release\rust-template.exe' />
+                        <File Source='target\release\nsip.exe' />
                     </Component>
                 </Directory>
             </Directory>
@@ -248,7 +248,7 @@ snapcraft clean
 snapcraft
 
 # Check confinement issues
-snap connections rust-template
+snap connections nsip
 ```
 
 ### MSI Build Fails
@@ -278,7 +278,7 @@ For official Homebrew inclusion:
 snapcraft login
 
 # Upload snap
-snapcraft upload rust-template_0.1.0_amd64.snap --release stable
+snapcraft upload nsip_0.1.0_amd64.snap --release stable
 
 # Or use workflow automation with SNAPCRAFT_TOKEN secret
 ```
@@ -288,18 +288,18 @@ snapcraft upload rust-template_0.1.0_amd64.snap --release stable
 Create manifest in [winget-pkgs](https://github.com/microsoft/winget-pkgs):
 
 ```yaml
-# manifests/r/rust-template/rust-template/0.1.0/rust-template.rust-template.yaml
-PackageIdentifier: rust-template.rust-template
+# manifests/r/nsip/nsip/0.1.0/nsip.nsip.yaml
+PackageIdentifier: nsip.nsip
 PackageVersion: 0.1.0
 PackageLocale: en-US
 Publisher: Your Name
-PackageName: rust-template
+PackageName: nsip
 License: MIT
 ShortDescription: Modern Rust template
 Installers:
   - Architecture: x64
     InstallerType: wix
-    InstallerUrl: https://github.com/USER/REPO/releases/download/v0.1.0/rust-template-0.1.0-x64.msi
+    InstallerUrl: https://github.com/USER/REPO/releases/download/v0.1.0/nsip-0.1.0-x64.msi
     InstallerSha256: HASH
 ManifestType: singleton
 ManifestVersion: 1.0.0
@@ -311,13 +311,13 @@ ManifestVersion: 1.0.0
 
 ```bash
 # Debian
-docker run -it debian:latest bash -c "apt update && apt install -y ./rust-template.deb && rust-template --version"
+docker run -it debian:latest bash -c "apt update && apt install -y ./nsip.deb && nsip --version"
 
 # RPM
-docker run -it fedora:latest bash -c "dnf install -y ./rust-template.rpm && rust-template --version"
+docker run -it fedora:latest bash -c "dnf install -y ./nsip.rpm && nsip --version"
 
 # Snap
-sudo snap install rust-template_*_amd64.snap --dangerous && rust-template --version
+sudo snap install nsip_*_amd64.snap --dangerous && nsip --version
 ```
 
 ## Links

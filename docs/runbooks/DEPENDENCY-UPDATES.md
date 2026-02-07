@@ -1,6 +1,6 @@
 # Dependency Updates
 
-Runbook for managing Cargo and GitHub Actions dependencies in rust-template.
+Runbook for managing Cargo and GitHub Actions dependencies in nsip.
 
 ---
 

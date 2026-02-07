@@ -1,6 +1,6 @@
 # Releasing
 
-End-to-end runbook for creating, monitoring, and rolling back releases of rust-template.
+End-to-end runbook for creating, monitoring, and rolling back releases of nsip.
 
 ## Version Numbering (SemVer)
 
@@ -37,7 +37,7 @@ Configure in GitHub repository settings (**Settings > Secrets and variables > Ac
 
 Run through this checklist before every release.
 
-- [ ] All CI checks pass on `main` (check [Actions](https://github.com/zircote/rust-template/actions/workflows/ci.yml))
+- [ ] All CI checks pass on `main` (check [Actions](https://github.com/zircote/nsip/actions/workflows/ci.yml))
 - [ ] Update version in `Cargo.toml`:
   ```toml
   [package]
@@ -94,7 +94,7 @@ Pushing a `v*.*.*` tag triggers these workflows in parallel:
 |---|---|---|
 | **Release** | `release.yml` | Builds binaries for 5 platform targets, generates changelog via git-cliff, creates a GitHub Release with assets |
 | **Changelog** | `changelog.yml` | Regenerates `CHANGELOG.md` and commits it to `main` |
-| **Docker** | `docker.yml` | Builds multi-platform images (linux/amd64, linux/arm64), pushes to `ghcr.io/zircote/rust-template` with version + `latest` tags |
+| **Docker** | `docker.yml` | Builds multi-platform images (linux/amd64, linux/arm64), pushes to `ghcr.io/zircote/nsip` with version + `latest` tags |
 | **Publish** | `publish.yml` | Runs pre-publish checks and publishes to crates.io (if enabled and tag-triggered) |
 | **Signed Releases** | `signed-releases.yml` | Signs all release assets with Sigstore Cosign, generates SHA256/SHA512 checksums |
 
@@ -104,7 +104,7 @@ Pushing a `v*.*.*` tag triggers these workflows in parallel:
 
 ### GitHub Actions Dashboard
 
-- **All workflows:** https://github.com/zircote/rust-template/actions
+- **All workflows:** https://github.com/zircote/nsip/actions
 - **Filter by tag:** Click the specific workflow run triggered by the tag push
 
 ### CLI Monitoring
@@ -141,34 +141,34 @@ Run through this after all workflows complete.
   gh release view vX.Y.Z
   ```
 - [ ] **All 5 binary assets** are attached:
-  - `rust_template-linux-amd64`
-  - `rust_template-linux-arm64`
-  - `rust_template-macos-amd64`
-  - `rust_template-macos-arm64`
-  - `rust_template-windows-amd64.exe`
+  - `nsip-linux-amd64`
+  - `nsip-linux-arm64`
+  - `nsip-macos-amd64`
+  - `nsip-macos-arm64`
+  - `nsip-windows-amd64.exe`
 - [ ] **Checksums and signatures** are attached (`SHA256SUMS`, `SHA512SUMS`, `*.sig` files)
 - [ ] **Release notes** are generated correctly from conventional commits
 - [ ] **Docker image** is available:
   ```bash
-  docker pull ghcr.io/zircote/rust-template:vX.Y.Z
-  docker run --rm ghcr.io/zircote/rust-template:vX.Y.Z --version
+  docker pull ghcr.io/zircote/nsip:vX.Y.Z
+  docker run --rm ghcr.io/zircote/nsip:vX.Y.Z --version
   ```
 - [ ] **Docker `latest` tag** points to the new release:
   ```bash
-  docker pull ghcr.io/zircote/rust-template:latest
-  docker run --rm ghcr.io/zircote/rust-template:latest --version
+  docker pull ghcr.io/zircote/nsip:latest
+  docker run --rm ghcr.io/zircote/nsip:latest --version
   ```
 - [ ] **crates.io** package updated (if publishing is enabled):
   ```bash
-  cargo install rust_template@X.Y.Z
-  # Or check: https://crates.io/crates/rust_template
+  cargo install nsip@X.Y.Z
+  # Or check: https://crates.io/crates/nsip
   ```
 - [ ] **CHANGELOG.md** on `main` updated by the changelog workflow
 - [ ] Download and test a binary on at least one platform:
   ```bash
-  wget https://github.com/zircote/rust-template/releases/download/vX.Y.Z/rust_template-linux-amd64
-  chmod +x rust_template-linux-amd64
-  ./rust_template-linux-amd64 --version
+  wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-linux-amd64
+  chmod +x nsip-linux-amd64
+  ./nsip-linux-amd64 --version
   ```
 
 ---
@@ -209,9 +209,9 @@ Docker images on GHCR are immutable by tag. To mitigate:
 
 1. **Point users to a previous version:**
    ```bash
-   docker pull ghcr.io/zircote/rust-template:vPREVIOUS
+   docker pull ghcr.io/zircote/nsip:vPREVIOUS
    ```
-2. **Delete the package version** via GitHub UI: Packages > rust-template > Package versions > Delete
+2. **Delete the package version** via GitHub UI: Packages > nsip > Package versions > Delete
 3. **Re-tag `latest`** to the previous good version by re-pushing a known-good tag
 
 ---
@@ -294,13 +294,13 @@ Changelogs are generated automatically by [git-cliff](https://git-cliff.org/) fr
 
 ### GitHub Releases
 
-- **URL:** https://github.com/zircote/rust-template/releases
+- **URL:** https://github.com/zircote/nsip/releases
 - **Platforms:** Linux (amd64, arm64), macOS (amd64, arm64), Windows (amd64)
 - **Signatures:** Cosign keyless signing + SHA256/SHA512 checksums
 
 ### Docker (GHCR)
 
-- **Registry:** `ghcr.io/zircote/rust-template`
+- **Registry:** `ghcr.io/zircote/nsip`
 - **Platforms:** linux/amd64, linux/arm64
 - **Base image:** distroless/cc-debian12 (minimal attack surface)
 - **User:** nonroot:nonroot (unprivileged)
@@ -308,24 +308,24 @@ Changelogs are generated automatically by [git-cliff](https://git-cliff.org/) fr
 
 ### crates.io
 
-- **Package:** https://crates.io/crates/rust_template
+- **Package:** https://crates.io/crates/nsip
 - **Note:** Publishing is disabled by default in the template. Enable by uncommenting the tag trigger in `publish.yml` and setting `CARGO_REGISTRY_TOKEN`.
 
 ### Install Methods
 
 ```bash
 # From GitHub release (Linux)
-wget https://github.com/zircote/rust-template/releases/download/vX.Y.Z/rust_template-linux-amd64
-chmod +x rust_template-linux-amd64
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-linux-amd64
+chmod +x nsip-linux-amd64
 
 # From Docker
-docker pull ghcr.io/zircote/rust-template:vX.Y.Z
+docker pull ghcr.io/zircote/nsip:vX.Y.Z
 
 # From crates.io
-cargo install rust_template
+cargo install nsip
 
 # From source
-cargo install --git https://github.com/zircote/rust-template
+cargo install --git https://github.com/zircote/nsip
 ```
 
 ---

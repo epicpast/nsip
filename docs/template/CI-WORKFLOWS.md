@@ -1,7 +1,7 @@
 # CI/CD Workflows Reference
 
 Comprehensive guide to every GitHub Actions workflow included in the
-`zircote/rust-template` repository. Workflows are organized by purpose and
+`zircote/nsip` repository. Workflows are organized by purpose and
 annotated with trigger conditions, required secrets, and activation status.
 
 ---
@@ -451,12 +451,12 @@ monthly updates.
 
 **What it does:** Automatically renames the project when a new repository is
 created from this template. Replaces `zircote` with the new owner,
-`rust-template` with the new repo name, and `rust_template` with the
+`nsip` with the new repo name, and `nsip` with the
 corresponding crate name (underscored) across all non-workflow files. Becomes
-a no-op once `Cargo.toml` no longer contains `name = "rust_template"`.
+a no-op once `Cargo.toml` no longer contains `name = "nsip"`.
 
 **Trigger:** Push to `main`, manual. Skipped entirely for the
-`zircote/rust-template` repository itself.
+`zircote/nsip` repository itself.
 
 **Required secrets:** None.
 

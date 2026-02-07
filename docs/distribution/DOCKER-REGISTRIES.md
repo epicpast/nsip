@@ -16,14 +16,14 @@ Automated Docker image publication to multiple container registries.
 
 ```bash
 # Pull image
-docker pull username/rust-template:latest
-docker pull username/rust-template:0.1.0
+docker pull username/nsip:latest
+docker pull username/nsip:0.1.0
 
 # Run container
-docker run -it username/rust-template:latest
+docker run -it username/nsip:latest
 ```
 
-**URL:** https://hub.docker.com/r/username/rust-template
+**URL:** https://hub.docker.com/r/username/nsip
 
 ### 2. GitHub Container Registry (ghcr.io)
 
@@ -31,14 +31,14 @@ docker run -it username/rust-template:latest
 
 ```bash
 # Pull image
-docker pull ghcr.io/username/rust-template:latest
-docker pull ghcr.io/username/rust-template:0.1.0
+docker pull ghcr.io/username/nsip:latest
+docker pull ghcr.io/username/nsip:0.1.0
 
 # Run container
-docker run -it ghcr.io/username/rust-template:latest
+docker run -it ghcr.io/username/nsip:latest
 ```
 
-**URL:** https://github.com/username/rust-template/pkgs/container/rust-template
+**URL:** https://github.com/username/nsip/pkgs/container/nsip
 
 ### 3. AWS ECR (Elastic Container Registry)
 
@@ -51,7 +51,7 @@ aws ecr get-login-password --region us-east-1 | \
   123456789.dkr.ecr.us-east-1.amazonaws.com
 
 # Pull image
-docker pull 123456789.dkr.ecr.us-east-1.amazonaws.com/rust-template:latest
+docker pull 123456789.dkr.ecr.us-east-1.amazonaws.com/nsip:latest
 ```
 
 **Setup:** Add to workflow:
@@ -65,8 +65,8 @@ docker pull 123456789.dkr.ecr.us-east-1.amazonaws.com/rust-template:latest
   with:
     push: true
     tags: |
-      123456789.dkr.ecr.us-east-1.amazonaws.com/rust-template:${{ github.sha }}
-      123456789.dkr.ecr.us-east-1.amazonaws.com/rust-template:latest
+      123456789.dkr.ecr.us-east-1.amazonaws.com/nsip:${{ github.sha }}
+      123456789.dkr.ecr.us-east-1.amazonaws.com/nsip:latest
 ```
 
 ### 4. Google Artifact Registry
@@ -78,7 +78,7 @@ docker pull 123456789.dkr.ecr.us-east-1.amazonaws.com/rust-template:latest
 gcloud auth configure-docker us-docker.pkg.dev
 
 # Pull image
-docker pull us-docker.pkg.dev/PROJECT/rust-template/rust-template:latest
+docker pull us-docker.pkg.dev/PROJECT/nsip/nsip:latest
 ```
 
 **Setup:** Add to workflow:
@@ -99,7 +99,7 @@ docker pull us-docker.pkg.dev/PROJECT/rust-template/rust-template:latest
   uses: docker/build-push-action@v6
   with:
     push: true
-    tags: us-docker.pkg.dev/PROJECT/rust-template/rust-template:latest
+    tags: us-docker.pkg.dev/PROJECT/nsip/nsip:latest
 ```
 
 ### 5. Azure Container Registry (ACR)
@@ -111,7 +111,7 @@ docker pull us-docker.pkg.dev/PROJECT/rust-template/rust-template:latest
 az acr login --name myregistry
 
 # Pull image
-docker pull myregistry.azurecr.io/rust-template:latest
+docker pull myregistry.azurecr.io/nsip:latest
 ```
 
 **Setup:** Add to workflow:
@@ -133,7 +133,7 @@ docker pull myregistry.azurecr.io/rust-template:latest
   uses: docker/build-push-action@v6
   with:
     push: true
-    tags: myregistry.azurecr.io/rust-template:latest
+    tags: myregistry.azurecr.io/nsip:latest
 ```
 
 ### 6. Quay.io
@@ -142,7 +142,7 @@ docker pull myregistry.azurecr.io/rust-template:latest
 
 ```bash
 # Pull image
-docker pull quay.io/username/rust-template:latest
+docker pull quay.io/username/nsip:latest
 ```
 
 **Setup:** Add to workflow:
@@ -159,7 +159,7 @@ docker pull quay.io/username/rust-template:latest
   uses: docker/build-push-action@v6
   with:
     push: true
-    tags: quay.io/username/rust-template:latest
+    tags: quay.io/username/nsip:latest
 ```
 
 ## Image Tagging Strategy
@@ -296,7 +296,7 @@ FROM rust:1.92-slim
 - name: Sign image
   run: |
     cosign sign --yes \
-      username/rust-template:${{ github.sha }}
+      username/nsip:${{ github.sha }}
 ```
 
 ### 3. Scan for Vulnerabilities
@@ -305,7 +305,7 @@ FROM rust:1.92-slim
 - name: Run Trivy
   uses: aquasecurity/trivy-action@master
   with:
-    image-ref: username/rust-template:latest
+    image-ref: username/nsip:latest
     format: 'sarif'
     output: 'trivy-results.sarif'
 ```
@@ -340,8 +340,8 @@ cache-to: type=gha,mode=max
 ### Registry Cache
 
 ```yaml
-cache-from: type=registry,ref=username/rust-template:buildcache
-cache-to: type=registry,ref=username/rust-template:buildcache,mode=max
+cache-from: type=registry,ref=username/nsip:buildcache
+cache-to: type=registry,ref=username/nsip:buildcache,mode=max
 ```
 
 ## Troubleshooting
@@ -370,10 +370,10 @@ docker buildx build --platform linux/arm64 .
 
 ```bash
 # Analyze layers
-docker history username/rust-template:latest
+docker history username/nsip:latest
 
 # Use dive for interactive analysis
-dive username/rust-template:latest
+dive username/nsip:latest
 ```
 
 **Optimization tips:**
@@ -389,13 +389,13 @@ dive username/rust-template:latest
 **Docker Hub:**
 ```bash
 # Via Hub API
-curl https://hub.docker.com/v2/repositories/username/rust-template/
+curl https://hub.docker.com/v2/repositories/username/nsip/
 ```
 
 **GitHub Container Registry:**
 ```bash
 # Via GitHub API
-gh api /users/username/packages/container/rust-template
+gh api /users/username/packages/container/nsip
 ```
 
 ### Vulnerability Alerts

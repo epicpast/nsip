@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in contributing to rust_template!
+Thank you for your interest in contributing to nsip!
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@ Thank you for your interest in contributing to rust_template!
 2. Clone your fork:
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/rust-template.git
-   cd rust-template
+   git clone https://github.com/YOUR_USERNAME/nsip.git
+   cd nsip
    ```
 
 3. Create a feature branch:

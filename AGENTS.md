@@ -74,9 +74,9 @@ Include `# Examples` and `# Errors` sections:
 /// # Examples
 ///
 /// ```rust
-/// use rust_template::process;
+/// use nsip::process;
 /// let result = process("data")?;
-/// # Ok::<(), rust_template::Error>(())
+/// # Ok::<(), nsip::Error>(())
 /// ```
 pub fn process(input: &str) -> Result<Output, Error> {
     // implementation

@@ -67,15 +67,15 @@ The workflow generates a combined report:
 ```markdown
 ## Unsafe Code Analysis
 Functions  Expressions  Impls  Traits  Methods  Dependency
-0/10       0/100        0/5    0/2     0/20     rust_template
+0/10       0/100        0/5    0/2     0/20     nsip
 
 ## Binary Size Analysis
 File   .text   Size    Crate
  71.0%  59.0%   1.2MiB  std
-  8.5%   7.1%   147KiB  rust_template
+  8.5%   7.1%   147KiB  nsip
   
 ## Documentation Coverage
-Documenting rust_template v0.1.0
+Documenting nsip v0.1.0
 warning: missing documentation for public function
 ```
 
@@ -117,7 +117,7 @@ rustdoc::broken_intra_doc_links = "deny"  # Fail on broken links
 
 ```
 Functions  Expressions  Impls  Traits  Methods  Dependency
-2/10       5/100        0/5    0/2     0/20     ✓ rust_template
+2/10       5/100        0/5    0/2     0/20     ✓ nsip
 ```
 
 - **Functions**: 2 functions contain unsafe code
@@ -131,7 +131,7 @@ Functions  Expressions  Impls  Traits  Methods  Dependency
 ```
 File   .text   Size    Crate
 71.0%  59.0%   1.2MiB  std        ← Standard library
- 8.5%   7.1%   147KiB  rust_template
+ 8.5%   7.1%   147KiB  nsip
  5.2%   4.3%   89KiB   serde
 ```
 
