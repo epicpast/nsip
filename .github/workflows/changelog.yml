@@ -24,7 +24,7 @@ jobs:
 
       - name: Generate changelog
         # v4.5.0
-        uses: orhun/git-cliff-action@e615672902de82edb33eddcb803a1295fc409525
+        uses: orhun/git-cliff-action@e16f179f0be49ecdfe63753837f20b9531642772
         with:
           config: cliff.toml
           args: --verbose

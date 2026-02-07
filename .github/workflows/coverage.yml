@@ -68,7 +68,7 @@ jobs:
           echo "Full HTML report available in CI artifacts." >> coverage-report.md
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@7f8b4b4bde536c465e797be725718b88c5d95e0e # v5.1.2
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.1.2
         with:
           files: lcov.info
           fail_ci_if_error: false
