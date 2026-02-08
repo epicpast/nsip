@@ -1,6 +1,6 @@
 [package]
 name = "nsip"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.92"
 description = "NSIP Search API client for nsipsearch.nsip.org/api"
@@ -54,8 +54,14 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 proptest = "1.10.0"
 test-case = "3.3.1"
 
-# Async testing (uncomment if using tokio)
-# tokio-test = "0.4"
+# Async / HTTP mocking
+tokio-test = "0.4"
+wiremock = "0.6"
+
+# CLI integration tests
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.24.0"
 
 [profile.dev]
 # Faster compile times during development

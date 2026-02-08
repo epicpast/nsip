@@ -840,4 +840,554 @@ mod tests {
             assert!(matches!(err, Error::Validation(_)));
         });
     }
+
+    // ------------------------------------------------------------------
+    // Wiremock-based async integration tests
+    // ------------------------------------------------------------------
+
+    mod wiremock_tests {
+        use super::*;
+        use wiremock::{
+            Mock, MockServer, ResponseTemplate,
+            matchers::{method, path, query_param},
+        };
+
+        /// Build a client pointing at the given mock server with retries disabled.
+        fn mock_client(uri: &str) -> NsipClient {
+            NsipClient::builder()
+                .base_url(uri)
+                .max_retries(0)
+                .build()
+                .unwrap()
+        }
+
+        // -- date_last_updated ------------------------------------------------
+
+        #[tokio::test]
+        async fn date_last_updated_returns_value() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getDateLastUpdated"))
+                .respond_with(
+                    ResponseTemplate::new(200).set_body_json(serde_json::json!("2024-12-15")),
+                )
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let result = client.date_last_updated().await.unwrap();
+            assert_eq!(result.data, serde_json::json!("2024-12-15"));
+        }
+
+        // -- breed_groups -----------------------------------------------------
+
+        #[tokio::test]
+        async fn breed_groups_wrapper_format() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getAvailableBreedGroups"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "success": true,
+                    "data": [
+                        {
+                            "breedGroupId": 61,
+                            "breedGroupName": "Range",
+                            "breeds": [
+                                { "breedId": 486, "breedName": "SA Meat Merino" },
+                                { "breedId": 640, "breedName": "Katahdin" }
+                            ]
+                        }
+                    ]
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let groups = client.breed_groups().await.unwrap();
+            assert_eq!(groups.len(), 1);
+            assert_eq!(groups[0].id, 61);
+            assert_eq!(groups[0].name, "Range");
+            assert_eq!(groups[0].breeds.len(), 2);
+            assert_eq!(groups[0].breeds[0].id, 486);
+            assert_eq!(groups[0].breeds[0].name, "SA Meat Merino");
+        }
+
+        #[tokio::test]
+        async fn breed_groups_direct_array_format() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getAvailableBreedGroups"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!([
+                    {
+                        "breedGroupId": 10,
+                        "breedGroupName": "Wool",
+                        "breeds": [
+                            { "breedId": 100, "breedName": "Merino" }
+                        ]
+                    }
+                ])))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let groups = client.breed_groups().await.unwrap();
+            assert_eq!(groups.len(), 1);
+            assert_eq!(groups[0].id, 10);
+            assert_eq!(groups[0].name, "Wool");
+            assert_eq!(groups[0].breeds[0].name, "Merino");
+        }
+
+        // -- statuses ---------------------------------------------------------
+
+        #[tokio::test]
+        async fn statuses_returns_list() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getStatusesByBreedGroup"))
+                .respond_with(
+                    ResponseTemplate::new(200)
+                        .set_body_json(serde_json::json!(["CURRENT", "SOLD", "DEAD"])),
+                )
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let statuses = client.statuses().await.unwrap();
+            assert_eq!(statuses, vec!["CURRENT", "SOLD", "DEAD"]);
+        }
+
+        #[tokio::test]
+        async fn statuses_non_array_returns_empty() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getStatusesByBreedGroup"))
+                .respond_with(
+                    ResponseTemplate::new(200).set_body_json(serde_json::json!("not-an-array")),
+                )
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let statuses = client.statuses().await.unwrap();
+            assert!(statuses.is_empty());
+        }
+
+        // -- trait_ranges -----------------------------------------------------
+
+        #[tokio::test]
+        async fn trait_ranges_returns_json() {
+            let server = MockServer::start().await;
+            let body = serde_json::json!([
+                { "traitName": "BWT", "min": -2.0, "max": 3.0 },
+                { "traitName": "WWT", "min": 0.0, "max": 20.0 }
+            ]);
+            Mock::given(method("GET"))
+                .and(path("/search/getTraitRangesByBreed"))
+                .and(query_param("breedId", "486"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let result = client.trait_ranges(486).await.unwrap();
+            assert_eq!(result, body);
+        }
+
+        // -- search_animals ---------------------------------------------------
+
+        #[tokio::test]
+        async fn search_animals_basic() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/search/getPageOfSearchResults"))
+                .and(query_param("page", "0"))
+                .and(query_param("pageSize", "15"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "TotalCount": 42,
+                    "Results": [
+                        { "lpnId": "A1", "bwt": 0.5, "accbwt": 80 },
+                        { "lpnId": "A2", "bwt": -0.3, "accbwt": 70 }
+                    ]
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let results = client
+                .search_animals(0, 15, None, None, None, None)
+                .await
+                .unwrap();
+            assert_eq!(results.total_count, 42);
+            assert_eq!(results.results.len(), 2);
+            assert_eq!(results.page, 0);
+            assert_eq!(results.page_size, 15);
+        }
+
+        #[tokio::test]
+        async fn search_animals_with_criteria() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/search/getPageOfSearchResults"))
+                .and(query_param("breedId", "486"))
+                .and(query_param("sortedBreedTrait", "BWT"))
+                .and(query_param("reverse", "true"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "TotalCount": 10,
+                    "Results": [{ "lpnId": "B1" }]
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let criteria = crate::SearchCriteria::new().with_breed_id(486);
+            let results = client
+                .search_animals(0, 15, Some(486), Some("BWT"), Some(true), Some(&criteria))
+                .await
+                .unwrap();
+            assert_eq!(results.total_count, 10);
+            assert_eq!(results.results.len(), 1);
+        }
+
+        // -- animal_details ---------------------------------------------------
+
+        #[tokio::test]
+        async fn animal_details_nested_format() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/details/getAnimalDetails"))
+                .and(query_param("searchString", "LPN123"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "success": true,
+                    "data": {
+                        "progenyCount": 5,
+                        "dateOfBirth": "01/15/2020",
+                        "gender": "Female",
+                        "breed": { "breedName": "Katahdin", "breedId": 640 },
+                        "searchResultViewModel": {
+                            "lpnId": "LPN123",
+                            "status": "CURRENT",
+                            "bwt": 0.3,
+                            "accbwt": 0.75
+                        }
+                    }
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let details = client.animal_details("LPN123").await.unwrap();
+            assert_eq!(details.lpn_id, "LPN123");
+            assert_eq!(details.breed.as_deref(), Some("Katahdin"));
+            assert_eq!(details.gender.as_deref(), Some("Female"));
+            assert_eq!(details.total_progeny, Some(5));
+            let bwt = details.traits.get("BWT").unwrap();
+            assert!((bwt.value - 0.3).abs() < f64::EPSILON);
+        }
+
+        // -- lineage ----------------------------------------------------------
+
+        #[tokio::test]
+        async fn lineage_with_ancestors() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/details/getLineage"))
+                .and(query_param("lpnId", "LPN123"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "lpnId": "LPN123",
+                    "content": "<div>Farm A</div><div>DOB: 1/1/2020</div>",
+                    "children": [
+                        {
+                            "lpnId": "SIRE1",
+                            "content": "<div>Sire Farm</div>",
+                            "children": []
+                        },
+                        {
+                            "lpnId": "DAM1",
+                            "content": "<div>Dam Farm</div>",
+                            "children": []
+                        }
+                    ]
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let lineage = client.lineage("LPN123").await.unwrap();
+            let subject = lineage.subject.unwrap();
+            assert_eq!(subject.lpn_id, "LPN123");
+            assert_eq!(subject.farm_name.as_deref(), Some("Farm A"));
+            assert_eq!(lineage.sire.unwrap().lpn_id, "SIRE1");
+            assert_eq!(lineage.dam.unwrap().lpn_id, "DAM1");
+        }
+
+        // -- progeny ----------------------------------------------------------
+
+        #[tokio::test]
+        async fn progeny_pagination() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/details/getPageOfProgeny"))
+                .and(query_param("lpnId", "LPN123"))
+                .and(query_param("page", "0"))
+                .and(query_param("pageSize", "5"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "recordCount": 12,
+                    "records": [
+                        { "lpnId": "P1", "sex": "Male", "dob": "03/10/2022" },
+                        { "lpnId": "P2", "sex": "Female", "dob": "03/11/2022" }
+                    ]
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let progeny = client.progeny("LPN123", 0, 5).await.unwrap();
+            assert_eq!(progeny.total_count, 12);
+            assert_eq!(progeny.animals.len(), 2);
+            assert_eq!(progeny.animals[0].lpn_id, "P1");
+            assert_eq!(progeny.animals[0].sex.as_deref(), Some("Male"));
+            assert_eq!(progeny.page, 0);
+            assert_eq!(progeny.page_size, 5);
+        }
+
+        // -- search_by_lpn (concurrent) --------------------------------------
+
+        #[tokio::test]
+        async fn search_by_lpn_combines_three_requests() {
+            let server = MockServer::start().await;
+
+            // Mount details
+            Mock::given(method("GET"))
+                .and(path("/details/getAnimalDetails"))
+                .and(query_param("searchString", "LPN_FULL"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "success": true,
+                    "data": {
+                        "gender": "Male",
+                        "breed": { "breedName": "Suffolk" },
+                        "searchResultViewModel": {
+                            "lpnId": "LPN_FULL",
+                            "status": "CURRENT"
+                        }
+                    }
+                })))
+                .mount(&server)
+                .await;
+
+            // Mount lineage
+            Mock::given(method("GET"))
+                .and(path("/details/getLineage"))
+                .and(query_param("lpnId", "LPN_FULL"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "lpnId": "LPN_FULL",
+                    "content": "<div>Test</div>",
+                    "children": []
+                })))
+                .mount(&server)
+                .await;
+
+            // Mount progeny
+            Mock::given(method("GET"))
+                .and(path("/details/getPageOfProgeny"))
+                .and(query_param("lpnId", "LPN_FULL"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "recordCount": 0,
+                    "records": []
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let profile = client.search_by_lpn("LPN_FULL").await.unwrap();
+            assert_eq!(profile.details.lpn_id, "LPN_FULL");
+            assert_eq!(profile.details.breed.as_deref(), Some("Suffolk"));
+            assert_eq!(profile.lineage.subject.unwrap().lpn_id, "LPN_FULL");
+            assert_eq!(profile.progeny.total_count, 0);
+        }
+
+        // -- Error handling ---------------------------------------------------
+
+        #[tokio::test]
+        async fn not_found_returns_error() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/details/getAnimalDetails"))
+                .respond_with(ResponseTemplate::new(404))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let err = client.animal_details("MISSING").await.unwrap_err();
+            assert!(matches!(err, Error::NotFound(_)));
+        }
+
+        #[tokio::test]
+        async fn server_error_returns_api_error() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getDateLastUpdated"))
+                .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let err = client.date_last_updated().await.unwrap_err();
+            assert!(
+                matches!(err, Error::Api { status: 500, .. }),
+                "expected Api error with status 500, got {err:?}"
+            );
+        }
+
+        #[tokio::test]
+        async fn bad_request_returns_api_error() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getTraitRangesByBreed"))
+                .respond_with(ResponseTemplate::new(400).set_body_string("Bad Request"))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let err = client.trait_ranges(999).await.unwrap_err();
+            assert!(
+                matches!(err, Error::Api { status: 400, .. }),
+                "expected Api error with status 400, got {err:?}"
+            );
+        }
+
+        #[tokio::test]
+        async fn invalid_json_returns_parse_error() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getDateLastUpdated"))
+                .respond_with(ResponseTemplate::new(200).set_body_string("not-valid-json"))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let err = client.date_last_updated().await.unwrap_err();
+            assert!(
+                matches!(err, Error::Parse(_)),
+                "expected Parse error, got {err:?}"
+            );
+        }
+
+        #[tokio::test]
+        async fn empty_search_results() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(path("/search/getPageOfSearchResults"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "TotalCount": 0,
+                    "Results": []
+                })))
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let results = client
+                .search_animals(0, 10, None, None, None, None)
+                .await
+                .unwrap();
+            assert_eq!(results.total_count, 0);
+            assert!(results.results.is_empty());
+        }
+
+        #[tokio::test]
+        async fn progeny_validation_zero_page_size() {
+            let client = NsipClient::new();
+            let err = client.progeny("LPN1", 0, 0).await.unwrap_err();
+            assert!(matches!(err, Error::Validation(_)));
+        }
+
+        #[tokio::test]
+        async fn search_by_lpn_validation_empty_id() {
+            let client = NsipClient::new();
+            let err = client.search_by_lpn("").await.unwrap_err();
+            assert!(matches!(err, Error::Validation(_)));
+
+            let err = client.search_by_lpn("  ").await.unwrap_err();
+            assert!(matches!(err, Error::Validation(_)));
+        }
+
+        // -- Retry behavior ---------------------------------------------------
+
+        #[tokio::test]
+        async fn retries_on_server_error_then_succeeds() {
+            let server = MockServer::start().await;
+
+            // First request returns 500, second returns 200
+            Mock::given(method("GET"))
+                .and(path("/search/getDateLastUpdated"))
+                .respond_with(ResponseTemplate::new(500))
+                .up_to_n_times(1)
+                .mount(&server)
+                .await;
+
+            Mock::given(method("GET"))
+                .and(path("/search/getDateLastUpdated"))
+                .respond_with(
+                    ResponseTemplate::new(200).set_body_json(serde_json::json!("2024-12-20")),
+                )
+                .mount(&server)
+                .await;
+
+            let client = NsipClient::builder()
+                .base_url(server.uri())
+                .max_retries(2)
+                .build()
+                .unwrap();
+
+            let result = client.date_last_updated().await.unwrap();
+            assert_eq!(result.data, serde_json::json!("2024-12-20"));
+        }
+
+        #[tokio::test]
+        async fn no_retry_on_client_error() {
+            let server = MockServer::start().await;
+
+            Mock::given(method("GET"))
+                .and(path("/details/getAnimalDetails"))
+                .respond_with(ResponseTemplate::new(400).set_body_string("Bad"))
+                .mount(&server)
+                .await;
+
+            // Even with retries enabled, 400 should NOT be retried
+            let client = NsipClient::builder()
+                .base_url(server.uri())
+                .max_retries(3)
+                .build()
+                .unwrap();
+
+            let err = client.animal_details("X").await.unwrap_err();
+            assert!(matches!(err, Error::Api { status: 400, .. }));
+
+            // Verify only one request was made (no retries)
+            let requests = server.received_requests().await.unwrap();
+            assert_eq!(requests.len(), 1, "should not retry on 400 status");
+        }
+
+        // -- parse_breed_value ------------------------------------------------
+
+        #[test]
+        fn parse_breed_value_with_aliases() {
+            let val = serde_json::json!({ "id": 100, "name": "TestBreed" });
+            let breed = NsipClient::parse_breed_value(&val);
+            assert_eq!(breed.id, 100);
+            assert_eq!(breed.name, "TestBreed");
+
+            let val2 = serde_json::json!({ "breedId": 200, "breedName": "OtherBreed" });
+            let breed2 = NsipClient::parse_breed_value(&val2);
+            assert_eq!(breed2.id, 200);
+            assert_eq!(breed2.name, "OtherBreed");
+        }
+
+        #[test]
+        fn parse_breed_value_missing_fields() {
+            let val = serde_json::json!({});
+            let breed = NsipClient::parse_breed_value(&val);
+            assert_eq!(breed.id, 0);
+            assert_eq!(breed.name, "");
+        }
+    }
 }

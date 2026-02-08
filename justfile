@@ -9,8 +9,8 @@ default:
 
 # === Core Development ===
 
-# Full CI check: fmt, clippy, test, doc, deny
-check: fmt-check lint test doc-build deny
+# Full CI check: fmt, clippy, test, doc, deny, coverage
+check: fmt-check lint test doc-build deny coverage-gate
 
 # Build in debug mode
 build:
@@ -82,17 +82,21 @@ sbom:
 
 # === Coverage ===
 
+# Fail if line coverage drops below 90%
+coverage-gate:
+    rustup run stable cargo llvm-cov --all-features --fail-under-lines 90
+
 # Generate LCOV coverage report
 coverage:
-    cargo llvm-cov --all-features --lcov --output-path lcov.info
+    rustup run stable cargo llvm-cov --all-features --lcov --output-path lcov.info
 
 # Generate HTML coverage report
 coverage-html:
-    cargo llvm-cov --all-features --html --output-dir coverage-html
+    rustup run stable cargo llvm-cov --all-features --html --output-dir coverage-html
 
 # Print coverage summary to stdout
 coverage-summary:
-    cargo llvm-cov --all-features --summary-only
+    rustup run stable cargo llvm-cov --all-features --summary-only
 
 # === Advanced Testing ===
 

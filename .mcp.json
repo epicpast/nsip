@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "nsip": {
+      "command": "nsip",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

@@ -1,8 +1,10 @@
 name: Snap Package
 
+# Disabled — requires SNAPCRAFT_TOKEN secret.
+# To enable, uncomment the release trigger and configure the secret.
 on:
-  release:
-    types: [published]
+  # release:
+  #   types: [published]
   workflow_dispatch:
 
 permissions:

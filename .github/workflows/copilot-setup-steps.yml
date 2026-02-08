@@ -39,3 +39,9 @@ jobs:
 
       - name: Fetch dependencies
         run: cargo fetch
+
+      - name: Build nsip binary
+        run: cargo build --release
+
+      - name: Add nsip to PATH
+        run: echo "${GITHUB_WORKSPACE}/target/release" >> "${GITHUB_PATH}"

@@ -459,6 +459,9 @@ impl AnimalDetails {
 
         if is_nested {
             Ok(Self::from_nested_format(data))
+        } else if data.get("lpnId").is_some() {
+            // Search result row: camelCase fields with inline trait values
+            Ok(Self::from_search_result(data))
         } else {
             Ok(Self::from_legacy_format(data))
         }
@@ -537,6 +540,59 @@ impl AnimalDetails {
             genotyped,
             traits,
             contact_info,
+        }
+    }
+
+    /// Parse from a search result row (camelCase fields with inline trait values).
+    ///
+    /// Search results from `getPageOfSearchResults` use camelCase keys like
+    /// `lpnId`, `bwt`, `accbwt` — the same schema as `searchResultViewModel`
+    /// but at the top level without the `data` wrapper.
+    fn from_search_result(data: &serde_json::Value) -> Self {
+        let lpn_id = data
+            .get("lpnId")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+
+        let traits = data
+            .as_object()
+            .map(extract_traits_nested)
+            .unwrap_or_default();
+
+        Self {
+            lpn_id,
+            breed: None,
+            breed_group: None,
+            date_of_birth: data
+                .get("dateOfBirth")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from),
+            gender: data
+                .get("gender")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from),
+            status: data
+                .get("status")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from),
+            sire: data
+                .get("lpnSre")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from),
+            dam: data
+                .get("lpnDam")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from),
+            registration_number: data
+                .get("regNumber")
+                .and_then(serde_json::Value::as_str)
+                .map(String::from),
+            total_progeny: None,
+            flock_count: None,
+            genotyped: None,
+            traits,
+            contact_info: None,
         }
     }
 
@@ -1089,6 +1145,57 @@ mod tests {
     }
 
     #[test]
+    fn animal_details_from_search_result() {
+        let json = serde_json::json!({
+            "lpnId": "6400012006BWR107",
+            "lpnSre": "SIRE_SR",
+            "lpnDam": "DAM_SR",
+            "gender": "Male",
+            "status": "CURRENT",
+            "dateOfBirth": "3/15/2022",
+            "regNumber": "SR_REG",
+            "bwt": 0.35,
+            "accbwt": 72,
+            "wwt": 2.5,
+            "accwwt": 68,
+            "pwwt": 4.1,
+            "accpwwt": 65,
+            "ywt": 3.8,
+            "accywt": 55,
+            "nlb": 0.15,
+            "accnlb": 40
+        });
+
+        let details = AnimalDetails::from_api_response(&json).unwrap();
+        assert_eq!(details.lpn_id, "6400012006BWR107");
+        assert_eq!(details.sire.as_deref(), Some("SIRE_SR"));
+        assert_eq!(details.dam.as_deref(), Some("DAM_SR"));
+        assert_eq!(details.gender.as_deref(), Some("Male"));
+        assert_eq!(details.status.as_deref(), Some("CURRENT"));
+        assert_eq!(details.date_of_birth.as_deref(), Some("3/15/2022"));
+        assert_eq!(details.registration_number.as_deref(), Some("SR_REG"));
+
+        // Verify traits parsed from camelCase inline fields
+        let bwt = details.traits.get("BWT").unwrap();
+        assert!((bwt.value - 0.35).abs() < f64::EPSILON);
+        assert_eq!(bwt.accuracy, Some(72));
+
+        let wwt = details.traits.get("WWT").unwrap();
+        assert!((wwt.value - 2.5).abs() < f64::EPSILON);
+        assert_eq!(wwt.accuracy, Some(68));
+
+        let pwwt = details.traits.get("PWWT").unwrap();
+        assert!((pwwt.value - 4.1).abs() < f64::EPSILON);
+
+        let nlb = details.traits.get("NLB").unwrap();
+        assert!((nlb.value - 0.15).abs() < f64::EPSILON);
+        assert_eq!(nlb.accuracy, Some(40));
+
+        // Should have 5 traits total
+        assert_eq!(details.traits.len(), 5);
+    }
+
+    #[test]
     fn progeny_from_api_response() {
         let json = serde_json::json!({
             "recordCount": 3,
@@ -1179,6 +1286,77 @@ mod tests {
         let json = serde_json::to_value(&filter).unwrap();
         assert_eq!(json["min"], -1.0);
         assert_eq!(json["max"], 1.0);
+    }
+
+    #[test]
+    fn search_criteria_with_trait_ranges() {
+        let mut ranges = std::collections::HashMap::new();
+        ranges.insert(
+            "BWT".to_string(),
+            TraitRangeFilter {
+                min: -1.0,
+                max: 1.0,
+            },
+        );
+        let criteria = SearchCriteria::new().with_trait_ranges(ranges);
+        let json = serde_json::to_value(&criteria).unwrap();
+        let tr = &json["traitRanges"]["BWT"];
+        assert_eq!(tr["min"], -1.0);
+        assert_eq!(tr["max"], 1.0);
+    }
+
+    #[test]
+    fn extract_contact_info_null_returns_none() {
+        let json = serde_json::json!({
+            "data": {
+                "gender": "Male",
+                "searchResultViewModel": { "lpnId": "X1" },
+                "contactInfo": null
+            }
+        });
+        let details = AnimalDetails::from_api_response(&json).unwrap();
+        assert!(details.contact_info.is_none());
+    }
+
+    #[test]
+    fn legacy_format_missing_traits_key() {
+        let json = serde_json::json!({
+            "LpnId": "LEG_NO_TRAITS",
+            "Breed": "Suffolk",
+            "Gender": "Female"
+        });
+        let details = AnimalDetails::from_api_response(&json).unwrap();
+        assert_eq!(details.lpn_id, "LEG_NO_TRAITS");
+        assert!(details.traits.is_empty());
+    }
+
+    #[test]
+    fn legacy_format_non_object_trait_value() {
+        let json = serde_json::json!({
+            "LpnId": "LEG_BAD_TRAIT",
+            "Traits": {
+                "BWT": "not an object",
+                "WWT": { "Value": 2.0, "Accuracy": 70 }
+            }
+        });
+        let details = AnimalDetails::from_api_response(&json).unwrap();
+        // BWT should be skipped, WWT should parse
+        assert!(!details.traits.contains_key("BWT"));
+        assert!(details.traits.contains_key("WWT"));
+    }
+
+    #[test]
+    fn lineage_node_without_children() {
+        // Lineage response where a node has no "children" key at all
+        let json = serde_json::json!({
+            "data": {
+                "lpnId": "NOCHILDREN",
+                "content": "<div>Farm</div>"
+            }
+        });
+        let lineage = Lineage::from_api_response(&json).unwrap();
+        assert!(lineage.sire.is_none());
+        assert!(lineage.dam.is_none());
     }
 
     #[test]

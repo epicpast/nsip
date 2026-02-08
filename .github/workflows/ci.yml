@@ -194,6 +194,9 @@ jobs:
       - name: Generate coverage report
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
+      - name: Enforce 90% line coverage
+        run: cargo llvm-cov --all-features --fail-under-lines 90
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
@@ -206,7 +209,7 @@ jobs:
   all-checks-pass:
     name: All Checks Pass
     if: always()
-    needs: [fmt, clippy, test, doc, deny, msrv]
+    needs: [fmt, clippy, test, doc, deny, msrv, coverage]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs passed
@@ -217,13 +220,15 @@ jobs:
           DOC_RESULT: ${{ needs.doc.result }}
           DENY_RESULT: ${{ needs.deny.result }}
           MSRV_RESULT: ${{ needs.msrv.result }}
+          COVERAGE_RESULT: ${{ needs.coverage.result }}
         run: |
           if [[ "$FMT_RESULT" != "success" ]] || \
              [[ "$CLIPPY_RESULT" != "success" ]] || \
              [[ "$TEST_RESULT" != "success" ]] || \
              [[ "$DOC_RESULT" != "success" ]] || \
              [[ "$DENY_RESULT" != "success" ]] || \
-             [[ "$MSRV_RESULT" != "success" ]]; then
+             [[ "$MSRV_RESULT" != "success" ]] || \
+             [[ "$COVERAGE_RESULT" != "success" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi

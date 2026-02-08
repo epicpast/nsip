@@ -35,7 +35,7 @@ Update version in `Cargo.toml`:
 
 ```toml
 [package]
-version = "0.2.0"  # Update this
+version = "0.3.0"  # Update this
 ```
 
 Run checks locally:
@@ -52,12 +52,12 @@ cargo deny check
 ```bash
 # Commit version bump
 git add Cargo.toml
-git commit -m "chore: bump version to 0.2.0"
+git commit -m "chore: bump version to 0.3.0"
 git push
 
 # Create annotated tag
-git tag -a v0.2.0 -m "Release v0.2.0"
-git push origin v0.2.0
+git tag -a v0.3.0 -m "Release v0.3.0"
+git push origin v0.3.0
 ```
 
 ### 3. Automated Workflows
@@ -190,13 +190,13 @@ Delete the release and tag:
 
 ```bash
 # Delete remote tag
-git push --delete origin v0.2.0
+git push --delete origin v0.3.0
 
 # Delete local tag
-git tag -d v0.2.0
+git tag -d v0.3.0
 
 # Delete release via GitHub UI or gh CLI
-gh release delete v0.2.0
+gh release delete v0.3.0
 ```
 
 ### Docker
@@ -213,13 +213,13 @@ docker pull ghcr.io/zircote/nsip:v0.1.0
 
 1. Yank the version (prevents new projects from using it):
    ```bash
-   cargo yank --vers 0.2.0
+   cargo yank --vers 0.3.0
    ```
 
 2. Publish a patch version with fixes:
    ```bash
    # Update to 0.2.1
-   git tag -a v0.2.1 -m "Release v0.2.1 (fixes v0.2.0)"
+   git tag -a v0.2.1 -m "Release v0.2.1 (fixes v0.3.0)"
    git push origin v0.2.1
    ```
 
@@ -292,8 +292,8 @@ Dependabot automatically opens PRs for:
 
 3. **Version Bump in Separate Commit**
    ```bash
-   git commit -m "chore: bump version to 0.2.0"
-   git tag -a v0.2.0 -m "Release v0.2.0"
+   git commit -m "chore: bump version to 0.3.0"
+   git tag -a v0.3.0 -m "Release v0.3.0"
    ```
 
 4. **Monitor Release Progress**

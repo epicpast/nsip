@@ -272,8 +272,8 @@ This template includes production-ready workflows:
 1. Update version in `Cargo.toml`
 2. Create and push a version tag:
    ```bash
-   git tag -a v0.2.0 -m "Release v0.2.0"
-   git push origin v0.2.0
+   git tag -a v0.3.0 -m "Release v0.3.0"
+   git push origin v0.3.0
    ```
 3. Workflows automatically:
    - Generate changelog
