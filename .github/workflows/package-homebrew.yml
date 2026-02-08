@@ -39,6 +39,7 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
           REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           if [ "$EVENT_NAME" = "release" ]; then
             VERSION="$RELEASE_TAG"
@@ -48,36 +49,97 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          # Download source archive
-          TARBALL_URL="https://github.com/${REPO}"
-          TARBALL_URL="${TARBALL_URL}/archive/refs/tags"
-          TARBALL_URL="${TARBALL_URL}/v${VERSION}.tar.gz"
-          echo "tarball_url=$TARBALL_URL" >> "$GITHUB_OUTPUT"
+          BASE="https://github.com/${REPO}/releases"
+          BASE="${BASE}/download/v${VERSION}"
 
-          # Calculate SHA256
-          SHA256=$(curl -sL "$TARBALL_URL" | shasum -a 256 | awk '{print $1}')
-          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          # Get SHA256 for each platform binary
+          ARM64_URL="${BASE}/nsip-macos-arm64"
+          AMD64_URL="${BASE}/nsip-macos-amd64"
+          LINUX_URL="${BASE}/nsip-linux-amd64"
+          COMP_URL="${BASE}/nsip-completions.tar.gz"
+          MAN_URL="${BASE}/nsip-man-pages.tar.gz"
+
+          ARM64_SHA=$(curl -sL "$ARM64_URL" \
+            | shasum -a 256 | awk '{print $1}')
+          AMD64_SHA=$(curl -sL "$AMD64_URL" \
+            | shasum -a 256 | awk '{print $1}')
+          LINUX_SHA=$(curl -sL "$LINUX_URL" \
+            | shasum -a 256 | awk '{print $1}')
+          COMP_SHA=$(curl -sL "$COMP_URL" \
+            | shasum -a 256 | awk '{print $1}')
+          MAN_SHA=$(curl -sL "$MAN_URL" \
+            | shasum -a 256 | awk '{print $1}')
+
+          echo "arm64_url=$ARM64_URL" >> "$GITHUB_OUTPUT"
+          echo "amd64_url=$AMD64_URL" >> "$GITHUB_OUTPUT"
+          echo "linux_url=$LINUX_URL" >> "$GITHUB_OUTPUT"
+          echo "comp_url=$COMP_URL" >> "$GITHUB_OUTPUT"
+          echo "man_url=$MAN_URL" >> "$GITHUB_OUTPUT"
+          echo "arm64_sha=$ARM64_SHA" >> "$GITHUB_OUTPUT"
+          echo "amd64_sha=$AMD64_SHA" >> "$GITHUB_OUTPUT"
+          echo "linux_sha=$LINUX_SHA" >> "$GITHUB_OUTPUT"
+          echo "comp_sha=$COMP_SHA" >> "$GITHUB_OUTPUT"
+          echo "man_sha=$MAN_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Generate formula
         env:
-          TARBALL_URL: ${{ steps.release.outputs.tarball_url }}
-          SHA256: ${{ steps.release.outputs.sha256 }}
           VERSION: ${{ steps.release.outputs.version }}
           REPO: ${{ github.repository }}
+          ARM64_URL: ${{ steps.release.outputs.arm64_url }}
+          AMD64_URL: ${{ steps.release.outputs.amd64_url }}
+          LINUX_URL: ${{ steps.release.outputs.linux_url }}
+          COMP_URL: ${{ steps.release.outputs.comp_url }}
+          MAN_URL: ${{ steps.release.outputs.man_url }}
+          ARM64_SHA: ${{ steps.release.outputs.arm64_sha }}
+          AMD64_SHA: ${{ steps.release.outputs.amd64_sha }}
+          LINUX_SHA: ${{ steps.release.outputs.linux_sha }}
+          COMP_SHA: ${{ steps.release.outputs.comp_sha }}
+          MAN_SHA: ${{ steps.release.outputs.man_sha }}
         run: |
           cat > homebrew-tap/Formula/nsip.rb << FORMULA
           class Nsip < Formula
             desc "Sheep genetic evaluation CLI"
             homepage "https://github.com/${REPO}"
-            url "${TARBALL_URL}"
-            sha256 "${SHA256}"
-            license "MIT"
             version "${VERSION}"
+            license "MIT"
 
-            depends_on "rust" => :build
+            on_macos do
+              if Hardware::CPU.arm?
+                url "${ARM64_URL}"
+                sha256 "${ARM64_SHA}"
+              else
+                url "${AMD64_URL}"
+                sha256 "${AMD64_SHA}"
+              end
+            end
+
+            on_linux do
+              url "${LINUX_URL}"
+              sha256 "${LINUX_SHA}"
+            end
+
+            resource "completions" do
+              url "${COMP_URL}"
+              sha256 "${COMP_SHA}"
+            end
+
+            resource "man-pages" do
+              url "${MAN_URL}"
+              sha256 "${MAN_SHA}"
+            end
 
             def install
-              system "cargo", "install", *std_cargo_args
+              bin.install "nsip"
+
+              resource("completions").stage do
+                bash_completion.install "nsip.bash" => "nsip"
+                zsh_completion.install "_nsip"
+                fish_completion.install "nsip.fish"
+              end
+
+              resource("man-pages").stage do
+                man1.install Dir["*.1"]
+              end
             end
 
             test do
@@ -104,5 +166,5 @@ jobs:
       - name: Show formula (dry run)
         if: github.event.inputs.dry_run == 'true'
         run: |
-          echo "Generated formula (dry run - not pushed):"
+          echo "Generated formula (dry run):"
           cat homebrew-tap/Formula/nsip.rb
