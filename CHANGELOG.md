@@ -7,31 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-07
+
 ### Added
 
-- Production-ready CI/CD workflows
-  - Release workflow with multi-platform binary builds
-  - Automated changelog generation with git-cliff
-  - Docker multi-platform container builds
-  - Automated crates.io publishing
-  - Security audit workflow with cargo-audit
-  - Benchmark tracking workflow
-- Docker support with distroless base image
-- git-cliff configuration for conventional commits
-- Release template for GitHub releases
-- Comprehensive documentation for CI/CD and deployment
+- MCP server (`nsip mcp`) with 13 tools, 5 resources, 4 resource templates,
+  and 7 guided prompts for sheep genetic evaluation
+- Farmer-friendly CLI with `compare`, `completions`, and `man` subcommands
+- Human-readable ASCII table output (default) with `--json` flag for machine output
+- NSIP client with full endpoint coverage: search, details, lineage, progeny,
+  breed groups, trait ranges, statuses, and date-last-updated
+- Inbreeding coefficient (COI) calculation with traffic-light rating
+- Weighted multi-trait ranking and mating recommendation analytics
+- LLM guide templates for Claude, Copilot, Cursor, Gemini, and generic agents
+- MCP reference documentation (`docs/MCP.md`)
+- CLI integration tests
 
 ### Changed
 
 - Renamed source directory from `src/` to `crates/`
+- Renamed release binary artifacts from `rust_template` to `nsip`
 - Updated all documentation to reflect actual features
-- Enhanced README with CI/CD and deployment information
 
 ### Fixed
 
 - MSRV version mismatch in documentation (1.80 → 1.92)
-- Placeholder features replaced with actual capabilities
-- Config builder example now includes all methods
+- Release binary artifact naming
 
 ## [0.1.0] - 2024-02-06
 
