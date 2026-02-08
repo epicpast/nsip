@@ -1,6 +1,7 @@
+---
 name: Code Coverage
 
-on:
+"on":
   pull_request:
   # schedule:
   #   - cron: '0 0 * * 1'  # Weekly on Monday
@@ -14,68 +15,87 @@ jobs:
   coverage:
     name: Generate Coverage Report
     runs-on: ubuntu-latest
+    environment: copilot
     timeout-minutes: 30
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+        # yamllint disable-line rule:line-length
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a  # master
         with:
           toolchain: stable
           components: llvm-tools-preview
 
       - name: Cache dependencies
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        # yamllint disable-line rule:line-length
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
+          # yamllint disable-line rule:line-length
           key: ${{ runner.os }}-cargo-coverage-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69 # v2.67.25
+        # yamllint disable-line rule:line-length
+        uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69  # v2.67.25
         with:
           tool: cargo-llvm-cov@0.6.14
 
       - name: Generate coverage
         run: |
-          cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-          cargo llvm-cov --all-features --workspace --html --output-dir coverage-html
-          cargo llvm-cov --all-features --workspace --json --output-path coverage.json
+          cargo llvm-cov --all-features --workspace \
+            --lcov --output-path lcov.info
+          cargo llvm-cov --all-features --workspace \
+            --html --output-dir coverage-html
+          cargo llvm-cov --all-features --workspace \
+            --json --output-path coverage.json
 
       - name: Parse coverage percentage
         id: coverage
         run: |
-          COVERAGE=$(cargo llvm-cov --all-features --workspace --summary-only | grep -oP 'TOTAL\s+\d+\.\d+%' | grep -oP '\d+\.\d+' || echo "0")
-          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          COVERAGE=$(cargo llvm-cov \
+            --all-features --workspace --summary-only \
+            | grep -oP 'TOTAL\s+\d+\.\d+%' \
+            | grep -oP '\d+\.\d+' || echo "0")
+          echo "percentage=$COVERAGE" >> "$GITHUB_OUTPUT"
           echo "Coverage: ${COVERAGE}%"
 
       - name: Generate coverage report
+        env:
+          PERCENTAGE: ${{ steps.coverage.outputs.percentage }}
         run: |
           echo "# Code Coverage Report" > coverage-report.md
           echo "" >> coverage-report.md
-          echo "**Overall Coverage:** ${{ steps.coverage.outputs.percentage }}%" >> coverage-report.md
+          echo "**Overall Coverage:** ${PERCENTAGE}%" \
+            >> coverage-report.md
           echo "" >> coverage-report.md
           echo "## Summary" >> coverage-report.md
           echo "" >> coverage-report.md
           echo "\`\`\`" >> coverage-report.md
-          cargo llvm-cov --all-features --workspace --summary-only >> coverage-report.md
+          cargo llvm-cov --all-features --workspace \
+            --summary-only >> coverage-report.md
           echo "\`\`\`" >> coverage-report.md
           echo "" >> coverage-report.md
-          echo "Full HTML report available in CI artifacts." >> coverage-report.md
+          echo "Full HTML report available in CI artifacts." \
+            >> coverage-report.md
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.1.2
+        # yamllint disable-line rule:line-length
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de  # v5.1.2
         with:
           files: lcov.info
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        # yamllint disable-line rule:line-length
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
         with:
           name: coverage-report
           path: |
@@ -87,12 +107,14 @@ jobs:
 
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        # yamllint disable-line rule:line-length
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
         with:
           script: |
             const fs = require('fs');
-            const report = fs.readFileSync('coverage-report.md', 'utf8');
-            
+            const report = fs.readFileSync(
+              'coverage-report.md', 'utf8'
+            );
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -101,13 +123,14 @@ jobs:
             });
 
       - name: Check coverage threshold
+        env:
+          COVERAGE: ${{ steps.coverage.outputs.percentage }}
         run: |
-          COVERAGE=${{ steps.coverage.outputs.percentage }}
           THRESHOLD=80
-          
-          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
-            echo "⚠️ Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
-            echo "Consider adding more tests to improve coverage."
+          if (( $(echo "$COVERAGE < $THRESHOLD" \
+                  | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below ${THRESHOLD}%"
+            echo "Consider adding more tests."
           else
-            echo "✅ Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%"
+            echo "Coverage ${COVERAGE}% meets ${THRESHOLD}%"
           fi

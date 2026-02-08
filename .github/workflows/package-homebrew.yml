@@ -21,6 +21,7 @@ jobs:
   homebrew:
     name: Update Homebrew Formula
     runs-on: macos-latest
+    environment: copilot
 
     steps:
       - name: Checkout homebrew tap
