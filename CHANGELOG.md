@@ -10,10 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Update CHANGELOG.md for v0.3.1
+- Update CHANGELOG.md for v0.3.2
 
 ### Fixed
 
 - Update docs, workflows, and metadata for v0.3.2
+- **ci**: Bump to 0.3.2, add environment for secrets, fix yamllint
+
+### Miscellaneous
+
+- **release**: Bump version to 0.3.2
 
 ## [0.3.1] - 2026-02-08
 
