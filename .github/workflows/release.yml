@@ -118,6 +118,53 @@ jobs:
             nsip-man-pages.tar.gz \
             --clobber
 
+  generate-sbom:
+    name: Generate SBOM
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98  # v6.0.2
+
+      - name: Install Rust toolchain
+        # yamllint disable-line rule:line-length
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+        with:
+          toolchain: stable
+
+      - name: Install cargo-sbom
+        # yamllint disable-line rule:line-length
+        uses: taiki-e/install-action@1c0532667bd5bc37f71fc223a52e7c41c966d9d7  # v2.67.18
+        with:
+          tool: cargo-sbom
+
+      - name: Generate SBOM (SPDX format)
+        run: >-
+          cargo sbom --output-format spdx_json_2_3
+          > nsip-sbom-spdx.json
+
+      - name: Attest SBOM provenance
+        # yamllint disable-line rule:line-length
+        uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
+        with:
+          subject-path: nsip-sbom-spdx.json
+
+      - name: Upload SBOM to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release upload "${{ github.ref_name }}"
+          nsip-sbom-spdx.json --clobber
+
+      - name: Upload SBOM artifact
+        # yamllint disable-line rule:line-length
+        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5  # v4.6.2
+        with:
+          name: nsip-sbom-spdx
+          path: nsip-sbom-spdx.json
+          retention-days: 90
+
   build-binaries:
     name: Build ${{ matrix.target }}
     needs: create-release

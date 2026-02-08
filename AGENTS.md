@@ -17,10 +17,12 @@ Instructions for AI coding agents working on this Rust project.
 ```
 crates/
   lib.rs           # Library entry point and public API
-  main.rs          # Binary entry point (optional)
+  main.rs          # Binary entry point
+  client.rs        # HTTP client for the NSIP Search API
+  models.rs        # Data models (SearchCriteria, AnimalDetails, etc.)
+  format.rs        # Human-readable ASCII table formatting
+  mcp/             # MCP server (13 tools, prompts, resources)
 tests/             # Integration tests
-benches/           # Benchmarks (criterion)
-examples/          # Example programs
 ```
 
 ## Build and Test Commands
@@ -73,12 +75,15 @@ Include `# Examples` and `# Errors` sections:
 ///
 /// # Examples
 ///
-/// ```rust
-/// use nsip::process;
-/// let result = process("data")?;
-/// # Ok::<(), nsip::Error>(())
+/// ```rust,no_run
+/// use nsip::NsipClient;
+/// # async fn example() -> Result<(), nsip::Error> {
+/// let client = NsipClient::new();
+/// let groups = client.breed_groups().await?;
+/// # Ok(())
+/// # }
 /// ```
-pub fn process(input: &str) -> Result<Output, Error> {
+pub async fn breed_groups(&self) -> Result<Vec<BreedGroup>, Error> {
     // implementation
 }
 ```

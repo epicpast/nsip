@@ -218,9 +218,9 @@ docker pull ghcr.io/zircote/nsip:v0.1.0
 
 2. Publish a patch version with fixes:
    ```bash
-   # Update to 0.2.1
-   git tag -a v0.2.1 -m "Release v0.2.1 (fixes v0.3.0)"
-   git push origin v0.2.1
+   # Update to X.Y.Z+1
+   git tag -a vX.Y.Z -m "Release vX.Y.Z (fixes vA.B.C)"
+   git push origin vX.Y.Z
    ```
 
 ## Monitoring

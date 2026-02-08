@@ -24,6 +24,8 @@ Sheep genetic evaluation CLI & MCP server -- search animals, compare EBVs, plan 
   <img src=".github/readme-infographic.svg" alt="NSIP Architecture Overview" width="800">
 </p>
 
+> **Try it out:** Clone [zircote/nsip-example](https://github.com/zircote/nsip-example) for a ready-to-use farm repository with MCP server configuration, sample workflows, and AI assistant instructions pre-configured.
+
 ## Features
 
 - **Type-safe API client** with comprehensive error handling
@@ -40,7 +42,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-nsip = "0.1"
+nsip = "0.3"
 ```
 
 Or use cargo add:
@@ -65,7 +67,6 @@ async fn main() -> Result<(), nsip::Error> {
 
     // Search for animals
     let criteria = SearchCriteria::new()
-        .with_breed_id(640)
         .with_status("CURRENT");
 
     let results = client
@@ -113,6 +114,15 @@ nsip progeny <lpn-id>
 # Get full profile (details + lineage + progeny)
 nsip profile <lpn-id>
 
+# Compare two or more animals side-by-side
+nsip compare <lpn-id-1> <lpn-id-2>
+
+# Generate shell completions
+nsip completions bash
+
+# Generate man pages
+nsip man-pages ./man/
+
 # Start MCP server mode
 nsip mcp
 ```
@@ -141,10 +151,18 @@ nsip mcp
 | `SearchCriteria` | Search parameters with builder pattern |
 | `AnimalDetails` | Detailed animal record with traits and contact info |
 | `AnimalProfile` | Combined details + lineage + progeny |
+| `Breed` | A single breed within a breed group |
 | `BreedGroup` | Breed group with nested breeds |
+| `ContactInfo` | Owner / flock contact information |
+| `DateLastUpdated` | Response from the date-last-updated endpoint |
 | `Lineage` | Animal lineage/ancestry tree |
+| `LineageAnimal` | A single node in the pedigree tree |
 | `Progeny` | Paginated animal offspring |
+| `ProgenyAnimal` | A single offspring record |
 | `SearchResults` | Paginated search results |
+| `Trait` | A single EBV trait with value and accuracy |
+| `TraitRange` | Min/max range for a trait within a breed |
+| `TraitRangeFilter` | Min/max bounds for a trait filter |
 | `Error` | Error type for operations |
 | `Result<T>` | Type alias for `Result<T, Error>` |
 
@@ -157,10 +175,20 @@ The library includes MCP (Model Context Protocol) support for integration with A
 nsip::mcp::serve_stdio().await?;
 ```
 
-The MCP protocol exposes the following tools when running `nsip mcp`:
-- `search` - Search for animals with filters
-- `details` - Get detailed animal information
-- `lineage` - Get animal lineage/ancestry
+The MCP protocol exposes the following 13 tools when running `nsip mcp`:
+- `search` - Search for animals with filters for breed, gender, status, date range, and flock
+- `details` - Get detailed EBV data, breed, contact info, and status for an animal
+- `lineage` - Get pedigree / ancestry tree including parents and grandparents
+- `progeny` - Get paginated list of offspring for an animal
+- `profile` - Get complete profile (details + pedigree + offspring) in one call
+- `breed_groups` - List all breed groups and individual breeds
+- `trait_ranges` - Get min/max EBV trait ranges for a specific breed
+- `compare` - Compare 2-5 animals side-by-side on their EBV traits
+- `rank` - Rank animals within a breed by weighted EBV traits
+- `inbreeding_check` - Calculate Wright's coefficient of inbreeding for a sire-dam pairing
+- `mating_recommendations` - Find optimal mates ranked by trait complementarity and COI
+- `flock_summary` - Summarize a flock's animals: count, gender breakdown, and average EBVs
+- `database_status` - Get last-updated date and available animal statuses
 
 ## Development
 
@@ -201,10 +229,14 @@ cargo doc --open
 crates/
 ├── lib.rs           # Library entry point
 ├── main.rs          # Binary entry point
-└── ...              # Additional modules
+├── client.rs        # HTTP client for the NSIP Search API
+├── models.rs        # Data models (SearchCriteria, AnimalDetails, etc.)
+├── format.rs        # Human-readable ASCII table formatting
+└── mcp/             # MCP server (13 tools, prompts, resources)
 
 tests/
-└── integration_test.rs
+├── integration_test.rs
+└── cli_test.rs      # CLI integration tests
 
 Cargo.toml           # Project manifest
 clippy.toml          # Clippy configuration

@@ -2,9 +2,6 @@
 name: SBOM Generation
 
 "on":
-  push:
-    tags:
-      - "v*.*.*"
   release:
     types: [published]
   workflow_dispatch:
@@ -36,7 +33,7 @@ jobs:
       - name: Generate SBOM (SPDX format)
         run: |
           cargo sbom --output-format spdx_json_2_3 > sbom-spdx.json
-          
+
       - name: Upload SBOM artifact
         # v4.6.2
         uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5

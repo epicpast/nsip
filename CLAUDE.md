@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **GitHub template repository** for Rust crates. The crate name is `nsip` (Rust edition 2024, MSRV 1.92). It ships both a library (`crates/lib.rs`) and a binary (`crates/main.rs`). Source lives in `crates/`, not the standard `src/` directory.
+This is the **NSIP sheep genetic evaluation CLI and library**. The crate name is `nsip` (Rust edition 2024, MSRV 1.92). It ships both a library (`crates/lib.rs`) and a binary (`crates/main.rs`). Source lives in `crates/`, not the standard `src/` directory.
 
 ## Build Commands
 
@@ -47,14 +47,19 @@ cargo fmt -- --check && cargo clippy --all-targets --all-features -- -D warnings
 
 ### Source Layout
 
-- `crates/lib.rs` — Library root: exports `Error` (thiserror), `Result<T>`, `Config` (builder pattern), `add()`, `divide()`
+- `crates/lib.rs` — Library root: exports `NsipClient`, `SearchCriteria`, `Error` (thiserror), `Result<T>`, `mcp` module, `models` module
 - `crates/main.rs` — Binary entry point with `run() -> Result` pattern returning `ExitCode`
+- `crates/client.rs` — HTTP client for the NSIP Search API (`NsipClient`)
+- `crates/models.rs` — Data models (`AnimalDetails`, `Lineage`, `Progeny`, `SearchResults`, etc.)
+- `crates/format.rs` — Human-readable ASCII table formatting (binary-only module)
+- `crates/mcp/` — MCP server with 13 tools, guided prompts, and resource templates
 - `tests/integration_test.rs` — Integration tests including property-based tests (proptest)
+- `tests/cli_test.rs` — CLI integration tests
 
 ### Key Patterns
 
 - **Error handling**: `thiserror` for error types, `Result<T>` alias, `?` propagation. Never `unwrap`/`expect`/`panic!` in library code.
-- **Builder pattern**: `Config::new().with_verbose(true).with_max_retries(5)` using `const fn` and `#[must_use]`
+- **Builder pattern**: `SearchCriteria::new().with_breed_id(640).with_status("CURRENT")` using `const fn` and `#[must_use]`
 - **Binary structure**: `main()` returns `ExitCode`, delegates to `run()` which returns `Result`. Binary code allows `#[allow(clippy::print_stdout, clippy::print_stderr)]`.
 
 ### Lint Configuration
@@ -75,6 +80,7 @@ Configured in `rustfmt.toml`: 100-char line width, edition 2024, `imports_granul
 
 - **Unit tests**: `#[cfg(test)] mod tests` inside source files
 - **Integration tests**: `tests/integration_test.rs`
+- **CLI tests**: `tests/cli_test.rs`
 - **Property tests**: `proptest` crate in `tests/integration_test.rs::property_tests` module
 - **Parameterized tests**: `test-case` crate available in dev-dependencies
 - **Doc tests**: all public API examples must compile

@@ -24,6 +24,10 @@ Each template covers:
 - **Data conventions** -- LPN IDs, breed IDs, EBV traits, selection direction
 - **Error handling tips** -- not-found responses, pagination, validation
 
+## Example Project
+
+Clone [zircote/nsip-example](https://github.com/zircote/nsip-example) for a working farm repository with MCP config, sample workflows, and AI assistant instructions already set up.
+
 ## Full Reference
 
 For complete parameter tables, response schemas, analytics formulas, and the EBV glossary, see [`docs/MCP.md`](../MCP.md).
