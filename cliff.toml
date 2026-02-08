@@ -49,15 +49,16 @@ topo_order = false
 # Sort commits by oldest first
 sort_commits = "oldest"
 
-[git.commit_parsers]
 # Conventional Commits parsers
-{ message = "^feat", group = "Added" }
-{ message = "^fix", group = "Fixed" }
-{ message = "^docs", group = "Documentation" }
-{ message = "^perf", group = "Performance" }
-{ message = "^refactor", group = "Refactored" }
-{ message = "^style", group = "Styling" }
-{ message = "^test", group = "Testing" }
-{ message = "^chore\\(release\\): prepare for", skip = true }
-{ message = "^chore", group = "Miscellaneous" }
-{ body = ".*security", group = "Security" }
+commit_parsers = [
+  { message = "^feat", group = "Added" },
+  { message = "^fix", group = "Fixed" },
+  { message = "^docs", group = "Documentation" },
+  { message = "^perf", group = "Performance" },
+  { message = "^refactor", group = "Refactored" },
+  { message = "^style", group = "Styling" },
+  { message = "^test", group = "Testing" },
+  { message = "^chore\\(release\\): prepare for", skip = true },
+  { message = "^chore", group = "Miscellaneous" },
+  { body = ".*security", group = "Security" },
+]
