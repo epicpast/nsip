@@ -134,7 +134,15 @@ jobs:
             end
 
             def install
-              bin.install "nsip"
+              if OS.mac?
+                if Hardware::CPU.arm?
+                  bin.install "nsip-macos-arm64" => "nsip"
+                else
+                  bin.install "nsip-macos-amd64" => "nsip"
+                end
+              elsif OS.linux?
+                bin.install "nsip-linux-amd64" => "nsip"
+              end
 
               resource("completions").stage do
                 bash_completion.install "nsip.bash" => "nsip"
