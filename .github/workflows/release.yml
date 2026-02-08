@@ -19,6 +19,7 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    environment: copilot
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
@@ -52,6 +53,10 @@ jobs:
           body: ${{ steps.changelog.outputs.content }}
           draft: false
           prerelease: false
+        env:
+          # Use PAT so release event propagates to
+          # downstream workflows (homebrew, sbom)
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
   generate-extras:
     name: Generate completions & man pages
