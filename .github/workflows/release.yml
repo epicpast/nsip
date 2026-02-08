@@ -9,6 +9,8 @@ name: Release
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -22,33 +24,99 @@ jobs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout repository
-        # v6.0.2
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98  # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Get version from tag
         id: get_version
+        # yamllint disable-line rule:line-length
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         id: changelog
-        # v4.5.0
-        uses: orhun/git-cliff-action@e16f179f0be49ecdfe63753837f20b9531642772
+        # yamllint disable-line rule:line-length
+        uses: orhun/git-cliff-action@e16f179f0be49ecdfe63753837f20b9531642772  # v4.5.0
         with:
           config: cliff.toml
           args: --latest --strip header
 
       - name: Create GitHub Release
         id: create_release
-        # v2.0.3
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
+        # yamllint disable-line rule:line-length
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2.0.3
         with:
           tag_name: ${{ github.ref }}
           name: Release ${{ steps.get_version.outputs.version }}
           body: ${{ steps.changelog.outputs.content }}
           draft: false
           prerelease: false
+
+  generate-extras:
+    name: Generate completions & man pages
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98  # v6.0.2
+
+      - name: Install Rust toolchain
+        # yamllint disable-line rule:line-length
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+        with:
+          toolchain: stable
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Generate shell completions
+        run: |
+          mkdir -p completions
+          ./target/release/nsip completions bash \
+            > completions/nsip.bash
+          ./target/release/nsip completions zsh \
+            > completions/_nsip
+          ./target/release/nsip completions fish \
+            > completions/nsip.fish
+          ./target/release/nsip completions powershell \
+            > completions/_nsip.ps1
+
+      - name: Generate man pages
+        run: |
+          mkdir -p man
+          ./target/release/nsip man-pages --out-dir man
+
+      - name: Package completions
+        run: >-
+          tar czf nsip-completions.tar.gz
+          -C completions .
+
+      - name: Package man pages
+        run: >-
+          tar czf nsip-man-pages.tar.gz -C man .
+
+      - name: Attest completions archive
+        # yamllint disable-line rule:line-length
+        uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
+        with:
+          subject-path: nsip-completions.tar.gz
+
+      - name: Attest man pages archive
+        # yamllint disable-line rule:line-length
+        uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
+        with:
+          subject-path: nsip-man-pages.tar.gz
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            nsip-completions.tar.gz \
+            nsip-man-pages.tar.gz \
+            --clobber
 
   build-binaries:
     name: Build ${{ matrix.target }}
@@ -86,31 +154,35 @@ jobs:
 
     steps:
       - name: Checkout repository
-        # v6.0.2
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98  # v6.0.2
 
       - name: Install Rust toolchain
-        # master
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561
+        # yamllint disable-line rule:line-length
+        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
         with:
           toolchain: stable
           targets: ${{ matrix.target }}
 
-      - name: Install cross-compilation tools (Linux ARM64)
+      - name: Install cross-compilation tools
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: >-
+          cargo build --release
+          --target ${{ matrix.target }}
         env:
+          # yamllint disable-line rule:line-length
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
       - name: Strip binary (Unix)
         if: runner.os != 'Windows'
         run: |
-          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+          if [ "${{ matrix.target }}" = \
+               "aarch64-unknown-linux-gnu" ]; then
             aarch64-linux-gnu-strip \
               "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}"
           else
@@ -124,6 +196,12 @@ jobs:
           cp "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}" \
              "${{ matrix.asset_name }}"
 
+      - name: Attest binary provenance
+        # yamllint disable-line rule:line-length
+        uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
+        with:
+          subject-path: ${{ matrix.asset_name }}
+
       - name: Upload release asset
         shell: bash
         env:
@@ -133,8 +211,8 @@ jobs:
             "${{ matrix.asset_name }}" --clobber
 
       - name: Upload artifact
-        # v4.6.2
-        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5
+        # yamllint disable-line rule:line-length
+        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5  # v4.6.2
         with:
           name: ${{ matrix.asset_name }}
-          path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+          path: ${{ matrix.asset_name }}

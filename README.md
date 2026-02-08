@@ -1,5 +1,11 @@
 # `nsip`
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/social-preview-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/social-preview.svg">
+  <img alt="nsip - Sheep Genetic Evaluation Tools" src=".github/social-preview.svg" width="100%">
+</picture>
+
 <!-- Badges -->
 [![GitHub Template](https://img.shields.io/badge/template-zircote%2Frust--template-blue?logo=github)](https://github.com/zircote/nsip)
 [![CI](https://github.com/zircote/nsip/actions/workflows/ci.yml/badge.svg)](https://github.com/zircote/nsip/actions/workflows/ci.yml)
@@ -12,7 +18,11 @@
 [![Security: gitleaks](https://img.shields.io/badge/security-gitleaks-blue?logo=git&logoColor=white)](https://github.com/gitleaks/gitleaks)
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot)](https://docs.github.com/en/code-security/dependabot)
 
-NSIP Search API client for querying livestock data from nsipsearch.nsip.org/api.
+Sheep genetic evaluation CLI & MCP server -- search animals, compare EBVs, plan matings, rank flocks via the NSIP database.
+
+<p align="center">
+  <img src=".github/readme-infographic.svg" alt="NSIP Architecture Overview" width="800">
+</p>
 
 ## Features
 

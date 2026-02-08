@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400">
+  <!-- Background -->
+  <rect width="800" height="400" fill="#f8faf8" rx="12"/>
+  <rect x="1" y="1" width="798" height="398" fill="none" stroke="#c8e6c9" stroke-width="2" rx="12"/>
+
+  <!-- Title bar -->
+  <rect x="1" y="1" width="798" height="52" fill="#2E7D32" rx="12"/>
+  <rect x="1" y="40" width="798" height="13" fill="#2E7D32"/>
+  <text x="400" y="35" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="bold" fill="#fff" letter-spacing="1">NSIP -- Sheep Genetic Evaluation Tools</text>
+
+  <!-- Three columns -->
+  <!-- Column 1: CLI -->
+  <g transform="translate(30, 75)">
+    <rect width="230" height="290" rx="8" fill="#E8F5E9" stroke="#A5D6A7" stroke-width="1.5"/>
+    <rect width="230" height="36" rx="8" fill="#43A047"/>
+    <rect y="28" width="230" height="8" fill="#43A047"/>
+    <text x="115" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#fff">CLI Tool</text>
+    <g font-family="system-ui, sans-serif" font-size="11.5" fill="#0D3B0F" font-weight="600">
+      <text x="16" y="60">search</text><text x="90" y="60" fill="#2E5A30" font-size="10" font-weight="400">Find animals</text>
+      <text x="16" y="80">details</text><text x="90" y="80" fill="#2E5A30" font-size="10" font-weight="400">EBV data</text>
+      <text x="16" y="100">lineage</text><text x="90" y="100" fill="#2E5A30" font-size="10" font-weight="400">Pedigree tree</text>
+      <text x="16" y="120">progeny</text><text x="90" y="120" fill="#2E5A30" font-size="10" font-weight="400">Offspring list</text>
+      <text x="16" y="140">profile</text><text x="90" y="140" fill="#2E5A30" font-size="10" font-weight="400">Full animal view</text>
+      <text x="16" y="160">compare</text><text x="90" y="160" fill="#2E5A30" font-size="10" font-weight="400">Side-by-side EBVs</text>
+      <text x="16" y="180">rank</text><text x="90" y="180" fill="#2E5A30" font-size="10" font-weight="400">Weighted ranking</text>
+      <text x="16" y="200">breed-groups</text><text x="110" y="200" fill="#2E5A30" font-size="10" font-weight="400">List breeds</text>
+      <text x="16" y="220">trait-ranges</text><text x="110" y="220" fill="#2E5A30" font-size="10" font-weight="400">Breed norms</text>
+    </g>
+    <line x1="16" y1="235" x2="214" y2="235" stroke="#81C784" stroke-width="1"/>
+    <text x="16" y="255" font-family="monospace" font-size="10" fill="#1B5E20">nsip search --breed-id 486</text>
+    <text x="16" y="272" font-family="monospace" font-size="10" fill="#1B5E20">nsip compare A1 A2 A3</text>
+  </g>
+
+  <!-- Column 2: MCP Server -->
+  <g transform="translate(285, 75)">
+    <rect width="230" height="290" rx="8" fill="#E8F5E9" stroke="#A5D6A7" stroke-width="1.5"/>
+    <rect width="230" height="36" rx="8" fill="#2E7D32"/>
+    <rect y="28" width="230" height="8" fill="#2E7D32"/>
+    <text x="115" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#fff">MCP Server</text>
+    <g font-family="system-ui, sans-serif" font-size="11" fill="#0D3B0F">
+      <text x="16" y="58" font-weight="bold">13 Tools</text>
+      <text x="16" y="76" fill="#2E5A30" font-size="10">Full NSIP API surface</text>
+      <text x="16" y="100" font-weight="bold">7 Guided Prompts</text>
+      <text x="16" y="118" fill="#2E5A30" font-size="10">evaluate-ram, plan-mating,</text>
+      <text x="16" y="133" fill="#2E5A30" font-size="10">flock-improvement, ...</text>
+      <text x="16" y="157" font-weight="bold">5 Resources</text>
+      <text x="16" y="175" fill="#2E5A30" font-size="10">EBV glossary, breed directory,</text>
+      <text x="16" y="190" fill="#2E5A30" font-size="10">selection &amp; inbreeding guides</text>
+      <text x="16" y="214" font-weight="bold">4 Resource Templates</text>
+      <text x="16" y="232" fill="#2E5A30" font-size="10">nsip://animal/{id}</text>
+      <text x="16" y="247" fill="#2E5A30" font-size="10">nsip://breed/{id}/ranges</text>
+    </g>
+    <line x1="16" y1="260" x2="214" y2="260" stroke="#81C784" stroke-width="1"/>
+    <text x="16" y="278" font-family="monospace" font-size="10" fill="#1B5E20">nsip mcp</text>
+  </g>
+
+  <!-- Column 3: Analytics -->
+  <g transform="translate(540, 75)">
+    <rect width="230" height="290" rx="8" fill="#E8F5E9" stroke="#A5D6A7" stroke-width="1.5"/>
+    <rect width="230" height="36" rx="8" fill="#1B5E20"/>
+    <rect y="28" width="230" height="8" fill="#1B5E20"/>
+    <text x="115" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#fff">Breeding Analytics</text>
+    <g font-family="system-ui, sans-serif" font-size="11" fill="#0D3B0F">
+      <text x="16" y="58" font-weight="bold">Inbreeding (COI)</text>
+      <text x="16" y="76" fill="#2E5A30" font-size="10">Wright's coefficient with</text>
+      <text x="16" y="91" fill="#2E5A30" font-size="10">Green/Yellow/Red rating</text>
+      <text x="16" y="115" font-weight="bold">Multi-Trait Ranking</text>
+      <text x="16" y="133" fill="#2E5A30" font-size="10">Weighted composite scores</text>
+      <text x="16" y="148" fill="#2E5A30" font-size="10">with accuracy scaling</text>
+      <text x="16" y="172" font-weight="bold">Mating Recommendations</text>
+      <text x="16" y="190" fill="#2E5A30" font-size="10">COI check + trait</text>
+      <text x="16" y="205" fill="#2E5A30" font-size="10">complementarity analysis</text>
+      <text x="16" y="229" font-weight="bold">13 EBV Traits</text>
+      <text x="16" y="247" fill="#2E5A30" font-size="10">BWT WWT PWWT YWT FAT</text>
+      <text x="16" y="262" fill="#2E5A30" font-size="10">EMD NLB NWT PWT DAG</text>
+      <text x="16" y="277" fill="#2E5A30" font-size="10">WGR WEC FEC</text>
+    </g>
+  </g>
+</svg>
