@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   homebrew:
-    name: Update Homebrew Formula
+    name: Update Homebrew Formulas
     runs-on: macos-latest
     environment: copilot
 
@@ -39,7 +39,6 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
           REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           if [ "$EVENT_NAME" = "release" ]; then
             VERSION="$RELEASE_TAG"
@@ -52,13 +51,19 @@ jobs:
           BASE="https://github.com/${REPO}/releases"
           BASE="${BASE}/download/v${VERSION}"
 
-          # Get SHA256 for each platform binary
+          # Binary URLs
           ARM64_URL="${BASE}/nsip-macos-arm64"
           AMD64_URL="${BASE}/nsip-macos-amd64"
           LINUX_URL="${BASE}/nsip-linux-amd64"
           COMP_URL="${BASE}/nsip-completions.tar.gz"
           MAN_URL="${BASE}/nsip-man-pages.tar.gz"
 
+          # Source tarball URL
+          SRC_URL="https://github.com/${REPO}"
+          SRC_URL="${SRC_URL}/archive/refs/tags"
+          SRC_URL="${SRC_URL}/v${VERSION}.tar.gz"
+
+          # Compute SHA256 for all assets
           ARM64_SHA=$(curl -sL "$ARM64_URL" \
             | shasum -a 256 | awk '{print $1}')
           AMD64_SHA=$(curl -sL "$AMD64_URL" \
@@ -69,19 +74,19 @@ jobs:
             | shasum -a 256 | awk '{print $1}')
           MAN_SHA=$(curl -sL "$MAN_URL" \
             | shasum -a 256 | awk '{print $1}')
+          SRC_SHA=$(curl -sL "$SRC_URL" \
+            | shasum -a 256 | awk '{print $1}')
 
-          echo "arm64_url=$ARM64_URL" >> "$GITHUB_OUTPUT"
-          echo "amd64_url=$AMD64_URL" >> "$GITHUB_OUTPUT"
-          echo "linux_url=$LINUX_URL" >> "$GITHUB_OUTPUT"
-          echo "comp_url=$COMP_URL" >> "$GITHUB_OUTPUT"
-          echo "man_url=$MAN_URL" >> "$GITHUB_OUTPUT"
-          echo "arm64_sha=$ARM64_SHA" >> "$GITHUB_OUTPUT"
-          echo "amd64_sha=$AMD64_SHA" >> "$GITHUB_OUTPUT"
-          echo "linux_sha=$LINUX_SHA" >> "$GITHUB_OUTPUT"
-          echo "comp_sha=$COMP_SHA" >> "$GITHUB_OUTPUT"
-          echo "man_sha=$MAN_SHA" >> "$GITHUB_OUTPUT"
+          for key in arm64 amd64 linux comp man src; do
+            eval "echo \"${key}_url=\$$(echo ${key} \
+              | tr '[:lower:]' '[:upper:]')_URL\"" \
+              >> "$GITHUB_OUTPUT"
+            eval "echo \"${key}_sha=\$$(echo ${key} \
+              | tr '[:lower:]' '[:upper:]')_SHA\"" \
+              >> "$GITHUB_OUTPUT"
+          done
 
-      - name: Generate formula
+      - name: Generate binary formula
         env:
           VERSION: ${{ steps.release.outputs.version }}
           REPO: ${{ github.repository }}
@@ -149,7 +154,56 @@ jobs:
           end
           FORMULA
 
-      - name: Commit and push formula
+      - name: Generate source formula
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          REPO: ${{ github.repository }}
+          SRC_URL: ${{ steps.release.outputs.src_url }}
+          SRC_SHA: ${{ steps.release.outputs.src_sha }}
+        run: |
+          cat > homebrew-tap/Formula/nsip-source.rb << FORMULA
+          class NsipSource < Formula
+            desc "Sheep genetic evaluation CLI (source)"
+            homepage "https://github.com/${REPO}"
+            url "${SRC_URL}"
+            sha256 "${SRC_SHA}"
+            version "${VERSION}"
+            license "MIT"
+
+            depends_on "rust" => :build
+
+            def install
+              system "cargo", "install", *std_cargo_args
+
+              # Generate completions
+              out = Utils.safe_popen_read(
+                bin/"nsip", "completions", "bash"
+              )
+              (bash_completion/"nsip").write out
+
+              out = Utils.safe_popen_read(
+                bin/"nsip", "completions", "zsh"
+              )
+              (zsh_completion/"_nsip").write out
+
+              out = Utils.safe_popen_read(
+                bin/"nsip", "completions", "fish"
+              )
+              (fish_completion/"nsip.fish").write out
+
+              # Generate man pages
+              system bin/"nsip", "man-pages",
+                "--out-dir", man1
+            end
+
+            test do
+              assert_match version.to_s,
+                shell_output("#{bin}/nsip --version")
+            end
+          end
+          FORMULA
+
+      - name: Commit and push formulas
         if: github.event.inputs.dry_run != 'true'
         working-directory: homebrew-tap
         env:
@@ -159,12 +213,15 @@ jobs:
           git config user.email \
             "github-actions[bot]@users.noreply.github.com"
 
-          git add Formula/nsip.rb
+          git add Formula/nsip.rb Formula/nsip-source.rb
           git commit -m "nsip: update to ${VERSION}"
           git push
 
-      - name: Show formula (dry run)
+      - name: Show formulas (dry run)
         if: github.event.inputs.dry_run == 'true'
         run: |
-          echo "Generated formula (dry run):"
+          echo "=== nsip.rb (binary) ==="
           cat homebrew-tap/Formula/nsip.rb
+          echo ""
+          echo "=== nsip-source.rb (source) ==="
+          cat homebrew-tap/Formula/nsip-source.rb
