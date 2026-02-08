@@ -103,16 +103,28 @@ jobs:
           tar czf nsip-man-pages.tar.gz -C man .
 
       - name: Attest completions archive
+        id: attest_completions
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
         with:
           subject-path: nsip-completions.tar.gz
 
       - name: Attest man pages archive
+        id: attest_man
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
         with:
           subject-path: nsip-man-pages.tar.gz
+
+      - name: Rename attestation bundles
+        env:
+          COMP_BUNDLE: ${{ steps.attest_completions.outputs.bundle-path }}
+          MAN_BUNDLE: ${{ steps.attest_man.outputs.bundle-path }}
+        run: |
+          cp "$COMP_BUNDLE" \
+            nsip-completions.tar.gz.sigstore.json
+          cp "$MAN_BUNDLE" \
+            nsip-man-pages.tar.gz.sigstore.json
 
       - name: Upload to release
         env:
@@ -121,6 +133,8 @@ jobs:
           gh release upload "${{ github.ref_name }}" \
             nsip-completions.tar.gz \
             nsip-man-pages.tar.gz \
+            nsip-completions.tar.gz.sigstore.json \
+            nsip-man-pages.tar.gz.sigstore.json \
             --clobber
 
   generate-sbom:
@@ -150,17 +164,27 @@ jobs:
           > nsip-sbom-spdx.json
 
       - name: Attest SBOM provenance
+        id: attest_sbom
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
         with:
           subject-path: nsip-sbom-spdx.json
 
+      - name: Rename attestation bundle
+        env:
+          SBOM_BUNDLE: ${{ steps.attest_sbom.outputs.bundle-path }}
+        run: >-
+          cp "$SBOM_BUNDLE"
+          nsip-sbom-spdx.json.sigstore.json
+
       - name: Upload SBOM to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >-
-          gh release upload "${{ github.ref_name }}"
-          nsip-sbom-spdx.json --clobber
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            nsip-sbom-spdx.json \
+            nsip-sbom-spdx.json.sigstore.json \
+            --clobber
 
       - name: Upload SBOM artifact
         # yamllint disable-line rule:line-length
@@ -249,10 +273,19 @@ jobs:
              "${{ matrix.asset_name }}"
 
       - name: Attest binary provenance
+        id: attest_binary
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
         with:
           subject-path: ${{ matrix.asset_name }}
+
+      - name: Rename attestation bundle
+        shell: bash
+        env:
+          BUNDLE: ${{ steps.attest_binary.outputs.bundle-path }}
+          ASSET: ${{ matrix.asset_name }}
+        run: >-
+          cp "$BUNDLE" "${ASSET}.sigstore.json"
 
       - name: Upload release asset
         shell: bash
@@ -260,7 +293,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.ref_name }}" \
-            "${{ matrix.asset_name }}" --clobber
+            "${{ matrix.asset_name }}" \
+            "${{ matrix.asset_name }}.sigstore.json" \
+            --clobber
 
       - name: Upload artifact
         # yamllint disable-line rule:line-length
