@@ -145,3 +145,7 @@ proptest! {
 - `unwrap()`, `expect()`, `panic!()` in library code
 - `todo!()`, `unimplemented!()`
 - `dbg!()`, `print!()`, `println!()`, `eprint!()`, `eprintln!()`
+
+## NSIP MCP Server
+
+The binary ships a built-in MCP server (`nsip mcp`) for sheep genetic evaluation with 13 tools. See [`docs/MCP.md`](docs/MCP.md) for the full API reference and [`docs/llm-guides/`](docs/llm-guides/) for ready-to-use LLM instruction templates.

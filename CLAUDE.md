@@ -93,3 +93,7 @@ Release workflow triggers on version tags (`v*`): builds multi-platform binaries
 - All public items require doc comments with `# Arguments`, `# Returns`, `# Errors`, `# Examples`
 - Group imports: std, external crates, crate-local
 - `unsafe` code is forbidden (`unsafe_code = "forbid"` in Cargo.toml)
+
+## NSIP MCP Server
+
+The binary ships a built-in MCP server (`nsip mcp`) for sheep genetic evaluation with 13 tools, 7 guided prompts, and resource templates. See [`docs/MCP.md`](docs/MCP.md) for the full API reference and [`docs/llm-guides/`](docs/llm-guides/) for ready-to-use LLM instruction templates.
