@@ -1,0 +1,92 @@
+{
+  "manifest_version": "0.3",
+  "name": "nsip",
+  "version": "0.3.2",
+  "description": "NSIP sheep genetic evaluation MCP server -- search animals, compare EBVs, plan matings, check inbreeding, and analyze flocks using the National Sheep Improvement Program database.",
+  "author": {
+    "name": "Robert Allen",
+    "url": "https://github.com/zircote"
+  },
+  "repository": "https://github.com/zircote/nsip",
+  "license": "MIT",
+  "keywords": ["sheep", "genetics", "breeding", "EBV", "NSIP", "livestock", "agriculture"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/nsip-macos-arm64",
+    "mcp_config": {
+      "command": "${__dirname}/server/nsip-macos-arm64",
+      "args": ["mcp"],
+      "env": {},
+      "platform_overrides": {
+        "darwin": {
+          "command": "${__dirname}/server/nsip-macos-arm64"
+        },
+        "linux": {
+          "command": "${__dirname}/server/nsip-linux-amd64"
+        },
+        "win32": {
+          "command": "${__dirname}/server/nsip-windows-amd64.exe"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search for animals in the NSIP database with filters for breed, gender, status, date range, flock, and sorting."
+    },
+    {
+      "name": "details",
+      "description": "Get detailed EBV data, breed, contact info, and status for a specific animal by LPN ID."
+    },
+    {
+      "name": "lineage",
+      "description": "Get pedigree / ancestry tree for a specific animal including parents and grandparents."
+    },
+    {
+      "name": "progeny",
+      "description": "Get paginated list of offspring for a specific animal."
+    },
+    {
+      "name": "profile",
+      "description": "Get complete profile for an animal: details, pedigree, and offspring in one call."
+    },
+    {
+      "name": "breed_groups",
+      "description": "List all breed groups and individual breeds in the NSIP database."
+    },
+    {
+      "name": "trait_ranges",
+      "description": "Get min/max EBV trait ranges for a specific breed."
+    },
+    {
+      "name": "compare",
+      "description": "Compare 2-5 animals side-by-side on their EBV traits."
+    },
+    {
+      "name": "rank",
+      "description": "Rank animals within a breed by weighted EBV traits."
+    },
+    {
+      "name": "inbreeding_check",
+      "description": "Calculate Wright's coefficient of inbreeding for a potential sire-dam mating."
+    },
+    {
+      "name": "mating_recommendations",
+      "description": "Find optimal mates for an animal with inbreeding checks and trait complementarity ranking."
+    },
+    {
+      "name": "flock_summary",
+      "description": "Summarize a flock's animals: count, gender breakdown, and average EBV traits."
+    },
+    {
+      "name": "database_status",
+      "description": "Get NSIP database last-updated date and available animal statuses."
+    }
+  ],
+  "tools_generated": false,
+  "prompts_generated": true,
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"]
+  }
+}
