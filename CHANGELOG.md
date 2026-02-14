@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3-rc.1] - 2026-02-14
+
+### Added
+
+- **homebrew**: Add source formula alongside binary formula
+- **release**: Attach attestation bundles to release assets
+- **mcpb**: Add MCPB manifest, ignore file, and signing cert
+- **release**: Add MCPB bundle packaging to release pipeline
+
+### Documentation
+
+- Update CHANGELOG.md for v0.3.2
+
+### Fixed
+
+- **release**: Use PAT for release to trigger downstream workflows
+- **homebrew**: Use pre-built binaries with completions and man pages
+- **homebrew**: Rename platform binary to nsip during install
+- **mcpb**: Correct manifest schema and mcpb CLI usage
+
+### Miscellaneous
+
+- Ignore *.local.* files
+
 ## [0.3.2] - 2026-02-08
 
 ### Documentation
