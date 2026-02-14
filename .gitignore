@@ -107,6 +107,7 @@ junit.xml
 
 # Project specific
 *.local
+*.local.*
 
 # Generated CLI artifacts
 completions/
