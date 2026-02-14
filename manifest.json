@@ -7,7 +7,10 @@
     "name": "Robert Allen",
     "url": "https://github.com/zircote"
   },
-  "repository": "https://github.com/zircote/nsip",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zircote/nsip"
+  },
   "license": "MIT",
   "keywords": ["sheep", "genetics", "breeding", "EBV", "NSIP", "livestock", "agriculture"],
   "server": {
