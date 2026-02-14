@@ -92,6 +92,27 @@ msiexec /i nsip-0.1.0-x64.msi /quiet
 
 **Install Location:** `C:\Program Files\nsip\`
 
+### MCP Bundle (.mcpb)
+
+```bash
+# Download from releases
+curl -LO https://github.com/zircote/nsip/releases/latest/download/nsip.mcpb
+
+# Install in Claude Desktop: drag into Settings > Extensions
+# Verify integrity:
+gh attestation verify nsip.mcpb --repo zircote/nsip
+```
+
+**Workflow:** `.github/workflows/release.yml` (package-mcpb job)
+
+**Bundle Contents:**
+- `manifest.json` - MCPB v0.3 manifest with tool/prompt declarations
+- `server/nsip-linux-amd64` - Linux x86_64 binary
+- `server/nsip-linux-arm64` - Linux ARM64 binary
+- `server/nsip-macos-amd64` - macOS x86_64 binary
+- `server/nsip-macos-arm64` - macOS ARM64 binary
+- `server/nsip-windows-amd64.exe` - Windows x86_64 binary
+
 ## Configuration
 
 ### Debian Package Metadata

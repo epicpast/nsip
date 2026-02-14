@@ -48,6 +48,16 @@ Pre-built binaries are available from [GitHub Releases](https://github.com/zirco
 | macOS ARM64    | `nsip-macos-arm64`        |
 | Windows x86_64 | `nsip-windows-amd64.exe`  |
 
+### MCP Bundle (Claude Desktop / Claude Code)
+
+Download the universal `nsip.mcpb` bundle from [GitHub Releases](https://github.com/zircote/nsip/releases). It contains all platforms in a single file.
+
+**Claude Desktop:** Drag `nsip.mcpb` into Settings > Extensions, or double-click it.
+
+**Claude Code:** Install via the extensions UI.
+
+The bundle auto-selects the correct binary for your platform (macOS ARM64, Linux x86_64, Windows x86_64).
+
 ### Docker
 
 ```bash

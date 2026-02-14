@@ -303,3 +303,92 @@ jobs:
         with:
           name: ${{ matrix.asset_name }}
           path: ${{ matrix.asset_name }}
+
+  package-mcpb:
+    name: Package MCPB Bundle
+    needs: [create-release, build-binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98  # v6.0.2
+
+      - name: Setup Node.js
+        # yamllint disable-line rule:line-length
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a  # v4.2.0
+        with:
+          node-version: "22"
+
+      - name: Install mcpb CLI
+        run: npm install -g @anthropic-ai/mcpb
+
+      - name: Download platform binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p server
+          gh release download "${{ github.ref_name }}" \
+            --pattern "nsip-linux-amd64" \
+            --pattern "nsip-linux-arm64" \
+            --pattern "nsip-macos-amd64" \
+            --pattern "nsip-macos-arm64" \
+            --pattern "nsip-windows-amd64.exe" \
+            --dir server
+
+      - name: Set binary permissions
+        run: chmod +x server/nsip-*
+
+      - name: Inject version into manifest
+        env:
+          VERSION: >-
+            ${{ needs.create-release.outputs.version }}
+        run: >-
+          sed -i
+          "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/"
+          manifest.json
+
+      - name: Validate manifest
+        run: mcpb validate .
+
+      - name: Pack bundle
+        run: mcpb pack . --output nsip.mcpb
+
+      - name: Sign bundle
+        env:
+          MCPB_SIGNING_KEY: ${{ secrets.MCPB_SIGNING_KEY }}
+        run: |
+          echo "$MCPB_SIGNING_KEY" > /tmp/signing-key.pem
+          mcpb sign nsip.mcpb \
+            --cert certs/mcpb-signing.pem \
+            --key /tmp/signing-key.pem
+          rm -f /tmp/signing-key.pem
+
+      - name: Verify signature
+        run: mcpb verify nsip.mcpb
+
+      - name: Inspect bundle
+        run: mcpb info nsip.mcpb
+
+      - name: Attest bundle provenance
+        id: attest_mcpb
+        # yamllint disable-line rule:line-length
+        uses: actions/attest-build-provenance@62fc1d596301d0ab9914e1fec14dc5c8d93f65cd  # v3.2.0
+        with:
+          subject-path: nsip.mcpb
+
+      - name: Rename attestation bundle
+        env:
+          MCPB_BUNDLE: >-
+            ${{ steps.attest_mcpb.outputs.bundle-path }}
+        run: >-
+          cp "$MCPB_BUNDLE"
+          nsip.mcpb.sigstore.json
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            nsip.mcpb \
+            nsip.mcpb.sigstore.json \
+            --clobber

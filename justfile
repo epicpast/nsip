@@ -130,6 +130,18 @@ publish-dry:
 changelog:
     git-cliff --latest --strip header
 
+# Build MCPB bundle locally (requires: npm i -g @anthropic-ai/mcpb)
+mcpb: build-release
+    @mkdir -p server
+    @cp target/release/nsip server/nsip-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/arm64/arm64/;s/aarch64/arm64/;s/x86_64/amd64/') 2>/dev/null || true
+    mcpb validate .
+    mcpb pack . --output nsip.mcpb
+    mcpb sign nsip.mcpb --self-signed || true
+    mcpb verify nsip.mcpb
+    mcpb info nsip.mcpb
+    @echo "Bundle created: nsip.mcpb"
+    @rm -rf server
+
 # === Shell Completions & Man Pages ===
 
 # Generate shell completions for all supported shells
