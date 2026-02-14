@@ -353,21 +353,6 @@ jobs:
       - name: Pack bundle
         run: mcpb pack . nsip.mcpb
 
-      - name: Sign bundle
-        env:
-          MCPB_SIGNING_KEY: ${{ secrets.MCPB_SIGNING_KEY }}
-        run: |
-          echo "$MCPB_SIGNING_KEY" > /tmp/signing-key.pem
-          mcpb sign nsip.mcpb \
-            --cert certs/mcpb-signing.pem \
-            --key /tmp/signing-key.pem
-          rm -f /tmp/signing-key.pem
-
-      - name: Verify signature
-        run: >-
-          mcpb verify nsip.mcpb ||
-          echo "::warning::mcpb verify failed (known issue)"
-
       - name: Inspect bundle
         run: mcpb info nsip.mcpb
 

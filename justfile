@@ -136,8 +136,6 @@ mcpb: build-release
     @cp target/release/nsip server/nsip-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/arm64/arm64/;s/aarch64/arm64/;s/x86_64/amd64/') 2>/dev/null || true
     mcpb validate .
     mcpb pack . nsip.mcpb
-    mcpb sign nsip.mcpb --self-signed || true
-    mcpb verify nsip.mcpb || echo "verify: signature check skipped (mcpb verify bug)"
     mcpb info nsip.mcpb
     @echo "Bundle created: nsip.mcpb"
     @rm -rf server
