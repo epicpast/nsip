@@ -35,7 +35,7 @@ jobs:
         run: cargo build --release
 
       - name: Create debian package
-        run: cargo deb --no-build --output target/debian/rust-template.deb
+        run: cargo deb --no-build --output target/debian/nsip.deb
 
       - name: Upload debian package
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
@@ -72,7 +72,7 @@ jobs:
         run: cargo build --release
 
       - name: Strip binary
-        run: strip target/release/rust-template
+        run: strip target/release/nsip
 
       - name: Create RPM package
         run: cargo generate-rpm
