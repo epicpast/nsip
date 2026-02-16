@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-02-16
+
+### Added
+
+- **homebrew**: Add source formula alongside binary formula
+- **release**: Attach attestation bundles to release assets
+- **mcpb**: Add MCPB manifest, ignore file, and signing cert
+- **release**: Add MCPB bundle packaging to release pipeline
+- **ci**: Add agentic workflows (ci-doctor, issue-triage, q, update-docs, daily-repo-status)
+- **ci**: Extract composite actions for Rust setup and cargo tool installation
+- **ci**: Add concurrency groups and timeout limits to workflows
+
+### Changed
+
+- **deps**: Bump rmcp 0.14.0 to 0.15.0
+- **deps**: Bump clap 4.5.57 to 4.5.58, clap_complete 4.5.65 to 4.5.66
+- **deps**: Bump predicates 3.1.3 to 3.1.4, tempfile 3.24.0 to 3.25.0
+- **deps**: Bump actions/checkout to v6.0.2, actions/download-artifact to v7.0.0
+- **deps**: Bump actions/upload-pages-artifact to v4.0.0, actions/attest-build-provenance
+
+### Fixed
+
+- **release**: Use PAT for release to trigger downstream workflows
+- **homebrew**: Use pre-built binaries with completions and man pages
+- **homebrew**: Rename platform binary to nsip during install
+- **mcpb**: Correct manifest schema and mcpb CLI usage
+- **mcpb**: Remove signing (mcpb sign v2.1.2 corrupts ZIP)
+- **ci**: Rename rust-template to nsip in linux and sbom workflows
+- **ci**: Correct invalid action SHAs, remove unsupported CodeQL workflow
+- **ci**: Standardize action version pins across 35+ workflows
+
+### Miscellaneous
+
+- Ignore *.local.* files
+
 ## [0.3.3-rc.3] - 2026-02-14
 
 ### Added

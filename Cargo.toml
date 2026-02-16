@@ -1,6 +1,6 @@
 [package]
 name = "nsip"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2024"
 rust-version = "1.92"
 description = "NSIP Search API client for nsipsearch.nsip.org/api"
