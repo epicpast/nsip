@@ -9,6 +9,10 @@ on:
         description: 'Version to package'
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -16,20 +20,22 @@ jobs:
   debian-package:
     name: Build Debian Package (.deb)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install cargo-deb
-        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131 # v2.67.30
-        with:
-          tool: cargo-deb@2.7.0
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
+          cache-key: deb
+
+      - name: Install cargo-deb
+        uses: ./.github/actions/install-cargo-tool
+        with:
+          tool: cargo-deb@2.7.0
 
       - name: Build release binary
         run: cargo build --release
@@ -53,20 +59,22 @@ jobs:
   rpm-package:
     name: Build RPM Package (.rpm)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install cargo-generate-rpm
-        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131 # v2.67.30
-        with:
-          tool: cargo-generate-rpm@0.15.1
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
+          cache-key: rpm
+
+      - name: Install cargo-generate-rpm
+        uses: ./.github/actions/install-cargo-tool
+        with:
+          tool: cargo-generate-rpm@0.15.1
 
       - name: Build release binary
         run: cargo build --release

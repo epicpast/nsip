@@ -24,15 +24,17 @@ jobs:
   build-docs:
     name: Build Documentation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
+          cache-key: docs
 
       - name: Build rustdoc
         run: |
@@ -40,7 +42,7 @@ jobs:
           echo '<meta http-equiv="refresh" content="0; url=rust_template">' > target/doc/index.html
 
       - name: Install mdBook
-        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131 # v2.67.30
+        uses: ./.github/actions/install-cargo-tool
         with:
           tool: mdbook@0.4.40
 
@@ -109,6 +111,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: build-docs
     
     steps:

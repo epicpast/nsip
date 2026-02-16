@@ -24,17 +24,18 @@ jobs:
   fmt:
     name: Format
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install Rust toolchain
-        # yamllint disable-line rule:line-length
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
           components: rustfmt
+          cache-key: fmt
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -42,29 +43,18 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install Rust toolchain
-        # yamllint disable-line rule:line-length
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
           components: clippy
-
-      - name: Cache cargo registry
-        # yamllint disable-line rule:line-length
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-clippy-
+          cache-key: clippy
 
       - name: Run clippy
         run: >-
@@ -74,6 +64,7 @@ jobs:
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -83,23 +74,11 @@ jobs:
         # yamllint disable-line rule:line-length
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install Rust toolchain
-        # yamllint disable-line rule:line-length
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
-
-      - name: Cache cargo registry
-        # yamllint disable-line rule:line-length
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-test-
+          cache-key: test
 
       - name: Run tests
         run: cargo test --all-features --verbose
@@ -107,6 +86,7 @@ jobs:
   doc:
     name: Documentation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       RUSTDOCFLAGS: "-D warnings"
     steps:
@@ -114,23 +94,11 @@ jobs:
         # yamllint disable-line rule:line-length
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install Rust toolchain
-        # yamllint disable-line rule:line-length
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
-
-      - name: Cache cargo registry
-        # yamllint disable-line rule:line-length
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-doc-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-doc-
+          cache-key: doc
 
       - name: Check documentation
         run: cargo doc --no-deps --all-features
@@ -138,6 +106,7 @@ jobs:
   deny:
     name: Cargo Deny
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
@@ -145,7 +114,7 @@ jobs:
 
       - name: Install cargo-deny
         # yamllint disable-line rule:line-length
-        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131  # v2.67.30
+        uses: ./.github/actions/install-cargo-tool
         with:
           tool: cargo-deny
 
@@ -155,28 +124,17 @@ jobs:
   msrv:
     name: MSRV Check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install Rust toolchain
-        # yamllint disable-line rule:line-length
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: "1.92"
-
-      - name: Cache cargo registry
-        # yamllint disable-line rule:line-length
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-msrv-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-msrv-
+          cache-key: msrv
 
       - name: Check MSRV
         run: cargo check --all-features
@@ -184,36 +142,25 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: copilot
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - name: Install Rust toolchain
-        # yamllint disable-line rule:line-length
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
           components: llvm-tools-preview
+          cache-key: cov
 
       - name: Install cargo-llvm-cov
         # yamllint disable-line rule:line-length
-        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131  # v2.67.30
+        uses: ./.github/actions/install-cargo-tool
         with:
           tool: cargo-llvm-cov
-
-      - name: Cache cargo registry
-        # yamllint disable-line rule:line-length
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-cov-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-cov-
 
       - name: Generate coverage report
         run: >-
