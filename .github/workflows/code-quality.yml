@@ -26,7 +26,7 @@ jobs:
 
       - name: Install analysis tools
         # v2.67.18
-        uses: taiki-e/install-action@1c0532667bd5bc37f71fc223a52e7c41c966d9d7
+        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131
         with:
           tool: cargo-geiger,cargo-bloat
 

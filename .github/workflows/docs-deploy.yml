@@ -40,7 +40,7 @@ jobs:
           echo '<meta http-equiv="refresh" content="0; url=rust_template">' > target/doc/index.html
 
       - name: Install mdBook
-        uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69 # v2.67.25
+        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131 # v2.67.30
         with:
           tool: mdbook@0.4.40
 
