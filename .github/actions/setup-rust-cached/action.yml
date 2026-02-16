@@ -1,0 +1,59 @@
+---
+name: 'Setup Rust with Caching'
+description: 'Install Rust toolchain with optimized cargo caching'
+
+inputs:
+  toolchain:
+    description: 'Rust toolchain to install (stable, beta, nightly, or specific version)'
+    required: false
+    default: 'stable'
+  components:
+    description: 'Comma-separated list of components to install (e.g., rustfmt,clippy)'
+    required: false
+    default: ''
+  targets:
+    description: 'Comma-separated list of targets to install'
+    required: false
+    default: ''
+  cache-key:
+    description: 'Additional cache key suffix for job-specific caching'
+    required: false
+    default: 'default'
+
+outputs:
+  cache-hit:
+    description: 'Whether the cache was hit'
+    value: ${{ steps.cache.outputs.cache-hit }}
+  rustc-version:
+    description: 'Installed rustc version'
+    value: ${{ steps.rustc-version.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a  # master
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: ${{ inputs.components }}
+        targets: ${{ inputs.targets }}
+
+    - name: Get rustc version
+      id: rustc-version
+      shell: bash
+      run: echo "version=$(rustc --version | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+    - name: Cache cargo registry and build artifacts
+      id: cache
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
+      with:
+        path: |
+          ~/.cargo/registry/index
+          ~/.cargo/registry/cache
+          ~/.cargo/git/db
+          target
+        key: ${{ runner.os }}-cargo-${{ inputs.cache-key }}-${{ hashFiles('**/Cargo.lock') }}-${{ steps.rustc-version.outputs.version }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-${{ inputs.cache-key }}-${{ hashFiles('**/Cargo.lock') }}-
+          ${{ runner.os }}-cargo-${{ inputs.cache-key }}-
+          ${{ runner.os }}-cargo-

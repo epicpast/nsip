@@ -17,14 +17,14 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Build snap
         uses: snapcore/action-build@3bdaa03e89fbf4598ba4c501055a582c77b6a75a # v1.3.0
         id: build
 
       - name: Upload snap artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@ea3f73d3e6f8268b4a40da165a72ca6a06e37770  # v4.6.2
         with:
           name: snap-package
           path: ${{ steps.build.outputs.snap }}

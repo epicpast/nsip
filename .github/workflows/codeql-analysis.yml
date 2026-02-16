@@ -23,28 +23,27 @@ jobs:
   analyze:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Initialize CodeQL
-        # yamllint disable-line rule:line-length
-        uses: github/codeql-action/init@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2  # v4.32.2
+        uses: github/codeql-action/init@4f5a7c2ca15e7f96ab7a75c2e9b6551ac597da02  # v3.28.1
         with:
           languages: cpp
           # CodeQL uses the cpp extractor for Rust analysis
 
-      - name: Install Rust toolchain
-        # yamllint disable-line rule:line-length
-        uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561  # master
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
         with:
           toolchain: stable
+          cache-key: codeql
 
       - name: Build for analysis
         run: cargo build --all-features
 
       - name: Perform CodeQL analysis
-        # yamllint disable-line rule:line-length
-        uses: github/codeql-action/analyze@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2  # v4.32.2
+        uses: github/codeql-action/analyze@4f5a7c2ca15e7f96ab7a75c2e9b6551ac597da02  # v3.28.1
         with:
           category: "/language:cpp"
