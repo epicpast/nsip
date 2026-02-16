@@ -1205,6 +1205,7 @@ jobs:
       pull-requests: write
     timeout-minutes: 15
     env:
+      GH_AW_ENGINE_ID: "copilot"
       GH_AW_WORKFLOW_ID: "q"
       GH_AW_WORKFLOW_NAME: "Q - Agentic Workflow Optimizer"
       GH_AW_WORKFLOW_SOURCE: "githubnext/agentics/workflows/q.md@eb7950f37d350af6fa09d19827c4883e72947221"
