@@ -1021,6 +1021,7 @@ jobs:
       pull-requests: write
     timeout-minutes: 15
     env:
+      GH_AW_ENGINE_ID: "copilot"
       GH_AW_WORKFLOW_ID: "issue-triage"
       GH_AW_WORKFLOW_NAME: "Agentic Triage"
       GH_AW_WORKFLOW_SOURCE: "githubnext/agentics/workflows/issue-triage.md@eb7950f37d350af6fa09d19827c4883e72947221"
