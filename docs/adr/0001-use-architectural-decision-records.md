@@ -1,8 +1,24 @@
+---
+title: "Use Architectural Decision Records"
+description: "Adopt ADRs to document significant architectural decisions"
+type: adr
+category: process
+tags:
+  - documentation
+  - process
+  - adr
+status: accepted
+created: "2026-02-16"
+updated: "2026-02-16"
+author: nsip maintainers
+project: nsip
+technologies:
+  - markdown
+audience:
+  - developers
+---
+
 # Use Architectural Decision Records
-
-## Status
-
-Accepted
 
 ## Context
 
