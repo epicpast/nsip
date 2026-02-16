@@ -7,38 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.3] - 2026-02-16
 
-### Added
+### Documentation
 
-- **homebrew**: Add source formula alongside binary formula
-- **release**: Attach attestation bundles to release assets
-- **mcpb**: Add MCPB manifest, ignore file, and signing cert
-- **release**: Add MCPB bundle packaging to release pipeline
-- **ci**: Add agentic workflows (ci-doctor, issue-triage, q, update-docs, daily-repo-status)
-- **ci**: Extract composite actions for Rust setup and cargo tool installation
-- **ci**: Add concurrency groups and timeout limits to workflows
-
-### Changed
-
-- **deps**: Bump rmcp 0.14.0 to 0.15.0
-- **deps**: Bump clap 4.5.57 to 4.5.58, clap_complete 4.5.65 to 4.5.66
-- **deps**: Bump predicates 3.1.3 to 3.1.4, tempfile 3.24.0 to 3.25.0
-- **deps**: Bump actions/checkout to v6.0.2, actions/download-artifact to v7.0.0
-- **deps**: Bump actions/upload-pages-artifact to v4.0.0, actions/attest-build-provenance
+- Update CHANGELOG.md for v0.3.3-rc.3
 
 ### Fixed
 
-- **release**: Use PAT for release to trigger downstream workflows
-- **homebrew**: Use pre-built binaries with completions and man pages
-- **homebrew**: Rename platform binary to nsip during install
-- **mcpb**: Correct manifest schema and mcpb CLI usage
-- **mcpb**: Remove signing (mcpb sign v2.1.2 corrupts ZIP)
 - **ci**: Rename rust-template to nsip in linux and sbom workflows
-- **ci**: Correct invalid action SHAs, remove unsupported CodeQL workflow
-- **ci**: Standardize action version pins across 35+ workflows
+- **ci**: Correct invalid action SHAs from copilot agent
 
 ### Miscellaneous
 
-- Ignore *.local.* files
+- **ci**: Remove ci-doctor agentic workflow files
+- **ci**: Update agentic workflow lock files
+- **ci**: Add engine ID to q workflow lock file
+- **deps**: Bump clap_complete from 4.5.65 to 4.5.66 (#19)
+- **deps**: Bump clap from 4.5.57 to 4.5.58 (#17)
+- **deps**: Bump tempfile from 3.24.0 to 3.25.0 (#18)
+- **deps**: Bump rmcp from 0.14.0 to 0.15.0 (#21)
+- **deps**: Bump predicates from 3.1.3 to 3.1.4 (#20)
+- **deps**: Bump the github-actions group with 3 updates (#22)
+- Remove copilot agent working files
+- **deps**: Bump actions/attest-build-provenance
+- **deps**: Bump actions/download-artifact from 6.0.0 to 7.0.0
+- **deps**: Bump actions/upload-pages-artifact from 3.0.1 to 4.0.0
+- **ci**: Remove CodeQL workflow (unsupported for Rust)
+- **deps**: Bump actions/checkout from 4.2.2 to 6.0.2
+- **release**: Bump version to 0.3.3
 
 ## [0.3.3-rc.3] - 2026-02-14
 
