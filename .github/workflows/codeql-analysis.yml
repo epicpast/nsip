@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@4f5a7c2ca15e7f96ab7a75c2e9b6551ac597da02  # v3.28.1
+        uses: github/codeql-action/init@f5c2471be782132e47a6e6f9c725e56730d6e9a3  # v3.28.1
         with:
           languages: cpp
           # CodeQL uses the cpp extractor for Rust analysis
@@ -44,6 +44,6 @@ jobs:
         run: cargo build --all-features
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@4f5a7c2ca15e7f96ab7a75c2e9b6551ac597da02  # v3.28.1
+        uses: github/codeql-action/analyze@f5c2471be782132e47a6e6f9c725e56730d6e9a3  # v3.28.1
         with:
           category: "/language:cpp"
