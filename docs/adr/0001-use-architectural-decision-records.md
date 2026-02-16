@@ -37,7 +37,7 @@ We will use Architectural Decision Records (ADRs) to document significant archit
 
 ADRs will:
 - Be stored in `docs/adr/` directory
-- Use the MADR (Markdown Architectural Decision Records) format
+- Use the [structured-MADR](https://github.com/zircote/structured-madr) (SMADR) format
 - Be numbered sequentially (0001, 0002, etc.)
 - Include: title, status, context, decision, and consequences
 - Be reviewed through pull requests like code changes

@@ -8,16 +8,21 @@ An Architectural Decision Record (ADR) is a document that captures an important 
 
 ## Format
 
-We use the [MADR (Markdown Architectural Decision Records)](https://adr.github.io/madr/) format for our ADRs.
+We use [structured-MADR](https://github.com/zircote/structured-madr) (SMADR) format, validated by [adrscope](https://github.com/zircote/adrscope) in CI.
 
-Each ADR file should:
+Each ADR file must:
 - Be named `NNNN-title-with-dashes.md` where `NNNN` is a zero-padded sequential number
-- Include the following sections:
-  - Title
-  - Status (proposed, accepted, deprecated, superseded)
-  - Context
+- Include YAML frontmatter with required fields:
+  - `title`, `description`, `type: adr`, `category`, `tags`
+  - `status` (proposed, accepted, deprecated, superseded)
+  - `created`, `updated` (ISO 8601 dates)
+  - `author`, `project`
+- Include the following body sections:
+  - Context (background, current limitations)
+  - Decision Drivers (primary, secondary)
+  - Considered Options (with risk assessments)
   - Decision
-  - Consequences
+  - Consequences (positive, negative, neutral)
 
 ## Workflow
 
