@@ -1,154 +1,224 @@
 # How to Compare Animals
 
-> **Problem:** You need to compare genetic traits (EBVs) across multiple animals to make breeding decisions.
+> **Problem:** You need to compare EBV traits across multiple animals to inform breeding or selection decisions.
 
-**Time:** 10 minutes
+**Prerequisites:**
+- `nsip` CLI installed, or `nsip` crate added to your `Cargo.toml`
+- LPN IDs of the animals you want to compare
 
 ---
 
 ## CLI Method
 
-The fastest way to compare animals is via the CLI:
+### Step 1: Run the Compare Command
 
-````bash
-nsip compare <lpn-id-1> <lpn-id-2> [<lpn-id-3> ...]
-````
+Compare two or more animals (up to 5) by their LPN IDs:
 
-**Example:**
+```bash
+nsip compare 430735-0032 430735-0041 430735-0058
+```
 
-````bash
-nsip compare ABC123 DEF456 GHI789
-````
+This outputs a side-by-side ASCII table with all EBV traits aligned for comparison.
 
-**Output:** Side-by-side ASCII table with aligned EBV traits.
+### Step 2: Filter to Specific Traits
+
+Use `--traits` to focus on the traits that matter for your breeding goal:
+
+```bash
+nsip compare 430735-0032 430735-0041 --traits BWT,WWT,YWT,PEMD
+```
+
+### Step 3: Get JSON Output
+
+Add `-J` for machine-readable output:
+
+```bash
+nsip compare 430735-0032 430735-0041 -J
+```
 
 ---
 
-## Programmatic Comparison
+## Library Method
 
-Use the library for custom comparison logic:
+### Step 1: Fetch Animal Details
 
-````rust
+Use `animal_details()` to retrieve EBV data for each animal:
+
+```rust
 use nsip::NsipClient;
 
 #[tokio::main]
 async fn main() -> Result<(), nsip::Error> {
     let client = NsipClient::new();
 
-    let lpn_ids = vec!["ABC123", "DEF456"];
-    
-    // Fetch all profiles concurrently
-    let futures = lpn_ids.iter()
-        .map(|id| client.search_by_lpn(id));
-    
-    let profiles = futures::future::try_join_all(futures).await?;
+    let animal_a = client.animal_details("430735-0032").await?;
+    let animal_b = client.animal_details("430735-0041").await?;
 
-    // Compare specific trait
-    for profile in &profiles {
-        let weight_trait = profile.details.traits.get("Weight")
-            .map(|t| t.value)
-            .unwrap_or(0.0);
-        
-        println!("{}: Weight EBV = {}", profile.details.lpn_id, weight_trait);
+    Ok(())
+}
+```
+
+### Step 2: Fetch Multiple Animals Concurrently
+
+Use `tokio::join!` to fetch details in parallel:
+
+```rust
+use nsip::NsipClient;
+
+#[tokio::main]
+async fn main() -> Result<(), nsip::Error> {
+    let client = NsipClient::new();
+
+    let (a, b, c) = tokio::join!(
+        client.animal_details("430735-0032"),
+        client.animal_details("430735-0041"),
+        client.animal_details("430735-0058"),
+    );
+
+    let animals = vec![a?, b?, c?];
+
+    Ok(())
+}
+```
+
+### Step 3: Compare Specific Traits
+
+Access the `traits` field on `AnimalDetails` to compare EBVs. Trait keys use standard abbreviations (BWT, WWT, YWT, EMD, etc.):
+
+```rust
+use nsip::NsipClient;
+
+#[tokio::main]
+async fn main() -> Result<(), nsip::Error> {
+    let client = NsipClient::new();
+
+    let (a, b) = tokio::join!(
+        client.animal_details("430735-0032"),
+        client.animal_details("430735-0041"),
+    );
+    let animals = vec![a?, b?];
+
+    let traits_of_interest = ["BWT", "WWT", "YWT", "PEMD"];
+
+    for animal in &animals {
+        println!("Animal: {}", animal.lpn_id);
+        for trait_name in &traits_of_interest {
+            if let Some(t) = animal.traits.get(*trait_name) {
+                println!(
+                    "  {}: {:.2} (accuracy: {}%)",
+                    t.name,
+                    t.value,
+                    t.accuracy.unwrap_or(0),
+                );
+            }
+        }
     }
 
     Ok(())
 }
-````
+```
 
----
+### Step 4: Calculate a Weighted Score
 
-## Using the MCP Tool
+Build a simple composite score to rank animals against a breeding objective:
 
-If you're using an AI assistant with the MCP server:
-
-````json
-{
-  "tool": "compare",
-  "arguments": {
-    "lpn_ids": ["ABC123", "DEF456", "GHI789"]
-  }
-}
-````
-
-The tool returns a structured comparison with:
-- Common traits across all animals
-- Trait values aligned for easy comparison
-- Missing traits clearly marked
-
----
-
-## Filtering by Trait Ranges
-
-Compare only animals within specific trait ranges:
-
-````rust
-use nsip::{NsipClient, SearchCriteria, TraitRangeFilter};
-
-let criteria = SearchCriteria::new()
-    .with_trait_range("Weight", TraitRangeFilter {
-        min: Some(10.0),
-        max: Some(50.0),
-    });
-
-let results = client
-    .search_animals(0, 10, Some(640), None, None, Some(&criteria))
-    .await?;
-
-// Now compare the filtered results
-for animal in &results.results {
-    println!("{}: Weight in range", animal.lpn_id);
-}
-````
-
----
-
-## Ranking by Multiple Traits
-
-Weighted trait comparison:
-
-````rust
+```rust
 use std::collections::HashMap;
+use nsip::{AnimalDetails, NsipClient};
 
-// Define trait weights (sum to 1.0)
-let weights: HashMap<&str, f64> = [
-    ("Weight", 0.4),
-    ("Muscle", 0.3),
-    ("Fat", 0.3),
-].iter().cloned().collect();
-
-// Calculate weighted score for an animal
-fn calculate_score(
-    animal: &nsip::AnimalDetails,
-    weights: &HashMap<&str, f64>
-) -> f64 {
-    weights.iter()
-        .map(|(trait_name, weight)| {
-            animal.traits.get(*trait_name)
-                .map(|t| t.value * weight)
-                .unwrap_or(0.0)
+fn weighted_score(animal: &AnimalDetails, weights: &HashMap<&str, f64>) -> f64 {
+    weights
+        .iter()
+        .filter_map(|(trait_name, weight)| {
+            animal.traits.get(*trait_name).map(|t| {
+                let accuracy = f64::from(t.accuracy.unwrap_or(50)) / 100.0;
+                t.value * weight * accuracy
+            })
         })
         .sum()
 }
 
-// Score all animals
-let mut scored: Vec<_> = profiles.iter()
-    .map(|p| (p.details.lpn_id.clone(), calculate_score(&p.details, &weights)))
-    .collect();
+#[tokio::main]
+async fn main() -> Result<(), nsip::Error> {
+    let client = NsipClient::new();
 
-// Sort by score descending
-scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    let (a, b) = tokio::join!(
+        client.animal_details("430735-0032"),
+        client.animal_details("430735-0041"),
+    );
+    let animals = vec![a?, b?];
 
-for (lpn_id, score) in scored {
-    println!("{}: {:.2}", lpn_id, score);
+    // Terminal sire objective: penalize birth weight (lbs), reward growth (lbs) and muscle (mm)
+    let weights: HashMap<&str, f64> = HashMap::from([
+        ("BWT", -1.0),
+        ("WWT", 2.0),
+        ("YWT", 1.5),
+        ("PEMD", 1.0),
+    ]);
+
+    let mut scored: Vec<_> = animals
+        .iter()
+        .map(|a| (&a.lpn_id, weighted_score(a, &weights)))
+        .collect();
+
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    for (lpn_id, score) in &scored {
+        println!("{lpn_id}: {score:.2}");
+    }
+
+    Ok(())
 }
-````
+```
+
+---
+
+## MCP Method
+
+If you are using the NSIP MCP server through an AI assistant:
+
+```json
+{
+  "tool": "compare",
+  "arguments": {
+    "animal_ids": ["430735-0032", "430735-0041", "430735-0058"],
+    "traits": "BWT,WWT,YWT,PEMD"
+  }
+}
+```
+
+The `compare` tool returns a structured side-by-side comparison with all requested traits. Missing traits are clearly marked.
+
+For weighted ranking across a breed, use the `rank` tool instead:
+
+```json
+{
+  "tool": "rank",
+  "arguments": {
+    "breed_id": 486,
+    "weights": { "BWT": -1.0, "WWT": 2.0, "YWT": 1.5, "PEMD": 1.0 },
+    "gender": "Male",
+    "status": "CURRENT",
+    "top_n": 5
+  }
+}
+```
+
+---
+
+## Verify Results
+
+After comparing, confirm that:
+
+1. All requested animals were found (check for `NotFound` errors).
+2. The traits you care about are present for each animal. Not all animals have all 13 EBV traits.
+3. Accuracy values are reasonable -- low-accuracy EBVs (below 40%) should be treated with caution.
 
 ---
 
 ## See Also
 
-- [How to Calculate Inbreeding Coefficient](INBREEDING-CHECK.md)
-- [How to Rank Animals](RANK-ANIMALS.md)
+- [How to Filter Search Results](FILTER-SEARCH-RESULTS.md) -- find candidates before comparing
+- [How to Export JSON](EXPORT-JSON.md) -- export comparison data for further analysis
 - [Understanding EBVs](../explanation/EBV-EXPLAINED.md)
 - [MCP Compare Tool Reference](../MCP.md#compare)
