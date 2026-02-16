@@ -1,8 +1,9 @@
+---
+status: accepted
+date: 2026-02-16
+---
+
 # Documentation Directory Structure
-
-## Status
-
-Accepted
 
 ## Context
 

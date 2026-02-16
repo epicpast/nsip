@@ -1,8 +1,9 @@
+---
+status: accepted
+date: 2026-02-16
+---
+
 # Use Architectural Decision Records
-
-## Status
-
-Accepted
 
 ## Context
 

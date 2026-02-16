@@ -58,3 +58,4 @@ The HTML viewer is uploaded as a build artifact and can be downloaded from the A
 
 - [ADR-0001](0001-use-architectural-decision-records.md) - Use Architectural Decision Records
 - [ADR-0002](0002-documentation-directory-structure.md) - Documentation Directory Structure
+- [ADR-0003](0003-adopt-diataxis-documentation-framework.md) - Adopt Diátaxis Documentation Framework

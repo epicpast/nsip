@@ -1,10 +1,11 @@
-# ADR-0003: Adopt Diátaxis Documentation Framework
-
-**Status:** Accepted  
-**Date:** 2026-02-16  
-**Deciders:** Update Docs Workflow
-
 ---
+status: accepted
+date: 2026-02-16
+deciders:
+  - Update Docs Workflow
+---
+
+# Adopt Diátaxis Documentation Framework
 
 ## Context
 
