@@ -33,7 +33,7 @@ jobs:
 
       - name: Install cargo-deny
         # v2.67.25
-        uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69
+        uses: taiki-e/install-action@288875dd3d64326724fa6d9593062d9f8ba0b131
         with:
           tool: cargo-deny
 
