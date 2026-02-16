@@ -1,6 +1,60 @@
 # Documentation Index
 
-> All documentation for the nsip project.
+> All documentation for the nsip project organized using the [Diátaxis framework](https://diataxis.fr/).
+
+## Quick Start
+
+New to NSIP? Start here:
+
+| Document | Description |
+|----------|-------------|
+| [Getting Started Tutorial](tutorials/GETTING-STARTED.md) | 15-minute hands-on introduction to the NSIP API |
+| [Understanding EBVs](explanation/EBV-EXPLAINED.md) | Learn about Estimated Breeding Values and genetic selection |
+| [API Reference](MCP.md) | Complete reference for all API methods and MCP tools |
+
+---
+
+## Tutorials
+
+Learning-oriented guides that take you through practical exercises.
+
+| Tutorial | Time | Description |
+|----------|------|-------------|
+| [Getting Started](tutorials/GETTING-STARTED.md) | 15 min | Connect to NSIP, search animals, retrieve genetic data |
+
+---
+
+## How-To Guides
+
+Problem-oriented guides for accomplishing specific tasks.
+
+| Guide | Description |
+|-------|-------------|
+| [Configure Timeout and Retries](how-to/CONFIGURE-CLIENT.md) | Customize HTTP client behavior for your use case |
+| [Compare Animals](how-to/COMPARE-ANIMALS.md) | Side-by-side genetic trait comparisons |
+
+---
+
+## Explanation
+
+Understanding-oriented discussions of key concepts.
+
+| Document | Description |
+|----------|-------------|
+| [Understanding EBVs](explanation/EBV-EXPLAINED.md) | What EBVs are, how they're calculated, and how to use them |
+
+---
+
+## Reference
+
+Information-oriented technical descriptions.
+
+| Document | Description |
+|----------|-------------|
+| [Error Handling](reference/ERROR-HANDLING.md) | Complete error type reference and handling patterns |
+| [MCP Server API](MCP.md) | Full MCP tool, resource, and prompt reference |
+
+---
 
 ## Template Adoption Guides
 
