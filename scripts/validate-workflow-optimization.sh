@@ -22,7 +22,7 @@ echo "=== Checking Composite Actions ==="
 echo ""
 
 echo "=== Checking Action Version Consistency ==="
-CHECKOUT_VERSIONS=$(grep -h "uses: actions/checkout@" .github/workflows/*.yml | sort -u | wc -l)
+CHECKOUT_VERSIONS=$(grep -h "uses: actions/checkout@" .github/workflows/*.yml | sed 's/^[[:space:]]*//' | sort -u | wc -l)
 [ "$CHECKOUT_VERSIONS" -eq 1 ] && success "Consistent checkout versions" || warning "Found $CHECKOUT_VERSIONS different checkout versions"
 echo ""
 
