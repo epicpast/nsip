@@ -1,6 +1,20 @@
 ---
+title: "Documentation Directory Structure"
+description: "Organize docs into template guides and operational runbooks"
+type: adr
+category: documentation
+tags:
+  - documentation
+  - structure
 status: accepted
-date: 2026-02-16
+created: "2026-02-16"
+updated: "2026-02-16"
+author: nsip maintainers
+project: nsip
+technologies:
+  - markdown
+audience:
+  - developers
 ---
 
 # Documentation Directory Structure

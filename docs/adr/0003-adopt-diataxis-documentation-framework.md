@@ -1,11 +1,26 @@
 ---
+title: "Adopt Diataxis Documentation Framework"
+description: "Organize user documentation using the Diataxis framework"
+type: adr
+category: documentation
+tags:
+  - documentation
+  - diataxis
+  - structure
 status: accepted
-date: 2026-02-16
-deciders:
-  - Update Docs Workflow
+created: "2026-02-16"
+updated: "2026-02-16"
+author: nsip maintainers
+project: nsip
+technologies:
+  - markdown
+audience:
+  - developers
+related:
+  - 0002-documentation-directory-structure.md
 ---
 
-# Adopt Diátaxis Documentation Framework
+# Adopt Diataxis Documentation Framework
 
 ## Context
 
