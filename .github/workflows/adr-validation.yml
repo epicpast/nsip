@@ -29,14 +29,14 @@ jobs:
         uses: zircote/adrscope@f5b56af9f5ebe72a480770ff9389fcc46345cb66
         with:
           command: validate
-          adr-path: docs/adr
+          input-dir: docs/adr
 
       - name: Get ADR Statistics
         # main
         uses: zircote/adrscope@f5b56af9f5ebe72a480770ff9389fcc46345cb66
         with:
           command: stats
-          adr-path: docs/adr
+          input-dir: docs/adr
 
       - name: Comment on PR
         if: github.event_name == 'pull_request'

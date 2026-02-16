@@ -31,8 +31,8 @@ jobs:
         uses: zircote/adrscope@f5b56af9f5ebe72a480770ff9389fcc46345cb66
         with:
           command: html
-          adr-path: docs/adr
-          output-path: adr-viewer
+          input-dir: docs/adr
+          output: adr-viewer
 
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
