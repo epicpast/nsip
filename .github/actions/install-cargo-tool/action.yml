@@ -1,0 +1,16 @@
+---
+name: 'Install Cargo Tool'
+description: 'Install a cargo tool using taiki-e/install-action with consistent versioning'
+
+inputs:
+  tool:
+    description: 'Tool name to install (e.g., cargo-deny, cargo-llvm-cov)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install ${{ inputs.tool }}
+      uses: taiki-e/install-action@f176c07a0a40cbfdd08ee9aa8bf1655701d11e69  # v2.67.25
+      with:
+        tool: ${{ inputs.tool }}

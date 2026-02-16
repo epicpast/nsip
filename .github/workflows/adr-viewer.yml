@@ -35,8 +35,7 @@ jobs:
           output-path: adr-viewer
 
       - name: Upload artifact
-        # v4.6.0
-        uses: actions/upload-artifact@ea3f73d3e6f8268b4a40da165a72ca6a06e37770
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: adr-viewer
           path: adr-viewer/

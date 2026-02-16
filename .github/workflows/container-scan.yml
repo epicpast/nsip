@@ -10,6 +10,10 @@ name: Container Security Scan
   #   - cron: "0 0 * * 0"  # Weekly on Sundays
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   security-events: write
@@ -21,7 +25,7 @@ jobs:
     steps:
       - name: Checkout repository
         # v6.0.2
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Build Docker image for scanning
         run: docker build -t rust-template:scan .
@@ -52,7 +56,7 @@ jobs:
 
       - name: Upload scan report
         # v4.6.2
-        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         if: always()
         with:
           name: trivy-scan-report
