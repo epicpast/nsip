@@ -16,7 +16,7 @@ permissions:
 tools:
   github:
     toolsets: [issues, pull_requests]
-  bash: [docker, nsip, git]
+  bash: [docker, nsip, git, cat, jq]
   nsip:
     container: ghcr.io/zircote/nsip
     entrypointArgs: ["mcp"]
@@ -34,8 +34,8 @@ safe-outputs:
 
 network:
   allowed:
-    - "api.github.com"
-    - "ghcr.io"
+    - defaults
+    - containers
     - "nsip.org"
   firewall: true
 source: zircote/gh-agentic-workflows/workflows/flock-action.md@b502dbd3372733ad0155cb70cfb64afd07fae89e
