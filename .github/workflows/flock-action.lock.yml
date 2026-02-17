@@ -25,7 +25,7 @@
 #
 # Source: zircote/gh-agentic-workflows/workflows/flock-action.md@b502dbd3372733ad0155cb70cfb64afd07fae89e
 #
-# frontmatter-hash: 6e61cab923d8de20b7085333f37bc03df443fa292fcccc12c71891a56879677b
+# frontmatter-hash: 948cb6091736cb7f08fc09cc962d4a30e54c61d4c1338ec1b795d6d00c29483e
 
 name: "Flock Action"
 "on":

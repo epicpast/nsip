@@ -35,7 +35,6 @@ network:
     - defaults
     - containers
     - "nsip.org"
-  firewall: true
 source: zircote/gh-agentic-workflows/workflows/flock-action.md@b502dbd3372733ad0155cb70cfb64afd07fae89e
 ---
 
