@@ -13,7 +13,8 @@ permissions: read-all
 
 tools:
   github:
-    toolsets: [issues, pull_requests]
+    toolsets: [context, issues, pull_requests]
+    mode: remote
   bash: [docker, nsip, git, cat, jq]
   nsip:
     container: ghcr.io/zircote/nsip
