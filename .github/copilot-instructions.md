@@ -42,4 +42,19 @@ cargo deny check                                         # Supply chain audit
 
 ## NSIP MCP Server
 
-The binary includes an MCP server (`nsip mcp`) for sheep genetic evaluation. Configure in `.vscode/mcp.json`. See `docs/MCP.md` for the full API reference and `docs/llm-guides/` for ready-to-use LLM instruction templates.
+The binary includes an MCP server (`nsip mcp`) for sheep genetic evaluation.
+Configure in `.mcp.json`. See `docs/MCP.md` for the full API reference and
+`docs/llm-guides/` for ready-to-use LLM instruction templates.
+
+Available tools: `search`, `details`, `lineage`, `progeny`, `profile`,
+`breed_groups`, `trait_ranges`, `compare`, `rank`, `inbreeding_check`,
+`mating_recommendations`, `flock_summary`, `database_status`.
+
+See `.github/instructions/nsip-mcp.instructions.md` for full tool reference,
+workflow recipes, and formatting rules.
+
+## Flock Actions
+
+Issues with the `flock-action` label request automated breeding analyses. Parse
+the issue form fields, call the appropriate MCP tools, and produce a report PR
+in `reports/`. See `.github/instructions/flock-action.instructions.md`.

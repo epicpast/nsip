@@ -2,13 +2,7 @@
   "mcpServers": {
     "nsip": {
       "command": "nsip",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "ghcr.io/zircote/nsip",
-        "mcp"
-      ]
+      "args": ["mcp"]
     }
   }
 }
