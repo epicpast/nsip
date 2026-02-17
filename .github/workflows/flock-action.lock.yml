@@ -25,7 +25,7 @@
 #
 # Source: zircote/gh-agentic-workflows/workflows/flock-action.md@b502dbd3372733ad0155cb70cfb64afd07fae89e
 #
-# frontmatter-hash: 95965271a8f4c2b6e9c7e3df183b08215da4ac9182c0a301bb8028c4cb868b51
+# frontmatter-hash: 6e61cab923d8de20b7085333f37bc03df443fa292fcccc12c71891a56879677b
 
 name: "Flock Action"
 "on":
@@ -47,6 +47,9 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
+      discussions: write
+      issues: write
+      pull-requests: write
     outputs:
       comment_id: ""
       comment_repo: ""
@@ -69,10 +72,7 @@ jobs:
   agent:
     needs: activation
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: read
-      pull-requests: read
+    permissions: read-all
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       GH_AW_ASSETS_ALLOWED_EXTS: ""
@@ -1132,6 +1132,10 @@ jobs:
 
   pre_activation:
     runs-on: ubuntu-slim
+    permissions:
+      discussions: write
+      issues: write
+      pull-requests: write
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
     steps:
@@ -1139,6 +1143,19 @@ jobs:
         uses: github/gh-aw/actions/setup@58d1d157fbac0f1204798500faefc4f7461ebe28 # v0.45.0
         with:
           destination: /opt/gh-aw/actions
+      - name: Add eyes reaction for immediate feedback
+        id: react
+        if: github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'discussion' || github.event_name == 'discussion_comment' || (github.event_name == 'pull_request') && (github.event.pull_request.head.repo.id == github.repository_id)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          GH_AW_REACTION: "eyes"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { setupGlobals } = require('/opt/gh-aw/actions/setup_globals.cjs');
+            setupGlobals(core, github, context, exec, io);
+            const { main } = require('/opt/gh-aw/actions/add_reaction.cjs');
+            await main();
       - name: Check team membership for workflow
         id: check_membership
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8

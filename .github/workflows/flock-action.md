@@ -7,11 +7,9 @@ timeout-minutes: 30
 on:
   issues:
     types: [opened]
+  reaction: eyes
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
+permissions: read-all
 
 tools:
   github:
