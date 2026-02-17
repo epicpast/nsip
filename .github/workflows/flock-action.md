@@ -52,9 +52,10 @@ have this label, skip it entirely.
 
 ## Retrieving the Issue
 
-Read the details of issue #${{ github.event.issue.number }} in
-${{ github.repository }}. Extract the issue title, body, and labels from the
-response.
+Use the **github** server's `issue_read` tool with `method: "get"` to retrieve
+issue #${{ github.event.issue.number }} in ${{ github.repository }}
+(owner: `${{ github.repository_owner }}`, repo: `nsip`).
+Extract the issue title, body, and labels from the response.
 
 ## Parsing the Issue
 
