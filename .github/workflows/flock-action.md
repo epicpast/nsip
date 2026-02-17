@@ -31,11 +31,6 @@ safe-outputs:
   add-labels:
     allowed: [flock-action, in-progress]
 
-network:
-  allowed:
-    - defaults
-    - containers
-    - "nsip.org"
 source: zircote/gh-agentic-workflows/workflows/flock-action.md@b502dbd3372733ad0155cb70cfb64afd07fae89e
 ---
 
