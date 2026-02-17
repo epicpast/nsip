@@ -33,6 +33,7 @@ Problem-oriented guides for accomplishing specific tasks.
 
 | Guide | Description |
 |-------|-------------|
+| [Submit a Flock Action Request](how-to/FLOCK-ACTION.md) | Request automated breeding analyses via GitHub Issues |
 | [Configure Client](how-to/CONFIGURE-CLIENT.md) | Customize timeout, retries, and base URL for the HTTP client |
 | [Compare Animals](how-to/COMPARE-ANIMALS.md) | Side-by-side genetic trait comparisons via CLI, library, or MCP |
 | [Filter Search Results](how-to/FILTER-SEARCH-RESULTS.md) | Use SearchCriteria to filter by breed, gender, status, date, and trait ranges |
@@ -104,6 +105,7 @@ Detailed reference material organized by topic.
 
 | Document | Description |
 |----------|-------------|
+| [Flock Action](workflows/FLOCK-ACTION.md) | Automated breeding analysis via GitHub Issues |
 | [Coverage](workflows/COVERAGE.md) | Code coverage configuration and reporting |
 | [Test Matrix](workflows/TEST-MATRIX.md) | Multi-platform and multi-version test matrix |
 | [Benchmark Regression](workflows/BENCHMARK-REGRESSION.md) | Performance regression detection |

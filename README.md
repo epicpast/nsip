@@ -31,6 +31,7 @@ Sheep genetic evaluation CLI & MCP server -- search animals, compare EBVs, plan 
 - **Type-safe API client** with comprehensive error handling
 - **Search functionality** for animals by breed group, status, and other criteria
 - **Detailed animal information** including lineage and progeny
+- **Automated breeding analyses** via GitHub Issues (Flock Action workflow)
 - **MCP (Model Context Protocol) integration** for AI assistant compatibility
 - **CLI tool** with multiple subcommands for easy interaction
 - **Async/await support** with tokio runtime
@@ -178,6 +179,36 @@ nsip::mcp::serve_stdio().await?;
 The MCP protocol exposes the following 13 tools when running `nsip mcp`:
 - `search` - Search for animals with filters for breed, gender, status, date range, and flock
 - `details` - Get detailed EBV data, breed, contact info, and status for an animal
+- `lineage` - Retrieve pedigree (ancestry) tree
+- `progeny` - List offspring with pagination
+- `profile` - Combined details + lineage + progeny in one call
+- `breed_groups` - List all breed groups and breeds
+- `trait_ranges` - Get min/max EBV values across all animals in a breed
+- `compare` - Side-by-side EBV comparison of 2-5 animals
+- `rank` - Rank animals within a breed by weighted composite score
+- `inbreeding_check` - Calculate inbreeding coefficient (COI) for sire x dam mating
+- `mating_recommendations` - Find optimal mates for an animal
+- `flock_summary` - Summarize flock statistics and average EBVs
+- `database_status` - Check when the database was last updated
+
+### Automated Breeding Analysis
+
+Submit breeding analysis requests via GitHub Issues using the **Flock Action** workflow:
+
+1. Navigate to [Issues → New issue → Flock Action](../../issues/new?template=flock-action.yml)
+2. Select an analysis type:
+   - **Mating Recommendations** — Find best sires for your ewes
+   - **Evaluate Flock** — Comprehensive individual animal assessment
+   - **Compare Animals** — Side-by-side trait comparison (2-5 animals)
+   - **Rank Animals** — Custom weighted composite scoring
+   - **Inbreeding Matrix** — COI values for all possible pairings
+   - **Flock Profile** — Statistical summary with breed benchmarks
+3. Enter LPN IDs and optional parameters
+4. Submit issue — AI agent generates report and creates PR
+
+See [Flock Action Guide](docs/how-to/FLOCK-ACTION.md) for detailed instructions.
+
+---
 - `lineage` - Get pedigree / ancestry tree including parents and grandparents
 - `progeny` - Get paginated list of offspring for an animal
 - `profile` - Get complete profile (details + pedigree + offspring) in one call
