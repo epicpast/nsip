@@ -25,7 +25,7 @@
 #
 # Source: zircote/gh-agentic-workflows/workflows/flock-action.md@b502dbd3372733ad0155cb70cfb64afd07fae89e
 #
-# frontmatter-hash: 031d3105c02ad7f851074748698a2e6f3748d3c63998aecbdd313e43cedc23c5
+# frontmatter-hash: d7a7550c1c51c0dd6d7853921729dd6c86647ae99a8128d7ba98cf428f7fd83f
 
 name: "Flock Action"
 "on":
@@ -191,7 +191,7 @@ jobs:
             const determineAutomaticLockdown = require('/opt/gh-aw/actions/determine_automatic_lockdown.cjs');
             await determineAutomaticLockdown(github, context, core);
       - name: Download container images
-        run: bash /opt/gh-aw/actions/download_docker_images.sh ghcr.io/github/gh-aw-firewall/agent:0.18.0 ghcr.io/github/gh-aw-firewall/squid:0.18.0 ghcr.io/github/gh-aw-mcpg:v0.1.4 ghcr.io/github/github-mcp-server:v0.30.3 mcp node:lts-alpine
+        run: bash /opt/gh-aw/actions/download_docker_images.sh ghcr.io/github/gh-aw-firewall/agent:0.18.0 ghcr.io/github/gh-aw-firewall/squid:0.18.0 ghcr.io/github/gh-aw-mcpg:v0.1.4 ghcr.io/github/github-mcp-server:v0.30.3 ghcr.io/zircote/nsip node:lts-alpine
       - name: Write Safe Outputs Config
         run: |
           mkdir -p /opt/gh-aw/safeoutputs
@@ -559,12 +559,8 @@ jobs:
               },
               "nsip": {
                 "type": "stdio",
-                "command": "docker",
-                "args": [
-                  "run",
-                  "--rm",
-                  "-i",
-                  "ghcr.io/zircote/nsip",
+                "container": "ghcr.io/zircote/nsip",
+                "entrypointArgs": [
                   "mcp"
                 ],
                 "tools": [
@@ -1169,6 +1165,7 @@ jobs:
       pull-requests: write
     timeout-minutes: 15
     env:
+      GH_AW_ENGINE_ID: "copilot"
       GH_AW_WORKFLOW_ID: "flock-action"
       GH_AW_WORKFLOW_NAME: "Flock Action"
       GH_AW_WORKFLOW_SOURCE: "zircote/gh-agentic-workflows/workflows/flock-action.md@b502dbd3372733ad0155cb70cfb64afd07fae89e"

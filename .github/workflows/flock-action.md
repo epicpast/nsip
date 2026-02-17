@@ -18,8 +18,8 @@ tools:
     toolsets: [issues, pull_requests]
   bash: [docker, nsip, git]
   nsip:
-    command: docker
-    args: ["run", "--rm", "-i", "ghcr.io/zircote/nsip", "mcp"]
+    container: ghcr.io/zircote/nsip
+    entrypointArgs: ["mcp"]
 
 safe-outputs:
   create-pull-request:
