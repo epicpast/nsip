@@ -52,6 +52,17 @@ produce a structured report.
 Only process issues that carry the `flock-action` label. If the issue does not
 have this label, skip it entirely.
 
+## Retrieving the Issue
+
+Fetch the triggering issue using the **github** MCP server's `get_issue` tool.
+Use the repository owner, repo name, and issue number from the github-context
+provided in the system prompt.
+
+If the MCP call fails, fall back to reading the event payload directly:
+```bash
+cat $GITHUB_EVENT_PATH | jq '.issue'
+```
+
 ## Parsing the Issue
 
 The issue body is a filled-in form with these sections:
