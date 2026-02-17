@@ -225,5 +225,5 @@ for group in &groups {
 
 - [How to Compare Animals](COMPARE-ANIMALS.md) -- compare filtered candidates
 - [How to Export JSON](EXPORT-JSON.md) -- export filtered results
-- [SearchCriteria Reference](../reference/SEARCH-CRITERIA.md)
+- [SearchCriteria Reference](../reference/LIBRARY-API.md#searchcriteria)
 - [EBV Trait Glossary](../MCP.md#ebv-trait-glossary)
