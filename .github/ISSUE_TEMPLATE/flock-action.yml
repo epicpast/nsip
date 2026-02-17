@@ -1,0 +1,60 @@
+---
+name: Flock Action
+description: Request an NSIP breeding analysis for your flock
+title: "[Flock Action] "
+labels: ["flock-action"]
+body:
+  - type: dropdown
+    id: action
+    attributes:
+      label: Action
+      description: Select the analysis type to perform
+      options:
+        - Mating Recommendations
+        - Evaluate Flock
+        - Compare Animals
+        - Rank Animals
+        - Inbreeding Matrix
+        - Flock Profile
+    validations:
+      required: true
+
+  - type: textarea
+    id: lpn-ids
+    attributes:
+      label: LPN IDs
+      description: Enter one LPN identifier per line
+      placeholder: |
+        400123
+        400456
+        400789
+    validations:
+      required: true
+
+  - type: textarea
+    id: trait-weights
+    attributes:
+      label: Trait Weights
+      description: >-
+        For Rank Animals action only.
+        Enter TRAIT:weight pairs, one per line.
+      placeholder: |
+        WWT:0.3
+        PWWT:0.3
+        PFAT:-0.2
+        PEMD:0.2
+
+  - type: input
+    id: sort-trait
+    attributes:
+      label: Sort Trait
+      description: >-
+        For Compare Animals action only.
+        Trait name to sort results by.
+      placeholder: PWWT
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Any additional context for the analysis
