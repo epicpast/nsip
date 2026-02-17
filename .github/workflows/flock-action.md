@@ -52,14 +52,9 @@ have this label, skip it entirely.
 
 ## Retrieving the Issue
 
-Fetch the triggering issue using the **github** MCP server's `get_issue` tool.
-Use the repository owner, repo name, and issue number from the github-context
-provided in the system prompt.
-
-If the MCP call fails, fall back to reading the event payload directly:
-```bash
-cat $GITHUB_EVENT_PATH | jq '.issue'
-```
+Read the details of issue #${{ github.event.issue.number }} in
+${{ github.repository }}. Extract the issue title, body, and labels from the
+response.
 
 ## Parsing the Issue
 
