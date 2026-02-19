@@ -561,8 +561,223 @@ Min/max bounds for filtering animals by trait value in search criteria.
 
 ---
 
+## mcp Module
+
+The `mcp` module provides a complete Model Context Protocol server implementation with tools, resources, prompts, and analytics for livestock breeding intelligence.
+
+### NsipServer
+
+MCP server implementation that exposes 13 tools, 5 static resources, 4 resource templates, and 7 guided breeding prompts.
+
+```rust
+use nsip::mcp::NsipServer;
+
+let server = NsipServer::new();
+```
+
+#### `NsipServer::new() -> Self`
+
+Create a new MCP server instance with default NSIP API client.
+
+```rust
+use nsip::mcp::NsipServer;
+
+let server = NsipServer::new();
+```
+
+#### `serve_stdio() -> Result<()>`
+
+Start the MCP server on stdio transport (used by Claude Desktop, Claude Code, Cursor, etc.).
+
+```rust
+use nsip::mcp::serve_stdio;
+
+#[tokio::main]
+async fn main() -> nsip::Result<()> {
+    serve_stdio().await
+}
+```
+
+---
+
+### analytics Submodule
+
+Pure computation functions for breeding analytics with no external dependencies.
+
+#### Types
+
+**`CoiRating`** — Traffic-light rating for inbreeding coefficient:
+- `Green` — COI < 6.25% (acceptable)
+- `Yellow` — 6.25% ≤ COI < 12.5% (elevated, proceed with caution)
+- `Red` — COI ≥ 12.5% (high inbreeding, generally avoid)
+
+**`SharedAncestor`** — Common ancestor found in both sire and dam pedigrees.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lpn_id` | `String` | LPN ID of the common ancestor |
+| `sire_depth` | `usize` | Generations from sire to this ancestor |
+| `dam_depth` | `usize` | Generations from dam to this ancestor |
+
+**`CoiResult`** — Result of coefficient of inbreeding calculation.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coefficient` | `f64` | Wright's coefficient of inbreeding (0.0–1.0) |
+| `rating` | `CoiRating` | Traffic-light rating |
+| `shared_ancestors` | `Vec<SharedAncestor>` | Common ancestors contributing to inbreeding |
+
+**`RankedAnimal`** — Animal with weighted composite score for trait-based ranking.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lpn_id` | `String` | LPN identifier |
+| `score` | `f64` | Weighted composite score |
+| `trait_scores` | `HashMap<String, f64>` | Per-trait weighted scores |
+
+#### Functions
+
+**`calculate_coi(sire_lineage: &Lineage, dam_lineage: &Lineage) -> CoiResult`**
+
+Calculate Wright's coefficient of inbreeding from sire and dam pedigrees.
+
+Formula: `COI = Σ [(0.5)^(n₁ + n₂ + 1)]` where:
+- `n₁` = path length from sire to common ancestor
+- `n₂` = path length from dam to common ancestor
+
+```rust
+use nsip::{NsipClient, mcp::analytics::calculate_coi};
+
+# async fn example() -> nsip::Result<()> {
+let client = NsipClient::new();
+let sire_lineage = client.lineage("430735-0032").await?;
+let dam_lineage = client.lineage("430735-0089").await?;
+
+let coi_result = calculate_coi(&sire_lineage, &dam_lineage);
+println!("COI: {:.2}% ({:?})", coi_result.coefficient * 100.0, coi_result.rating);
+# Ok(())
+# }
+```
+
+**`rank_animals(animals: &[AnimalDetails], weights: &HashMap<String, f64>) -> Vec<RankedAnimal>`**
+
+Rank animals by weighted composite of EBV traits.
+
+Score formula: `Σ (trait_value × weight × accuracy/100)` for each trait.
+
+```rust
+use std::collections::HashMap;
+use nsip::{NsipClient, mcp::analytics::rank_animals};
+
+# async fn example() -> nsip::Result<()> {
+let client = NsipClient::new();
+let search = client.search(
+    nsip::SearchCriteria::new()
+        .with_breed_id(486)
+        .with_gender("Male")
+        .with_status("CURRENT")
+).await?;
+
+let weights = HashMap::from([
+    ("BWT".to_string(), -1.0),
+    ("WWT".to_string(), 2.0),
+    ("YWT".to_string(), 1.5),
+]);
+
+let ranked = rank_animals(&search.animals, &weights);
+for animal in ranked.iter().take(5) {
+    println!("{}: {:.2}", animal.lpn_id, animal.score);
+}
+# Ok(())
+# }
+```
+
+**`trait_complementarity(sire: &AnimalDetails, dam: &AnimalDetails) -> HashMap<String, f64>`**
+
+Predict midparent EBV values for potential offspring.
+
+Formula: `predicted_EBV = (sire_EBV + dam_EBV) / 2.0`
+
+```rust
+use nsip::{NsipClient, mcp::analytics::trait_complementarity};
+
+# async fn example() -> nsip::Result<()> {
+let client = NsipClient::new();
+let sire = client.details("430735-0032").await?;
+let dam = client.details("430735-0089").await?;
+
+let midparent_ebvs = trait_complementarity(&sire, &dam);
+for (trait_name, value) in midparent_ebvs {
+    println!("{}: {:.2}", trait_name, value);
+}
+# Ok(())
+# }
+```
+
+**`find_shared_ancestors(sire_lineage: &Lineage, dam_lineage: &Lineage) -> Vec<SharedAncestor>`**
+
+Find ancestors that appear in both sire and dam pedigrees.
+
+```rust
+use nsip::{NsipClient, mcp::analytics::find_shared_ancestors};
+
+# async fn example() -> nsip::Result<()> {
+let client = NsipClient::new();
+let sire_lineage = client.lineage("430735-0032").await?;
+let dam_lineage = client.lineage("430735-0089").await?;
+
+let shared = find_shared_ancestors(&sire_lineage, &dam_lineage);
+for ancestor in shared {
+    println!("{} (sire depth: {}, dam depth: {})",
+        ancestor.lpn_id, ancestor.sire_depth, ancestor.dam_depth);
+}
+# Ok(())
+# }
+```
+
+---
+
+### prompts Submodule
+
+Guided breeding workflow prompts that fetch live data and construct structured context for LLM-based breeding advice.
+
+7 prompts available:
+- `evaluate-ram` — Evaluate a ram's breeding value (emphasizes growth and carcass traits)
+- `evaluate-ewe` — Evaluate a ewe's breeding value (emphasizes maternal traits)
+- `compare-breeding-stock` — Compare 2-5 animals side-by-side
+- `plan-mating` — Plan a specific mating with COI check and trait complementarity
+- `flock-improvement` — Analyze a breed/flock for trait gaps
+- `select-replacement` — Find top replacement candidates by gender and target trait
+- `interpret-ebvs` — Plain-language EBV explanation for farmers
+
+See [MCP Server Reference](../MCP.md#prompt-reference) for full prompt documentation.
+
+---
+
+### resources Submodule
+
+Static and dynamic resources for MCP clients.
+
+**Static resources:**
+- `nsip://glossary` — EBV trait glossary (markdown)
+- `nsip://breeds` — Live breed directory (JSON)
+- `nsip://guide/selection` — Selection guide (markdown)
+- `nsip://guide/inbreeding` — Inbreeding guide (markdown)
+- `nsip://status` — Database status (JSON)
+
+**Resource templates:**
+- `nsip://animal/{lpn_id}` — Full animal profile
+- `nsip://animal/{lpn_id}/pedigree` — Pedigree tree
+- `nsip://animal/{lpn_id}/progeny` — Offspring list
+- `nsip://breed/{breed_id}/ranges` — Breed trait ranges
+
+See [MCP Server Reference](../MCP.md#resource-reference) for full resource documentation.
+
+---
+
 ## See Also
 
+- [MCP Server Reference](../MCP.md) -- complete MCP tools, resources, and prompts documentation
 - [Error Handling Reference](ERROR-HANDLING.md) -- error types and recovery strategies
 - [Configuration Reference](CONFIGURATION.md) -- client configuration options
 - [CLI Reference](CLI.md) -- command-line interface for the same functionality
