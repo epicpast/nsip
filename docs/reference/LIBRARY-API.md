@@ -635,6 +635,16 @@ Pure computation functions for breeding analytics with no external dependencies.
 | `score` | `f64` | Weighted composite score |
 | `trait_scores` | `HashMap<String, f64>` | Per-trait weighted scores |
 
+**`TraitDefinition`** — EBV trait metadata with interpretation and selection direction.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `abbreviation` | `&'static str` | Trait abbreviation (e.g., `"BWT"`) |
+| `name` | `&'static str` | Full trait name (e.g., `"Birth Weight"`) |
+| `unit` | `&'static str` | Unit of measurement (e.g., `"lbs"`) |
+| `description` | `&'static str` | What the trait measures |
+| `selection_direction` | `&'static str` | Whether higher or lower is better |
+
 #### Functions
 
 **`calculate_coi(sire_lineage: &Lineage, dam_lineage: &Lineage) -> CoiResult`**
@@ -734,6 +744,25 @@ for ancestor in shared {
 # Ok(())
 # }
 ```
+
+**`ebv_glossary() -> Vec<TraitDefinition>`**
+
+Returns complete glossary of all 13 NSIP EBV traits with metadata for each trait.
+
+```rust
+use nsip::mcp::analytics::ebv_glossary;
+
+for trait_def in ebv_glossary() {
+    println!("{} ({}): {} [{}]",
+        trait_def.abbreviation,
+        trait_def.name,
+        trait_def.description,
+        trait_def.selection_direction
+    );
+}
+```
+
+See [EBV Trait Glossary](../MCP.md#ebv-trait-glossary) for the complete trait reference table.
 
 ---
 
