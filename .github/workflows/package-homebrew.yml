@@ -46,9 +46,21 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           if [ "$EVENT_NAME" = "workflow_run" ]; then
-            VERSION="${RUN_HEAD_BRANCH#v}"
+            # Expect RUN_HEAD_BRANCH to be a tag like "v1.2.3"
+            if printf '%s\n' "$RUN_HEAD_BRANCH" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([0-9A-Za-z.+-]*)?$'; then
+              VERSION="${RUN_HEAD_BRANCH#v}"
+            else
+              echo "Error: workflow_run triggered from non-tag ref '$RUN_HEAD_BRANCH'. Expected a tag like 'v1.2.3'." >&2
+              exit 1
+            fi
           else
-            VERSION="$INPUT_VERSION"
+            # Normalize INPUT_VERSION by stripping optional leading "v"
+            RAW_VERSION="${INPUT_VERSION#v}"
+            if ! printf '%s\n' "$RAW_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([0-9A-Za-z.+-]*)?$'; then
+              echo "Error: Provided version '$INPUT_VERSION' is not a valid semantic version (e.g., 1.2.3)." >&2
+              exit 1
+            fi
+            VERSION="$RAW_VERSION"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -81,11 +93,11 @@ jobs:
           SRC_SHA=$(curl -sL "$SRC_URL" \
             | shasum -a 256 | awk '{print $1}')
 
-          # Verify all SHAs are unique (identical = failed downloads)
-          SHAS="$ARM64_SHA $AMD64_SHA $LINUX_SHA"
-          UNIQUE=$(echo "$SHAS" | tr ' ' '\n' | sort -u | wc -l)
-          if [ "$UNIQUE" -lt 3 ]; then
-            echo "::error::SHA mismatch: binary SHAs are not unique."
+          # Verify all asset SHAs are unique (identical = failed downloads)
+          SHAS="$ARM64_SHA $AMD64_SHA $LINUX_SHA $COMP_SHA $MAN_SHA $SRC_SHA"
+          UNIQUE=$(echo "$SHAS" | tr ' ' '\n' | sort -u | grep -c .)
+          if [ "$UNIQUE" -lt 6 ]; then
+            echo "::error::SHA mismatch: asset SHAs are not unique."
             echo "  Assets may not have been uploaded yet."
             exit 1
           fi
