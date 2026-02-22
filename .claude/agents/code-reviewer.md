@@ -1,10 +1,9 @@
 ---
 name: code-reviewer
-description: >
-  Code review specialist for Rust projects. Use after completing features or before PRs to ensure memory safety, idiomatic Rust, and adherence to project standards.
+description: Code review specialist for Rust projects. Use after completing features or before PRs to ensure memory safety, idiomatic Rust, and adherence to project standards.
 model: inherit
 color: orange
-tools: Read, Glob, Grep, Bash
+tools: Read, Write, Edit, Bash, Glob, Grep, LSP, SendMessage, TaskList, TaskGet, TaskCreate, TaskUpdate
 ---
 
 # Code Reviewer Agent

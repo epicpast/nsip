@@ -2,8 +2,9 @@
 name: Homebrew Package
 
 "on":
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -22,6 +23,9 @@ jobs:
     name: Update Homebrew Formulas
     runs-on: macos-latest
     environment: copilot
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout homebrew tap
@@ -36,15 +40,27 @@ jobs:
         id: release
         env:
           EVENT_NAME: ${{ github.event_name }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          # workflow_run: tag is on head_branch
+          RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
           REPO: ${{ github.repository }}
         run: |
-          if [ "$EVENT_NAME" = "release" ]; then
-            VERSION="$RELEASE_TAG"
-            VERSION="${VERSION#v}"
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            # Expect RUN_HEAD_BRANCH to be a tag like "v1.2.3"
+            if printf '%s\n' "$RUN_HEAD_BRANCH" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([0-9A-Za-z.+-]*)?$'; then
+              VERSION="${RUN_HEAD_BRANCH#v}"
+            else
+              echo "Error: workflow_run triggered from non-tag ref '$RUN_HEAD_BRANCH'. Expected a tag like 'v1.2.3'." >&2
+              exit 1
+            fi
           else
-            VERSION="$INPUT_VERSION"
+            # Normalize INPUT_VERSION by stripping optional leading "v"
+            RAW_VERSION="${INPUT_VERSION#v}"
+            if ! printf '%s\n' "$RAW_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([0-9A-Za-z.+-]*)?$'; then
+              echo "Error: Provided version '$INPUT_VERSION' is not a valid semantic version (e.g., 1.2.3)." >&2
+              exit 1
+            fi
+            VERSION="$RAW_VERSION"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -76,6 +92,15 @@ jobs:
             | shasum -a 256 | awk '{print $1}')
           SRC_SHA=$(curl -sL "$SRC_URL" \
             | shasum -a 256 | awk '{print $1}')
+
+          # Verify all asset SHAs are unique (identical = failed downloads)
+          SHAS="$ARM64_SHA $AMD64_SHA $LINUX_SHA $COMP_SHA $MAN_SHA $SRC_SHA"
+          UNIQUE=$(echo "$SHAS" | tr ' ' '\n' | sort -u | grep -c .)
+          if [ "$UNIQUE" -lt 6 ]; then
+            echo "::error::SHA mismatch: asset SHAs are not unique."
+            echo "  Assets may not have been uploaded yet."
+            exit 1
+          fi
 
           for key in arm64 amd64 linux comp man src; do
             eval "echo \"${key}_url=\$$(echo ${key} \
