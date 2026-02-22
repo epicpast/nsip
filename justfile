@@ -1,4 +1,4 @@
-# justfile — local CI parity for nsip
+# justfile — local CI parity for rust_template
 # Run `just` to list all available recipes.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
@@ -9,8 +9,8 @@ default:
 
 # === Core Development ===
 
-# Full CI check: fmt, clippy, test, doc, deny, coverage
-check: fmt-check lint test doc-build deny coverage-gate
+# Full CI check: fmt, clippy, test, doc, deny
+check: fmt-check lint test doc-build deny
 
 # Build in debug mode
 build:
@@ -82,21 +82,17 @@ sbom:
 
 # === Coverage ===
 
-# Fail if line coverage drops below 90%
-coverage-gate:
-    rustup run stable cargo llvm-cov --all-features --fail-under-lines 90
-
 # Generate LCOV coverage report
 coverage:
-    rustup run stable cargo llvm-cov --all-features --lcov --output-path lcov.info
+    cargo llvm-cov --all-features --lcov --output-path lcov.info
 
 # Generate HTML coverage report
 coverage-html:
-    rustup run stable cargo llvm-cov --all-features --html --output-dir coverage-html
+    cargo llvm-cov --all-features --html --output-dir coverage-html
 
 # Print coverage summary to stdout
 coverage-summary:
-    rustup run stable cargo llvm-cov --all-features --summary-only
+    cargo llvm-cov --all-features --summary-only
 
 # === Advanced Testing ===
 
@@ -120,6 +116,44 @@ fuzz TARGET DURATION="60":
 mutants:
     cargo mutants --output mutants.out --json
 
+# === Template Sync ===
+
+# Template upstream repository
+template_repo := "zircote/rust-template"
+template_branch := "main"
+
+# Sync shared tooling from the rust-template upstream
+template-sync:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TMPDIR=$(mktemp -d)
+    trap 'rm -rf "$TMPDIR"' EXIT
+    echo "Fetching latest template from {{ template_repo }}..."
+    git clone --depth 1 --branch {{ template_branch }} \
+        "https://github.com/{{ template_repo }}.git" "$TMPDIR/template" 2>/dev/null
+    SYNC_PATHS=( \
+        ".claude/agents" \
+        ".claude/commands/spec-orchestrator.md" \
+        "clippy.toml" \
+        "rustfmt.toml" \
+        "deny.toml" \
+    )
+    for p in "${SYNC_PATHS[@]}"; do
+        src="$TMPDIR/template/$p"
+        if [ -e "$src" ]; then
+            mkdir -p "$(dirname "$p")"
+            if [ -d "$src" ]; then
+                cp -R "$src/." "$p/"
+            else
+                cp "$src" "$p"
+            fi
+            echo "  synced: $p"
+        else
+            echo "  skip (not in template): $p"
+        fi
+    done
+    echo "Done. Review changes with: git diff"
+
 # === Release ===
 
 # Dry-run a crates.io publish
@@ -129,29 +163,3 @@ publish-dry:
 # Generate changelog for the latest release
 changelog:
     git-cliff --latest --strip header
-
-# Build MCPB bundle locally (requires: npm i -g @anthropic-ai/mcpb)
-mcpb: build-release
-    @mkdir -p server
-    @cp target/release/nsip server/nsip-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/arm64/arm64/;s/aarch64/arm64/;s/x86_64/amd64/') 2>/dev/null || true
-    mcpb validate .
-    mcpb pack . nsip.mcpb
-    mcpb info nsip.mcpb
-    @echo "Bundle created: nsip.mcpb"
-    @rm -rf server
-
-# === Shell Completions & Man Pages ===
-
-# Generate shell completions for all supported shells
-completions:
-    @mkdir -p completions
-    cargo run -- completions bash > completions/nsip.bash
-    cargo run -- completions zsh > completions/_nsip
-    cargo run -- completions fish > completions/nsip.fish
-    @echo "Completions generated in completions/"
-
-# Generate man pages for all commands
-man:
-    @mkdir -p man
-    cargo run -- man-pages --out-dir man/
-    @echo "Man pages generated in man/"
