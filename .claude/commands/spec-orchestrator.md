@@ -230,7 +230,77 @@ With all inventories loaded, synthesize the complete task plan.
 
 ### 2.1 Merge Inventories
 
-Combine all discovery outputs into a unified picture:
+**CRITICAL: Use `jq` to process inventory JSON files instead of reading them into context.**
+Discovery inventories can be large. Reading them all into the context window risks exhaustion.
+Use `jq` via `Bash` to extract, merge, and summarize without loading raw JSON into context.
+
+#### Step 1: Get aggregate counts (zero context cost)
+
+```bash
+# Count endpoints, models, enums across all partitions
+jq -s '{
+  total_endpoints: [.[].endpoints // [] | length] | add,
+  total_models: [.[].models // [] | length] | add,
+  total_enums: [.[].enums // [] | length] | add,
+  total_validation_rules: [.[].validation_rules // [] | length] | add,
+  total_business_logic: [.[].business_logic // [] | length] | add,
+  total_gaps: [.[].gaps // [] | length] | add,
+  partitions: [.[].partition]
+}' /tmp/discovery/*.json
+```
+
+#### Step 2: Extract deduplicated entity lists
+
+```bash
+# Unique model names across all partitions
+jq -s '[.[].models // [] | .[].name] | unique | .[]' /tmp/discovery/*.json
+
+# Unique endpoint paths with methods
+jq -s '[.[].endpoints // [] | .[] | "\(.method) \(.path)"] | unique | sort | .[]' /tmp/discovery/*.json
+
+# All gaps aggregated
+jq -s '[.[].gaps // [] | .[]] | unique | .[]' /tmp/discovery/*.json
+```
+
+#### Step 3: Build merged inventory file (for task generation)
+
+```bash
+# Merge all partitions into a single deduplicated inventory
+jq -s '{
+  endpoints: [.[].endpoints // [] | .[]] | unique_by(.method + .path),
+  models: [.[].models // [] | .[]] | unique_by(.name),
+  enums: [.[].enums // [] | .[]] | unique_by(.name),
+  validation_rules: [.[].validation_rules // [] | .[]],
+  business_logic: [.[].business_logic // [] | .[]],
+  cross_cutting: [.[].cross_cutting // [] | .[]],
+  existing_code_notes: [.[].existing_code_notes // [] | .[]],
+  gaps: [.[].gaps // [] | .[]] | unique
+}' /tmp/discovery/*.json > /tmp/discovery/merged.json
+```
+
+#### Step 4: Generate task candidates per phase
+
+```bash
+# Phase A candidates: shared types, enums, error variants
+jq '[.enums[] | {subject: "Define \(.name) enum", spec_file: .spec_file, existing: .existing_impl}]' /tmp/discovery/merged.json
+
+# Phase B candidates: one task per model
+jq '[.models[] | {subject: "Implement \(.name) model", fields: [.fields[].name], spec_file: .spec_file, existing: .existing_impl}]' /tmp/discovery/merged.json
+
+# Phase D candidates: one task per endpoint
+jq '[.endpoints[] | {subject: "\(.method) \(.path)", status_codes: .status_codes, error_cases: .error_cases, spec_file: .spec_file}]' /tmp/discovery/merged.json
+```
+
+#### Step 5: Read only what you need
+
+After `jq` extracts structured summaries, read only specific sections into context:
+- Read the **counts** output (Step 1) to understand scope
+- Read the **gaps** output (Step 3) to identify missing coverage
+- Read individual model/endpoint details from `merged.json` using targeted `jq` queries **only when writing specific task descriptions**
+
+**NEVER read `/tmp/discovery/*.json` files directly with the `Read` tool.** Always use `jq` to extract the specific fields needed.
+
+#### Merging rules
 
 - **Deduplicate**: Same model referenced in multiple partitions → merge into one entry
 - **Resolve cross-references**: Endpoint X references Model Y from a different partition
@@ -393,13 +463,13 @@ Determine how many parallel teammates you need for the current wave. Spawn them 
 
 **CRITICAL requirements for teammate spawning:**
 
-1. Every teammate MUST be spawned with `run_in_background: true`. Without this, the orchestrator blocks on each Task call until that teammate finishes ALL its work — defeating parallelism entirely.
+1. Every teammate MUST use `subagent_type: "general-purpose"`. Custom agent types (e.g., `rust-developer`) are **broken as teammates** — they do not respond to `SendMessage`, do not claim tasks from `TaskList`, and go permanently idle after spawn. This is a known limitation: custom agents defined in `.claude/agents/` have conflicting instructions that override the teammate prompt. Only `general-purpose` (Tools: `*`, no conflicting agent instructions) works reliably as a teammate.
 
-2. Teammate agent types MUST have team coordination tools (`SendMessage`, `TaskList`, `TaskGet`, `TaskCreate`, `TaskUpdate`) in their tool list. The `rust-developer` agent includes these. If using a custom agent, verify its tools first.
+2. Every teammate MUST be spawned with `run_in_background: true`. Without this, the orchestrator blocks on each Task call until that teammate finishes ALL its work — defeating parallelism entirely.
 
 ```
 Task:
-  subagent_type: "rust-developer"
+  subagent_type: "general-purpose"
   team_name: "spec-impl"
   name: "impl-1"
   run_in_background: true
@@ -582,7 +652,7 @@ Present to the user:
 8. **Context budget** — give each subagent or teammate only CLAUDE.md, the relevant spec files, the relevant source files, and a self-contained task description.
 9. **Task lifecycle is MANDATORY** — `TaskCreate` → teammate claims via `TaskUpdate(owner + in_progress)` → work → verify → `TaskUpdate(completed)`. Never skip status updates; they unblock dependent tasks.
 10. **Team before tasks, tasks before teammates** — Phase 3.1 (TeamCreate) → 3.2 (TaskCreate) → 3.3 (spawn teammates). Tasks created without a team land in the wrong list. No exceptions.
-11. **Teammate agent types MUST include team coordination tools** — Any agent used as a teammate needs `SendMessage`, `TaskList`, `TaskGet`, `TaskCreate`, `TaskUpdate` in its tool list. The `rust-developer` agent includes these. If using a custom agent, verify its tools first. Teammates are spawned via `Task` with `team_name`, `name`, and `run_in_background: true`.
+11. **Teammates MUST use `subagent_type: "general-purpose"`** — Custom agent types (e.g., `rust-developer`) do not function as teammates. They go permanently idle after spawn, ignore `SendMessage`, and don't claim tasks. Only `general-purpose` works reliably as a teammate because it has all tools and no conflicting agent-level instructions.
 12. **Teammates self-claim tasks** — Teammates find unblocked unclaimed tasks via `TaskList` and claim them with `TaskUpdate(owner)`. This is more resilient than leader-assignment.
 13. **Clean shutdown** — Always send `shutdown_request` to all teammates and call `TeamDelete` when done.
 14. **User checkpoints are mandatory in interactive mode** — `AskUserQuestion` gates between discovery→synthesis and synthesis→execution. In `--auto` mode, checkpoints are logged to `/tmp/orchestrator-decisions.md` and auto-accepted. The user can review decisions after completion.
@@ -604,7 +674,7 @@ Present to the user:
 **Discovery subagent can't SendMessage** — This is by design. Fire-and-done `Task` subagents (no `team_name`) communicate via their Task return value, not `SendMessage`. Only team-member teammates (spawned with `team_name`) can use `SendMessage`.
 
 **Teammates not responding / not claiming tasks** — Three possible causes:
-1. **Missing tools**: Verify the agent type's tool list includes `SendMessage`, `TaskList`, `TaskUpdate`, `TaskGet`, `TaskCreate`. Check `.claude/agents/*.md` and add missing tools.
+1. **Wrong agent type**: Custom agents (e.g., `rust-developer`) do not work as teammates. Always use `subagent_type: "general-purpose"`.
 2. **Tasks in wrong namespace**: Tasks created before `TeamCreate` land in the default task list, not the team's. Always create the team FIRST.
 3. **Passive prompt**: The teammate prompt must command immediate action, not describe a workflow. Start with "Call TaskList RIGHT NOW" not "Your workflow is to check TaskList."
 
