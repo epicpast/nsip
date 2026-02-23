@@ -44,7 +44,7 @@ clap_complete = "4.5"
 clap_mangen = "0.2"
 
 # MCP server
-rmcp = { version = "0.15", features = ["server", "transport-io"] }
+rmcp = { version = "0.16", features = ["server", "transport-io"] }
 
 # Logging
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
