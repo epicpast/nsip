@@ -27,7 +27,7 @@ jobs:
 
       - name: Validate ADR Format
         # main
-        uses: zircote/adrscope@f5b56af9f5ebe72a480770ff9389fcc46345cb66
+        uses: zircote/adrscope@9365696ed66886219b74bda8206c1c25e1b6e04d
         with:
           command: validate
           input-dir: docs/adr
@@ -35,7 +35,7 @@ jobs:
 
       - name: Get ADR Statistics
         # main
-        uses: zircote/adrscope@f5b56af9f5ebe72a480770ff9389fcc46345cb66
+        uses: zircote/adrscope@9365696ed66886219b74bda8206c1c25e1b6e04d
         with:
           command: stats
           input-dir: docs/adr
