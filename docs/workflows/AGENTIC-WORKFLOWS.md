@@ -29,7 +29,7 @@ Analyzes failed GitHub Actions workflows to identify root causes and patterns. P
 - Daily Test Coverage Improver
 
 **Safe Outputs:**
-- Creates issues with `[CI Doctor]` prefix
+- Creates issues prefixed with the workflow name (for example, `CI Doctor`)
 - Adds labels: `automation`, `ci`
 - Can comment on existing issues
 
@@ -99,11 +99,11 @@ Daily health check of repository status, open issues, PR backlog, and workflow p
 - Workflow performance monitoring
 - Stale issue detection
 - Repository metrics tracking
-- Status summaries via discussions
+- Status summaries via GitHub issues
 
 **Safe Outputs:**
-- Creates discussions for status reports
-- Can comment on stale issues
+- Creates issues for status reports with `[repo-status]` title prefix
+- Adds labels: `report`, `daily-status`
 
 ---
 
@@ -371,7 +371,7 @@ Use `/q` slash command in issues/PRs to invoke the Q workflow optimizer for inve
 ## Related Documentation
 
 - [ADR-0001: Use Architectural Decision Records](../adr/0001-use-architectural-decision-records.md)
-- [ADR-0003: Adopt Diataxis Documentation Framework](../adr/0003-adopt-diataxis-documentation-framework.md)
+- [ADR-0003: Adopt Diátaxis Documentation Framework](../adr/0003-adopt-diataxis-documentation-framework.md)
 - [CI Troubleshooting](../runbooks/CI-TROUBLESHOOTING.md)
 - [Code Quality Metrics](CODE-QUALITY.md)
 
