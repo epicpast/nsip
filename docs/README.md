@@ -81,7 +81,7 @@ Guides for developers who just created a repository from this template.
 | [Getting Started](template/GETTING-STARTED.md) | "Use this template" to first `cargo build` to first CI pass |
 | [Configuration](template/CONFIGURATION.md) | Cargo.toml fields, placeholder replacement, feature flags, editor setup |
 | [CI Workflows](template/CI-WORKFLOWS.md) | Every included workflow: triggers, secrets, how to enable/disable |
-| [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents: CI Doctor, Daily QA, Issue Triage, Q optimizer |
+| [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents: CI Doctor, Daily QA, Issue Triage, Q optimizer, Update Docs, Daily Documentation Review, Daily Repository Status |
 | [Customization](template/CUSTOMIZATION.md) | Add modules, remove examples, adjust lints, modify release targets |
 | [GitHub Template Features](template/GITHUB-TEMPLATE-FEATURES.md) | What copies when using a template -- and what doesn't |
 | [Copilot Jumpstart](template/COPILOT-JUMPSTART.md) | Prompts for automatic project scaffolding with GitHub Copilot |
@@ -105,7 +105,7 @@ Detailed reference material organized by topic.
 
 | Document | Description |
 |----------|-------------|
-| [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents for CI/CD (CI Doctor, Daily QA, Issue Triage, Q optimizer, Update Docs) |
+| [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents for CI/CD (CI Doctor, Daily QA, Issue Triage, Q optimizer, Update Docs, Daily Documentation Review, Daily Repository Status) |
 | [Coverage](workflows/COVERAGE.md) | Code coverage configuration and reporting |
 | [Test Matrix](workflows/TEST-MATRIX.md) | Multi-platform and multi-version test matrix |
 | [Benchmark Regression](workflows/BENCHMARK-REGRESSION.md) | Performance regression detection |
