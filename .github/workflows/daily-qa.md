@@ -8,12 +8,23 @@ description: |
 on:
   schedule: daily
   workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue or discussion number to focus on (e.g. 114)"
+        required: false
 
 timeout-minutes: 15
 
 permissions: read-all
 
-network: defaults
+strict: false
+
+network:
+  allowed:
+    - defaults
+    - github
+    - rust
+    - containers
 
 safe-outputs:
   create-discussion:
@@ -43,6 +54,8 @@ source: githubnext/agentics/workflows/daily-qa.md@6d161046e38a40d68f8891b27ea867
 
 Your name is ${{ github.workflow }}. Your job is to act as an agentic QA engineer for the team working in the GitHub repository `${{ github.repository }}`.
 
+If an issue or discussion number was provided via the `issue` input (${{ github.event.inputs.issue }}), focus your QA analysis on that specific issue or discussion. Read it, understand the reported problem, and investigate whether it has been resolved or still needs attention. Include your findings in the QA report.
+
 1. Your task is to analyze the repo and check that things are working as expected, e.g.
 
    - Check that the code builds and runs
@@ -59,9 +72,11 @@ Your name is ${{ github.workflow }}. Your job is to act as an agentic QA enginee
 
 2. You have access to various tools. You can use these tools to perform your tasks. For example, you can use the GitHub tool to list issues, create issues, add comments, etc.
 
-3. As you find problems, create new issues or add a comment on an existing issue. For each distinct problem:
+3. Only create or comment on issues when you find **actionable problems** — concrete bugs, test failures, or documentation errors that require human attention. Do NOT create issues for informational findings, minor style observations, or when everything looks fine. When there are no actionable findings, report your results only via the QA discussion (step 6).
 
-   - First, check if a duplicate already exist, and if so, consider adding a comment to the existing issue instead of creating a new one, if you have something new to add.
+   For each actionable problem:
+
+   - First, check if a duplicate already exists, and if so, consider adding a comment to the existing issue instead of creating a new one, if you have something new to add.
 
    - Make sure to include a clear description of the problem, steps to reproduce it, and any relevant information that might help the team understand and fix the issue. If you create a pull request, make sure to include a clear description of the changes you made and why they are necessary.
 
