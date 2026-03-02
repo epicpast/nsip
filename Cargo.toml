@@ -61,7 +61,7 @@ wiremock = "0.6"
 # CLI integration tests
 assert_cmd = "2.0"
 predicates = "3.1"
-tempfile = "3.25.0"
+tempfile = "3.26.0"
 
 [profile.dev]
 # Faster compile times during development
