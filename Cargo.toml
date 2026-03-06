@@ -44,7 +44,7 @@ clap_complete = "4.5"
 clap_mangen = "0.2"
 
 # MCP server
-rmcp = { version = "0.16", features = ["server", "transport-io"] }
+rmcp = { version = "0.17", features = ["server", "transport-io"] }
 
 # Logging
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -61,7 +61,7 @@ wiremock = "0.6"
 # CLI integration tests
 assert_cmd = "2.0"
 predicates = "3.1"
-tempfile = "3.25.0"
+tempfile = "3.26.0"
 
 [profile.dev]
 # Faster compile times during development
