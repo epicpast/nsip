@@ -32,7 +32,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         # master
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac
+        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478
         with:
           image-ref: rust-template:scan
           format: sarif
@@ -48,7 +48,7 @@ jobs:
 
       - name: Generate human-readable report
         # master
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac
+        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478
         with:
           image-ref: rust-template:scan
           format: table
