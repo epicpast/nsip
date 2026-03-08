@@ -95,7 +95,6 @@ impl ServerHandler for NsipServer {
                 .enable_prompts_list_changed()
                 .enable_resources()
                 .enable_resources_list_changed()
-                .enable_resources_subscribe()
                 .enable_logging()
                 .build(),
         )
@@ -123,7 +122,7 @@ impl ServerHandler for NsipServer {
     async fn get_prompt(
         &self,
         request: GetPromptRequestParams,
-        _context: RequestContext<rmcp::service::RoleServer>,
+        context: RequestContext<rmcp::service::RoleServer>,
     ) -> Result<GetPromptResult, McpError> {
         let arguments: HashMap<String, String> = request
             .arguments
@@ -138,7 +137,7 @@ impl ServerHandler for NsipServer {
             })
             .collect();
 
-        prompts::get_prompt(&self.client, &request.name, &arguments).await
+        prompts::get_prompt(&self.client, &request.name, &arguments, Some(&context)).await
     }
 
     // -- Resources -------------------------------------------------------------

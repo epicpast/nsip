@@ -72,14 +72,16 @@ Authentication is only meaningful over HTTP. When `--auth` is set, the server re
 
 ### OAuth Environment Variables
 
-All four variables are required when `--auth` is set:
+The first four variables are required when `--auth` is set. The remaining two are optional with sensible defaults:
 
-| Variable | Description |
-|----------|-------------|
-| `NSIP_GITHUB_CLIENT_ID` | GitHub OAuth app client ID |
-| `NSIP_GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret |
-| `NSIP_AUTH_SECRET` | HMAC-SHA256 secret for JWT signing (minimum 32 characters recommended) |
-| `NSIP_AUTH_BASE_URL` | External base URL for redirect URIs (e.g. `http://localhost:8080`) |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `NSIP_GITHUB_CLIENT_ID` | Yes | — | GitHub OAuth app client ID |
+| `NSIP_GITHUB_CLIENT_SECRET` | Yes | — | GitHub OAuth app client secret |
+| `NSIP_AUTH_SECRET` | Yes | — | HMAC-SHA256 secret for JWT signing (minimum 32 characters recommended) |
+| `NSIP_AUTH_BASE_URL` | Yes | — | External base URL for redirect URIs (e.g. `http://localhost:8080`) |
+| `NSIP_AUTH_ISSUER` | No | value of `NSIP_AUTH_BASE_URL` | JWT `iss` claim value. Override when the public-facing issuer URL differs from the base URL. |
+| `NSIP_AUTH_TOKEN_TTL` | No | `3600` | JWT token time-to-live in seconds. |
 
 ### OAuth Endpoints
 

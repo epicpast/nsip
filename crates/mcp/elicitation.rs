@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 ///
 /// Allows the user to specify which traits matter for comparison.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[allow(dead_code)]
 pub(crate) struct ComparePreferences {
     /// Comma-separated trait abbreviations to focus on (e.g. "WWT,YWT,NLB").
     pub traits: Option<String>,
@@ -22,7 +21,6 @@ rmcp::elicit_safe!(ComparePreferences);
 ///
 /// Gathers breeding constraints for mating planning.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[allow(dead_code)]
 pub(crate) struct MatingConstraints {
     /// Maximum acceptable coefficient of inbreeding (0.0-1.0).
     pub max_coi: Option<f64>,
@@ -36,7 +34,6 @@ rmcp::elicit_safe!(MatingConstraints);
 ///
 /// Gathers flock context for improvement analysis.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[allow(dead_code)]
 pub(crate) struct FlockContext {
     /// Breeding objective: "Growth", "Maternal", or "Dual".
     pub breeding_objective: Option<String>,
@@ -50,7 +47,6 @@ rmcp::elicit_safe!(FlockContext);
 ///
 /// Gathers selection criteria for replacement candidates.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[allow(dead_code)]
 pub(crate) struct SelectionCriteria {
     /// Minimum accuracy percentage to require (0-100).
     pub min_accuracy: Option<i32>,
@@ -65,7 +61,6 @@ rmcp::elicit_safe!(SelectionCriteria);
 /// Returns `Some(data)` if the user accepted, `None` if elicitation is
 /// unavailable, the user declined, or the user cancelled. Errors from
 /// the service layer are logged and treated as unavailable.
-#[allow(dead_code)]
 pub(crate) async fn try_elicit<T>(
     context: &rmcp::service::RequestContext<rmcp::service::RoleServer>,
     message: &str,

@@ -157,16 +157,25 @@ fn lookup_pat_cache(cache: &PatCache, token: &str) -> Option<String> {
 
 /// Build `NsipClaims` for a PAT-authenticated user.
 ///
-/// Since PATs do not carry JWT metadata, we synthesize minimal claims
-/// with the GitHub login as the subject.
+/// Since PATs do not carry JWT metadata, we synthesize claims with
+/// the GitHub login as the subject, real timestamps, and a random JTI.
+/// The `exp` is set to the PAT cache TTL from now (5 min), matching
+/// the cache eviction window.
 fn pat_claims(github_login: &str) -> NsipClaims {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
     NsipClaims {
         sub: github_login.to_owned(),
         iss: "github-pat".to_owned(),
         aud: "nsip-mcp".to_owned(),
-        exp: 0,
-        iat: 0,
-        jti: String::new(),
+        exp: now + PAT_CACHE_TTL.as_secs(),
+        iat: now,
+        jti: format!("pat-{now}-{github_login}"),
     }
 }
 
@@ -233,6 +242,17 @@ mod tests {
         assert_eq!(claims.sub, "testuser");
         assert_eq!(claims.iss, "github-pat");
         assert_eq!(claims.aud, "nsip-mcp");
+        assert!(claims.iat > 0, "iat should be a real timestamp");
+        assert!(claims.exp > claims.iat, "exp should be after iat");
+        assert!(
+            claims.jti.starts_with("pat-"),
+            "jti should have pat- prefix, got: {}",
+            claims.jti
+        );
+        assert!(
+            claims.jti.contains("testuser"),
+            "jti should contain the login"
+        );
     }
 
     #[test]

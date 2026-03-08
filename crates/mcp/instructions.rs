@@ -61,8 +61,9 @@ fn append_analytics_tools(out: &mut String) {
         "\n## Analytics Tools\n\n\
          - **compare**: Side-by-side EBV comparison of 2\u{2013}5 animals with trait-level \
          differences and optional trait filtering.\n\
-         - **rank**: Rank animals within a breed by a target trait (e.g. YWT, YEMD, \
-         NLB). Returns top-N with percentile positions.\n\
+         - **rank**: Rank animals within a breed by a target trait (e.g. YWT, EMD, \
+         NLB). Returns top-N ranked by weighted composite score. \
+         Note: ranking is based on a sample of up to 100 animals per search page.\n\
          - **inbreeding_check**: Compute inbreeding coefficient (COI) between two \
          animals by comparing pedigree overlap.\n\
          - **mating_recommendations**: Given a sire, find optimal mates from available \
@@ -131,7 +132,7 @@ fn append_common_parameters(out: &mut String) {
     out.push_str(
         "\n## Common Parameters\n\n\
          - **page / page_size**: Pagination cursors for search and progeny results. \
-         First page is 1; default page_size varies by tool.\n\
+         First page is 0; default page_size varies by tool.\n\
          - **output format**: All tool results return JSON. Use the details tool for \
          full EBV breakdowns or profile for a combined view.\n",
     );

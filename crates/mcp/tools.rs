@@ -215,16 +215,6 @@ impl super::NsipServer {
         }
     }
 
-    #[cfg(test)]
-    #[allow(dead_code)]
-    fn with_base_url(url: &str) -> Self {
-        Self {
-            tool_router: Self::tool_router(),
-            client: NsipClient::with_base_url(url),
-            enabled_tools: super::tool_sets::EnabledToolSets::all(),
-        }
-    }
-
     /// Search for animals in the NSIP database with optional filters.
     #[tool(
         description = "Search for animals in the NSIP database with filters for breed, gender, status, date range, flock, and sorting"
@@ -411,7 +401,7 @@ impl super::NsipServer {
 
     /// Rank animals by weighted EBV composite score.
     #[tool(
-        description = "Rank animals within a breed by weighted EBV traits. Specify trait weights to prioritize breeding goals."
+        description = "Rank animals within a breed by weighted EBV traits. Specify trait weights to prioritize breeding goals. Note: ranking is based on a sample of up to 100 animals from a single search page; results may not reflect the full population."
     )]
     async fn rank(
         &self,
@@ -510,16 +500,14 @@ impl super::NsipServer {
 
         let mut recommendations = Vec::new();
         for candidate in top_candidates {
-            let mate_lineage = self
-                .client
-                .lineage(&candidate.lpn_id)
-                .await
-                .unwrap_or_else(|_| crate::Lineage {
-                    subject: None,
-                    sire: None,
-                    dam: None,
-                    generations: Vec::new(),
-                });
+            let mate_lineage_result = self.client.lineage(&candidate.lpn_id).await;
+            let coi_reliable = mate_lineage_result.is_ok();
+            let mate_lineage = mate_lineage_result.unwrap_or_else(|_| crate::Lineage {
+                subject: None,
+                sire: None,
+                dam: None,
+                generations: Vec::new(),
+            });
 
             let coi = analytics::calculate_coi(&animal_lineage, &mate_lineage);
             let complementarity = candidate_animals
@@ -534,6 +522,7 @@ impl super::NsipServer {
                 "coi": {
                     "coefficient": coi.coefficient,
                     "rating": coi.rating,
+                    "reliable": coi_reliable,
                 },
                 "predicted_offspring_ebvs": complementarity,
             }));
@@ -544,7 +533,7 @@ impl super::NsipServer {
 
     /// Get summary statistics for a flock.
     #[tool(
-        description = "Summarize a flock's animals: count, gender breakdown, and average EBV traits"
+        description = "Summarize a flock's animals: count, gender breakdown, and average EBV traits. Averages are computed from a sample of up to 100 animals; total_count reflects the full population."
     )]
     async fn flock_summary(
         &self,
@@ -1013,6 +1002,15 @@ mod tests {
         use super::super::super::NsipServer;
         use super::*;
 
+        /// Build an `NsipServer` pointing at the given mock URI.
+        fn mock_server(url: &str) -> NsipServer {
+            NsipServer {
+                tool_router: NsipServer::tool_router(),
+                client: NsipClient::with_base_url(url),
+                enabled_tools: crate::mcp::tool_sets::EnabledToolSets::all(),
+            }
+        }
+
         /// JSON for a details endpoint response (nested format).
         fn details_response(lpn_id: &str, gender: &str) -> serde_json::Value {
             serde_json::json!({
@@ -1093,7 +1091,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .search(Parameters(SearchParams {
                     breed_group_id: Some(61),
@@ -1130,7 +1128,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .search(Parameters(SearchParams {
                     breed_group_id: None,
@@ -1161,7 +1159,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let err = server
                 .search(Parameters(SearchParams {
                     breed_group_id: None,
@@ -1196,7 +1194,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .details(Parameters(AnimalIdParams {
                     animal_id: "LPN1".to_string(),
@@ -1223,7 +1221,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .lineage(Parameters(AnimalIdParams {
                     animal_id: "LPN1".to_string(),
@@ -1255,7 +1253,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .progeny(Parameters(ProgenyParams {
                     animal_id: "LPN1".to_string(),
@@ -1284,7 +1282,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .progeny(Parameters(ProgenyParams {
                     animal_id: "LPN1".to_string(),
@@ -1325,7 +1323,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .profile(Parameters(AnimalIdParams {
                     animal_id: "LPN1".to_string(),
@@ -1359,7 +1357,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server.breed_groups().await.unwrap();
 
             assert!(!result.is_error.unwrap_or(false));
@@ -1384,7 +1382,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .trait_ranges(Parameters(BreedIdParams { breed_id: 640 }))
                 .await
@@ -1420,7 +1418,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .compare(Parameters(CompareParams {
                     animal_ids: vec!["A1".to_string(), "A2".to_string()],
@@ -1455,7 +1453,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .compare(Parameters(CompareParams {
                     animal_ids: vec!["A1".to_string(), "A2".to_string()],
@@ -1475,7 +1473,7 @@ mod tests {
 
         #[tokio::test]
         async fn compare_too_few_ids() {
-            let server = NsipServer::with_base_url("http://unused");
+            let server = mock_server("http://unused");
             let err = server
                 .compare(Parameters(CompareParams {
                     animal_ids: vec!["A1".to_string()],
@@ -1488,7 +1486,7 @@ mod tests {
 
         #[tokio::test]
         async fn compare_too_many_ids() {
-            let server = NsipServer::with_base_url("http://unused");
+            let server = mock_server("http://unused");
             let err = server
                 .compare(Parameters(CompareParams {
                     animal_ids: vec![
@@ -1521,7 +1519,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let mut weights = HashMap::new();
             weights.insert("BWT".to_string(), -1.0);
             weights.insert("WWT".to_string(), 2.0);
@@ -1555,7 +1553,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let mut weights = HashMap::new();
             weights.insert("WWT".to_string(), 1.0);
 
@@ -1605,7 +1603,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .inbreeding_check(Parameters(InbreedingParams {
                     sire_id: "SIRE1".to_string(),
@@ -1666,7 +1664,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .inbreeding_check(Parameters(InbreedingParams {
                     sire_id: "SIRE1".to_string(),
@@ -1727,7 +1725,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .mating_recommendations(Parameters(MatingParams {
                     animal_id: "RAM1".to_string(),
@@ -1784,7 +1782,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .mating_recommendations(Parameters(MatingParams {
                     animal_id: "EWE1".to_string(),
@@ -1813,7 +1811,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .flock_summary(Parameters(FlockParams {
                     flock_id: "FLOCK1".to_string(),
@@ -1840,7 +1838,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server
                 .flock_summary(Parameters(FlockParams {
                     flock_id: "EMPTY".to_string(),
@@ -1877,7 +1875,7 @@ mod tests {
                 .mount(&mock)
                 .await;
 
-            let server = NsipServer::with_base_url(&mock.uri());
+            let server = mock_server(&mock.uri());
             let result = server.database_status().await.unwrap();
 
             assert!(!result.is_error.unwrap_or(false));
