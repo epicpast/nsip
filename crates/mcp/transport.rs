@@ -14,7 +14,13 @@ use crate::mcp::NsipServer;
 ///
 /// Binds to `host:port` and serves JSON-RPC requests at `/mcp`.
 /// Includes middleware for DNS rebinding protection, Accept header
-/// normalization, session status correction, and request logging.
+/// normalization, session status correction, request logging, and
+/// optional OAuth bearer token authentication.
+///
+/// When `oauth_state` is `Some`, the server requires bearer token
+/// authentication on the `/mcp` endpoint and exposes OAuth protocol
+/// endpoints (registration, authorization, callback, token exchange,
+/// and discovery metadata).
 ///
 /// # Errors
 ///
@@ -23,6 +29,7 @@ pub async fn serve_http(
     host: &str,
     port: u16,
     sets: super::tool_sets::EnabledToolSets,
+    oauth_state: Option<super::oauth::OAuthState>,
 ) -> crate::Result<()> {
     use rmcp::transport::streamable_http_server::{
         StreamableHttpServerConfig, StreamableHttpService, session::local::LocalSessionManager,
@@ -48,13 +55,24 @@ pub async fn serve_http(
         .allow_headers(tower_http::cors::Any)
         .expose_headers([http::HeaderName::from_static("mcp-session-id")]);
 
-    let router = axum::Router::new()
+    let mut router = axum::Router::new()
         .route_service("/mcp", service)
         .layer(middleware::from_fn(fix_rmcp_session_status))
         .layer(cors)
         .layer(middleware::from_fn(validate_origin))
         .layer(middleware::from_fn(log_requests))
         .layer(middleware::from_fn(ensure_sse_accept));
+
+    // Wire in OAuth if configured.
+    if let Some(ref state) = oauth_state {
+        router = router
+            .merge(super::oauth::oauth_router(state.clone()))
+            .layer(middleware::from_fn_with_state(
+                oauth_state.clone(),
+                super::oauth::middleware::bearer_auth,
+            ));
+        tracing::info!("OAuth 2.1 + PAT bearer auth enabled");
+    }
 
     let addr = format!("{host}:{port}");
     let listener = tokio::net::TcpListener::bind(&addr)

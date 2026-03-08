@@ -6,6 +6,7 @@
 pub mod analytics;
 pub(crate) mod elicitation;
 mod instructions;
+pub mod oauth;
 pub mod prompts;
 pub mod resources;
 pub mod tool_sets;

@@ -167,6 +167,12 @@ enum Commands {
         /// Defaults to all sets enabled.
         #[arg(long)]
         tools: Option<String>,
+
+        /// Enable OAuth 2.1 + GitHub PAT bearer auth (HTTP transport only).
+        /// Requires `NSIP_GITHUB_CLIENT_ID`, `NSIP_GITHUB_CLIENT_SECRET`,
+        /// `NSIP_AUTH_SECRET`, and `NSIP_AUTH_BASE_URL` environment variables.
+        #[arg(long)]
+        auth: bool,
     },
 }
 
@@ -425,6 +431,7 @@ async fn run() -> Result<(), nsip::Error> {
             host,
             port,
             tools,
+            auth,
         } => {
             tracing_subscriber::fmt()
                 .with_writer(std::io::stderr)
@@ -432,9 +439,29 @@ async fn run() -> Result<(), nsip::Error> {
             let sets = tools.map_or_else(nsip::mcp::tool_sets::EnabledToolSets::all, |csv| {
                 nsip::mcp::tool_sets::EnabledToolSets::from_csv(&csv)
             });
+            let oauth_state = if auth {
+                let config =
+                    nsip::mcp::oauth::config::OAuthConfig::try_from_env().ok_or_else(|| {
+                        nsip::Error::Validation(
+                            "--auth requires NSIP_GITHUB_CLIENT_ID, NSIP_GITHUB_CLIENT_SECRET, \
+                         NSIP_AUTH_SECRET, and NSIP_AUTH_BASE_URL environment variables"
+                                .into(),
+                        )
+                    })?;
+                let store = std::sync::Arc::new(nsip::mcp::oauth::store::InMemoryOAuthStore::new())
+                    as std::sync::Arc<dyn nsip::mcp::oauth::store::OAuthStoreBackend>;
+                Some(nsip::mcp::oauth::OAuthState::new(config, store))
+            } else {
+                None
+            };
             match transport.as_str() {
-                "stdio" => nsip::mcp::serve_stdio(sets).await?,
-                "http" => nsip::mcp::serve_http(&host, port, sets).await?,
+                "stdio" => {
+                    if auth {
+                        eprintln!("warning: --auth is ignored for stdio transport");
+                    }
+                    nsip::mcp::serve_stdio(sets).await?;
+                },
+                "http" => nsip::mcp::serve_http(&host, port, sets, oauth_state).await?,
                 other => {
                     return Err(nsip::Error::Validation(format!(
                         "unknown transport: {other}, expected 'stdio' or 'http'"
