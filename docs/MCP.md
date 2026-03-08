@@ -2,9 +2,9 @@
 
 The `nsip` binary ships a built-in [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that exposes the full NSIP Search API surface -- plus analytics-powered breeding intelligence -- to any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.).
 
-**Capabilities:** 13 tools, 5 static resources, 4 resource templates, 7 guided prompts
-**Protocol version:** `2024-11-05`
-**Transport:** stdio
+**Capabilities:** 13 tools, 5 static resources, 4 resource templates, 7 guided prompts, elicitation, cursor-based pagination
+**Protocol version:** `2025-06-18` (MCP LATEST)
+**Transports:** stdio, streamable HTTP (SSE)
 
 ---
 
@@ -101,6 +101,16 @@ Place at your project root or `~/.mcp.json`:
 
 On macOS the config file is at `~/Library/Application Support/Claude/claude_desktop_config.json`.
 
+### HTTP Transport
+
+For network-accessible deployments, use the streamable HTTP transport:
+
+```bash
+nsip mcp --transport http --host 127.0.0.1 --port 8080
+```
+
+This serves a single MCP endpoint at `/mcp` supporting JSON-RPC over POST and SSE via GET, with session management (`Mcp-Session-Id` header) and CORS headers.
+
 ### Docker transport
 
 ```json
@@ -119,7 +129,7 @@ On macOS the config file is at `~/Library/Application Support/Claude/claude_desk
 After configuring, verify the server starts:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
 ```
 
 ---

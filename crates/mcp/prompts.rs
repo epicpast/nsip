@@ -42,12 +42,12 @@ fn prompt_evaluate_ram() -> Prompt {
         Some(
             "Evaluate a ram's breeding value — fetches EBVs, breed ranges, and constructs a comprehensive assessment",
         ),
-        Some(vec![PromptArgument {
-            name: "lpn_id".to_string(),
-            title: Some("LPN ID".to_string()),
-            description: Some("LPN ID of the ram to evaluate".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("lpn_id")
+                .with_title("LPN ID")
+                .with_description("LPN ID of the ram to evaluate")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -55,12 +55,12 @@ fn prompt_evaluate_ewe() -> Prompt {
     Prompt::new(
         "evaluate-ewe",
         Some("Evaluate a ewe's breeding value — emphasizes maternal traits (NLB, NWT, PWT)"),
-        Some(vec![PromptArgument {
-            name: "lpn_id".to_string(),
-            title: Some("LPN ID".to_string()),
-            description: Some("LPN ID of the ewe to evaluate".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("lpn_id")
+                .with_title("LPN ID")
+                .with_description("LPN ID of the ewe to evaluate")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -70,12 +70,12 @@ fn prompt_compare_breeding_stock() -> Prompt {
         Some(
             "Compare multiple animals side-by-side with trait analysis and breeding recommendations",
         ),
-        Some(vec![PromptArgument {
-            name: "animal_ids".to_string(),
-            title: Some("Animal IDs".to_string()),
-            description: Some("Comma-separated LPN IDs of animals to compare (2-5)".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("animal_ids")
+                .with_title("Animal IDs")
+                .with_description("Comma-separated LPN IDs of animals to compare (2-5)")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -84,18 +84,14 @@ fn prompt_plan_mating() -> Prompt {
         "plan-mating",
         Some("Plan a specific mating — COI check, trait complementarity, and offspring prediction"),
         Some(vec![
-            PromptArgument {
-                name: "sire_id".to_string(),
-                title: Some("Sire LPN ID".to_string()),
-                description: Some("LPN ID of the sire".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "dam_id".to_string(),
-                title: Some("Dam LPN ID".to_string()),
-                description: Some("LPN ID of the dam".to_string()),
-                required: Some(true),
-            },
+            PromptArgument::new("sire_id")
+                .with_title("Sire LPN ID")
+                .with_description("LPN ID of the sire")
+                .with_required(true),
+            PromptArgument::new("dam_id")
+                .with_title("Dam LPN ID")
+                .with_description("LPN ID of the dam")
+                .with_required(true),
         ]),
     )
 }
@@ -105,18 +101,14 @@ fn prompt_flock_improvement() -> Prompt {
         "flock-improvement",
         Some("Analyze a breed or flock for trait gaps and improvement opportunities"),
         Some(vec![
-            PromptArgument {
-                name: "breed_id".to_string(),
-                title: Some("Breed ID".to_string()),
-                description: Some("Breed ID to analyze".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "flock_id".to_string(),
-                title: Some("Flock ID".to_string()),
-                description: Some("Optional flock ID to narrow analysis".to_string()),
-                required: Some(false),
-            },
+            PromptArgument::new("breed_id")
+                .with_title("Breed ID")
+                .with_description("Breed ID to analyze")
+                .with_required(true),
+            PromptArgument::new("flock_id")
+                .with_title("Flock ID")
+                .with_description("Optional flock ID to narrow analysis")
+                .with_required(false),
         ]),
     )
 }
@@ -126,24 +118,18 @@ fn prompt_select_replacement() -> Prompt {
         "select-replacement",
         Some("Find top replacement candidates within a breed by gender and target trait"),
         Some(vec![
-            PromptArgument {
-                name: "breed_id".to_string(),
-                title: Some("Breed ID".to_string()),
-                description: Some("Breed ID to search within".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "gender".to_string(),
-                title: Some("Gender".to_string()),
-                description: Some("Gender of replacement animals (Male or Female)".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "target_trait".to_string(),
-                title: Some("Target Trait".to_string()),
-                description: Some("Primary trait to optimize (e.g. WWT, NLB)".to_string()),
-                required: Some(true),
-            },
+            PromptArgument::new("breed_id")
+                .with_title("Breed ID")
+                .with_description("Breed ID to search within")
+                .with_required(true),
+            PromptArgument::new("gender")
+                .with_title("Gender")
+                .with_description("Gender of replacement animals (Male or Female)")
+                .with_required(true),
+            PromptArgument::new("target_trait")
+                .with_title("Target Trait")
+                .with_description("Primary trait to optimize (e.g. WWT, NLB)")
+                .with_required(true),
         ]),
     )
 }
@@ -152,12 +138,12 @@ fn prompt_interpret_ebvs() -> Prompt {
     Prompt::new(
         "interpret-ebvs",
         Some("Plain-language explanation of an animal's EBVs with breed-relative context"),
-        Some(vec![PromptArgument {
-            name: "lpn_id".to_string(),
-            title: Some("LPN ID".to_string()),
-            description: Some("LPN ID of the animal to interpret".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("lpn_id")
+                .with_title("LPN ID")
+                .with_description("LPN ID of the animal to interpret")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -241,13 +227,11 @@ async fn evaluate_animal<S: BuildHasher + Sync>(
          How should it be used in a breeding program?"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Breeding evaluation for {type_name} {lpn_id}")),
-        messages: vec![
-            PromptMessage::new_text(PromptMessageRole::User, system_msg),
-            PromptMessage::new_text(PromptMessageRole::User, user_msg),
-        ],
-    })
+    Ok(GetPromptResult::new(vec![
+        PromptMessage::new_text(PromptMessageRole::User, system_msg),
+        PromptMessage::new_text(PromptMessageRole::User, user_msg),
+    ])
+    .with_description(format!("Breeding evaluation for {type_name} {lpn_id}")))
 }
 
 /// Compare multiple animals side-by-side.
@@ -286,10 +270,11 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
         ids.len()
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Comparison of {} breeding animals", ids.len())),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Comparison of {} breeding animals", ids.len())))
 }
 
 /// Plan a specific mating.
@@ -345,10 +330,11 @@ async fn plan_mating<S: BuildHasher + Sync>(
          ## Mating Analysis Data\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Mating plan: {sire_id} x {dam_id}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Mating plan: {sire_id} x {dam_id}")))
 }
 
 /// Analyze a breed or flock for improvement opportunities.
@@ -402,10 +388,11 @@ async fn flock_improvement<S: BuildHasher + Sync>(
          ## Flock/Breed Analysis Data\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Flock improvement analysis for {scope}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Flock improvement analysis for {scope}")))
 }
 
 /// Find top replacement candidates.
@@ -458,10 +445,11 @@ async fn select_replacement<S: BuildHasher + Sync>(
          ## Replacement Candidates\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Replacement {gender} selection for {target_trait}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Replacement {gender} selection for {target_trait}")))
 }
 
 /// Plain-language EBV interpretation.
@@ -498,10 +486,11 @@ async fn interpret_ebvs<S: BuildHasher + Sync>(
          Summarize what this animal would contribute to a breeding program."
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("EBV interpretation for {lpn_id}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("EBV interpretation for {lpn_id}")))
 }
 
 // ---------------------------------------------------------------------------

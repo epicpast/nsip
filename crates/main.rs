@@ -150,7 +150,19 @@ enum Commands {
     },
 
     /// Start the MCP server for AI assistant integration.
-    Mcp,
+    Mcp {
+        /// Transport type: stdio (default) or http.
+        #[arg(long, default_value = "stdio")]
+        transport: String,
+
+        /// Host address to bind to (HTTP transport only).
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+
+        /// Port to bind to (HTTP transport only).
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
+    },
 }
 
 /// Generate man pages to a directory or stdout.
@@ -403,11 +415,23 @@ async fn run() -> Result<(), nsip::Error> {
             generate_man_pages(out_dir)?;
         },
 
-        Commands::Mcp => {
+        Commands::Mcp {
+            transport,
+            host,
+            port,
+        } => {
             tracing_subscriber::fmt()
                 .with_writer(std::io::stderr)
                 .init();
-            nsip::mcp::serve_stdio().await?;
+            match transport.as_str() {
+                "stdio" => nsip::mcp::serve_stdio().await?,
+                "http" => nsip::mcp::serve_http(&host, port).await?,
+                other => {
+                    return Err(nsip::Error::Validation(format!(
+                        "unknown transport: {other}, expected 'stdio' or 'http'"
+                    )));
+                },
+            }
         },
     }
 
