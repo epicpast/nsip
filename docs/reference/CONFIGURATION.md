@@ -102,9 +102,39 @@ This flag is global and applies to all subcommands.
 
 ## MCP Server Configuration
 
-The MCP server is started with `nsip mcp` and communicates over stdio (JSON-RPC). It has no configuration options of its own beyond the MCP client configuration.
+The MCP server supports two transports (stdio and HTTP), optional tool set filtering, OAuth authentication, and telemetry. See [MCP Server Configuration Reference](MCP-SERVER-CONFIGURATION.md) for the complete reference.
 
-### Claude Code (`.mcp.json`)
+### Quick Start
+
+```bash
+# Stdio (default) — all tools, no auth
+nsip mcp
+
+# HTTP with tool filtering
+nsip mcp --transport http --port 8080 --tools search,breed
+
+# HTTP with OAuth authentication
+nsip mcp --transport http --port 8080 --auth
+```
+
+### OAuth Environment Variables
+
+Required when `--auth` is set:
+
+| Variable | Description |
+|----------|-------------|
+| `NSIP_GITHUB_CLIENT_ID` | GitHub OAuth app client ID |
+| `NSIP_GITHUB_CLIENT_SECRET` | GitHub OAuth app client secret |
+| `NSIP_AUTH_SECRET` | HMAC-SHA256 secret for JWT signing |
+| `NSIP_AUTH_BASE_URL` | External base URL (e.g. `http://localhost:8080`) |
+
+### Telemetry
+
+When compiled with `--features telemetry`, the server logs in JSON format with W3C trace context (`trace_id`, `span_id`). Default build uses plain text tracing.
+
+### Client Configuration
+
+#### Claude Code (`.mcp.json`)
 
 Place at your project root or `~/.mcp.json`:
 
@@ -119,7 +149,7 @@ Place at your project root or `~/.mcp.json`:
 }
 ```
 
-### Claude Desktop (`claude_desktop_config.json`)
+#### Claude Desktop (`claude_desktop_config.json`)
 
 ```json
 {
@@ -134,7 +164,7 @@ Place at your project root or `~/.mcp.json`:
 
 On macOS the config file is at `~/Library/Application Support/Claude/claude_desktop_config.json`.
 
-### Docker Transport
+#### Docker Transport
 
 ```json
 {

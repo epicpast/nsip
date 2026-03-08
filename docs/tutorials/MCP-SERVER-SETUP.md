@@ -68,7 +68,7 @@ nsip --version
 Before connecting to an AI client, verify that the MCP server starts correctly:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0.1.0"}}}' | nsip mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
 ```
 
 You should see a JSON response containing the server's capabilities (tools, resources, and prompts). Press Ctrl+C to stop.
@@ -206,6 +206,18 @@ In this tutorial you:
 
 ---
 
+## Going Further
+
+The MCP server has additional features for production deployments:
+
+- **Tool sets** — expose only specific tool categories with `--tools search,breed`. See [How to Configure Tool Sets](../how-to/MCP-TOOL-SETS.md).
+- **HTTP transport** — serve over HTTP with `--transport http --port 8080` for network-accessible deployments.
+- **OAuth authentication** — secure the HTTP transport with GitHub OAuth via `--auth`. See [How to Enable OAuth](../how-to/OAUTH-AUTHENTICATION.md).
+- **Telemetry** — enable W3C trace context in logs with `--features telemetry`. See [How to Enable Telemetry](../how-to/TELEMETRY.md).
+- **Dynamic instructions** — the server generates instructions dynamically based on enabled tool sets, so MCP clients only see documentation for available tools. See [Dynamic Instructions](../explanation/DYNAMIC-INSTRUCTIONS.md).
+
+---
+
 ## Next Steps
 
 Now that your MCP server is running:
@@ -213,5 +225,6 @@ Now that your MCP server is running:
 - [Getting Started](GETTING-STARTED.md) -- use the NSIP library directly in Rust code
 - [Interpreting Results](INTERPRETING-RESULTS.md) -- understand the genetic data returned by queries
 - [Understanding EBVs](../explanation/EBV-EXPLAINED.md) -- background on Estimated Breeding Values
+- [MCP Server Configuration](../reference/MCP-SERVER-CONFIGURATION.md) -- full configuration reference
 
 For the complete MCP API reference, see the [MCP Server Reference](../MCP.md).
