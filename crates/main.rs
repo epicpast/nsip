@@ -218,6 +218,43 @@ fn render_man_page(
         .map_err(|e| nsip::Error::Validation(format!("cannot write {filename}: {e}")))
 }
 
+/// Initialise the tracing subscriber.
+///
+/// When compiled with the `telemetry` feature and `NSIP_OTLP_ENDPOINT` is set,
+/// the subscriber includes an `OpenTelemetry` layer that attaches W3C trace
+/// context (`trace_id`, `span_id`) to every JSON log line. Otherwise a plain
+/// text subscriber writing to stderr is used.
+fn init_tracing() {
+    init_tracing_inner();
+}
+
+#[cfg(feature = "telemetry")]
+fn init_tracing_inner() {
+    use tracing_subscriber::layer::SubscriberExt as _;
+    use tracing_subscriber::util::SubscriberInitExt as _;
+
+    let provider = nsip::mcp::telemetry::init_tracer_provider();
+    let otel_layer = nsip::mcp::telemetry::otel_layer(&provider);
+
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_writer(std::io::stderr)
+                .event_format(nsip::mcp::telemetry::OtelJsonFormat::default())
+                .fmt_fields(tracing_subscriber::fmt::format::JsonFields::default()),
+        )
+        .with(otel_layer)
+        .init();
+}
+
+#[cfg(not(feature = "telemetry"))]
+fn init_tracing_inner() {
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .init();
+}
+
 /// Runs the application logic.
 #[allow(clippy::too_many_lines)]
 async fn run() -> Result<(), nsip::Error> {
@@ -433,9 +470,7 @@ async fn run() -> Result<(), nsip::Error> {
             tools,
             auth,
         } => {
-            tracing_subscriber::fmt()
-                .with_writer(std::io::stderr)
-                .init();
+            init_tracing();
             let sets = tools.map_or_else(nsip::mcp::tool_sets::EnabledToolSets::all, |csv| {
                 nsip::mcp::tool_sets::EnabledToolSets::from_csv(&csv)
             });

@@ -132,6 +132,54 @@ After configuring, verify the server starts:
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
 ```
 
+### Tool Sets
+
+By default all 13 tools are exposed. Use `--tools` to enable only specific sets:
+
+```bash
+nsip mcp --tools search,breed
+```
+
+| Set | Tools |
+|-----|-------|
+| `search` | `search`, `details`, `lineage`, `progeny`, `profile` |
+| `analytics` | `compare`, `rank`, `inbreeding_check`, `mating_recommendations` |
+| `flock` | `flock_summary`, `database_status` |
+| `breed` | `breed_groups`, `trait_ranges` |
+
+Server instructions are dynamically generated to match the enabled tool sets.
+
+### Authentication
+
+The HTTP transport supports optional OAuth 2.1 + PKCE authentication with GitHub as the identity provider. Enable with `--auth`:
+
+```bash
+export NSIP_GITHUB_CLIENT_ID="..."
+export NSIP_GITHUB_CLIENT_SECRET="..."
+export NSIP_AUTH_SECRET="..."        # HMAC-SHA256 secret for JWT signing
+export NSIP_AUTH_BASE_URL="http://localhost:8080"
+nsip mcp --transport http --port 8080 --auth
+```
+
+When enabled, the server exposes OAuth protocol endpoints (`/register`, `/authorize`, `/callback`, `/token`, `/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource`) and requires a `Bearer` token on the `/mcp` endpoint.
+
+**GitHub PAT shortcut:** Clients can bypass the OAuth flow by passing a GitHub Personal Access Token directly as `Authorization: Bearer ghp_...`. The server validates the PAT via the GitHub API and caches the result for 5 minutes.
+
+Authentication is ignored for stdio transport.
+
+### Telemetry
+
+When compiled with `--features telemetry`, the server uses a custom JSON log format that includes W3C trace context (`trace_id`, `span_id`) on every log line:
+
+```bash
+cargo install nsip --features telemetry
+nsip mcp --transport http --port 8080
+```
+
+The telemetry feature adds an `OpenTelemetry` tracing layer. An OTLP exporter can be layered on by extending the tracer provider configuration.
+
+Without the `telemetry` feature (the default), standard text-based tracing to stderr is used.
+
 ---
 
 ## Tool Reference

@@ -9,6 +9,8 @@ mod instructions;
 pub mod oauth;
 pub mod prompts;
 pub mod resources;
+#[cfg(feature = "telemetry")]
+pub mod telemetry;
 pub mod tool_sets;
 mod tools;
 mod transport;

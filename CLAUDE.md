@@ -103,3 +103,9 @@ Release workflow triggers on version tags (`v*`): builds multi-platform binaries
 ## NSIP MCP Server
 
 The binary ships a built-in MCP server (`nsip mcp`) for sheep genetic evaluation with 13 tools, 7 guided prompts, and resource templates. See [`docs/MCP.md`](docs/MCP.md) for the full API reference and [`docs/llm-guides/`](docs/llm-guides/) for ready-to-use LLM instruction templates.
+
+### MCP Features
+
+- **Tool sets**: `--tools search,breed` to expose only specific tool categories
+- **OAuth 2.1 + PAT auth**: `--auth` on HTTP transport with GitHub identity provider (env: `NSIP_GITHUB_CLIENT_ID`, `NSIP_GITHUB_CLIENT_SECRET`, `NSIP_AUTH_SECRET`, `NSIP_AUTH_BASE_URL`)
+- **Telemetry**: `--features telemetry` enables `OpenTelemetry` trace context in JSON logs
