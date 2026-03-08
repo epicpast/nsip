@@ -162,6 +162,11 @@ enum Commands {
         /// Port to bind to (HTTP transport only).
         #[arg(long, default_value_t = 8080)]
         port: u16,
+
+        /// Comma-separated tool sets to enable (search,analytics,flock,breed).
+        /// Defaults to all sets enabled.
+        #[arg(long)]
+        tools: Option<String>,
     },
 }
 
@@ -419,13 +424,17 @@ async fn run() -> Result<(), nsip::Error> {
             transport,
             host,
             port,
+            tools,
         } => {
             tracing_subscriber::fmt()
                 .with_writer(std::io::stderr)
                 .init();
+            let sets = tools.map_or_else(nsip::mcp::tool_sets::EnabledToolSets::all, |csv| {
+                nsip::mcp::tool_sets::EnabledToolSets::from_csv(&csv)
+            });
             match transport.as_str() {
-                "stdio" => nsip::mcp::serve_stdio().await?,
-                "http" => nsip::mcp::serve_http(&host, port).await?,
+                "stdio" => nsip::mcp::serve_stdio(sets).await?,
+                "http" => nsip::mcp::serve_http(&host, port, sets).await?,
                 other => {
                     return Err(nsip::Error::Validation(format!(
                         "unknown transport: {other}, expected 'stdio' or 'http'"

@@ -19,12 +19,16 @@ use crate::mcp::NsipServer;
 /// # Errors
 ///
 /// Returns an error if the server fails to bind or encounters a runtime error.
-pub async fn serve_http(host: &str, port: u16) -> crate::Result<()> {
+pub async fn serve_http(
+    host: &str,
+    port: u16,
+    sets: super::tool_sets::EnabledToolSets,
+) -> crate::Result<()> {
     use rmcp::transport::streamable_http_server::{
         StreamableHttpServerConfig, StreamableHttpService, session::local::LocalSessionManager,
     };
 
-    let template_handler = NsipServer::new();
+    let template_handler = NsipServer::with_tool_sets(sets);
     let config = StreamableHttpServerConfig::default();
     let ct = config.cancellation_token.clone();
 

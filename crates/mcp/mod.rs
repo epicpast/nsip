@@ -8,6 +8,7 @@ pub(crate) mod elicitation;
 mod instructions;
 pub mod prompts;
 pub mod resources;
+pub mod tool_sets;
 mod tools;
 mod transport;
 
@@ -64,12 +65,14 @@ fn paginate<T: Clone>(
 
 /// MCP server for NSIP Search API with full protocol support.
 ///
-/// Exposes 13 tools, 5 static resources, 4 resource templates, and 7 guided
-/// breeding prompts backed by the NSIP API and local analytics.
+/// Exposes up to 13 tools (filtered by enabled tool sets), 5 static resources,
+/// 4 resource templates, and 7 guided breeding prompts backed by the NSIP API
+/// and local analytics.
 #[derive(Clone)]
 pub struct NsipServer {
     tool_router: ToolRouter<Self>,
     pub(crate) client: NsipClient,
+    pub(crate) enabled_tools: tool_sets::EnabledToolSets,
 }
 
 impl Default for NsipServer {
@@ -94,7 +97,7 @@ impl ServerHandler for NsipServer {
                 .build(),
         )
         .with_protocol_version(ProtocolVersion::LATEST)
-        .with_instructions(instructions::build_instructions())
+        .with_instructions(instructions::build_instructions(&self.enabled_tools))
     }
 
     // -- Prompts ---------------------------------------------------------------
@@ -205,10 +208,10 @@ pub use transport::serve_http;
 /// # Errors
 ///
 /// Returns an error if the server fails to start or encounters a runtime error.
-pub async fn serve_stdio() -> crate::Result<()> {
+pub async fn serve_stdio(sets: tool_sets::EnabledToolSets) -> crate::Result<()> {
     use rmcp::{ServiceExt, transport::stdio};
 
-    let service = NsipServer::new()
+    let service = NsipServer::with_tool_sets(sets)
         .serve(stdio())
         .await
         .map_err(|e| crate::Error::Connection(format!("MCP server failed to start: {e}")))?;
@@ -279,6 +282,18 @@ mod tests {
             !impl_info.name.is_empty(),
             "Server implementation name should not be empty"
         );
+    }
+
+    #[test]
+    fn with_tool_sets_filters_tools() {
+        let sets = tool_sets::EnabledToolSets::from_csv("search");
+        let server = NsipServer::with_tool_sets(sets);
+        let info = server.get_info();
+        assert_eq!(info.protocol_version, ProtocolVersion::LATEST);
+        // Instructions should mention search but not analytics
+        let text = info.instructions.as_deref().unwrap_or_default();
+        assert!(text.contains("## Search & Retrieval Tools"));
+        assert!(!text.contains("## Analytics Tools"));
     }
 
     #[test]

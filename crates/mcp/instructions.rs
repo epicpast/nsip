@@ -4,17 +4,30 @@
 //! comprehensive documentation of all tools, prompts, resources, and
 //! common parameters exposed by the NSIP server.
 
-/// Build server instructions covering all tools, prompts, and resources.
+use super::tool_sets::{EnabledToolSets, ToolSet};
+
+/// Build server instructions covering enabled tools, prompts, and resources.
+///
+/// Sections for disabled tool sets are omitted so the client only sees
+/// documentation for tools it can actually invoke.
 ///
 /// Returns a single `String` suitable for the `ServerInfo.instructions` field.
 #[must_use]
-pub(crate) fn build_instructions() -> String {
+pub(crate) fn build_instructions(tools: &EnabledToolSets) -> String {
     let mut out = String::with_capacity(4096);
     append_header(&mut out);
-    append_search_tools(&mut out);
-    append_analytics_tools(&mut out);
-    append_flock_tools(&mut out);
-    append_breed_tools(&mut out);
+    if tools.is_set_enabled(ToolSet::Search) {
+        append_search_tools(&mut out);
+    }
+    if tools.is_set_enabled(ToolSet::Analytics) {
+        append_analytics_tools(&mut out);
+    }
+    if tools.is_set_enabled(ToolSet::Flock) {
+        append_flock_tools(&mut out);
+    }
+    if tools.is_set_enabled(ToolSet::Breed) {
+        append_breed_tools(&mut out);
+    }
     append_resource_guide(&mut out);
     append_prompt_guide(&mut out);
     append_common_parameters(&mut out);
@@ -130,13 +143,13 @@ mod tests {
 
     #[test]
     fn output_is_nonempty() {
-        let instructions = build_instructions();
+        let instructions = build_instructions(&EnabledToolSets::all());
         assert!(!instructions.is_empty());
     }
 
     #[test]
     fn contains_section_headers() {
-        let instructions = build_instructions();
+        let instructions = build_instructions(&EnabledToolSets::all());
         let headers = [
             "NSIP Livestock Intelligence Server",
             "## Search & Retrieval Tools",
@@ -157,7 +170,7 @@ mod tests {
 
     #[test]
     fn contains_all_thirteen_tool_names() {
-        let instructions = build_instructions();
+        let instructions = build_instructions(&EnabledToolSets::all());
         let tools = [
             "search",
             "details",
@@ -180,7 +193,7 @@ mod tests {
 
     #[test]
     fn contains_all_seven_prompt_names() {
-        let instructions = build_instructions();
+        let instructions = build_instructions(&EnabledToolSets::all());
         let prompts = [
             "evaluate-ram",
             "evaluate-ewe",
@@ -200,7 +213,7 @@ mod tests {
 
     #[test]
     fn contains_nsip_uri_references() {
-        let instructions = build_instructions();
+        let instructions = build_instructions(&EnabledToolSets::all());
         assert!(
             instructions.contains("nsip://"),
             "Missing nsip:// URI references"
@@ -225,7 +238,7 @@ mod tests {
     fn uses_preallocated_buffer() {
         // Verify that the output fits within a reasonable capacity range
         // to confirm we're not wildly over- or under-allocating.
-        let instructions = build_instructions();
+        let instructions = build_instructions(&EnabledToolSets::all());
         assert!(
             instructions.len() < 8192,
             "Instructions unexpectedly large: {} bytes",
@@ -236,5 +249,40 @@ mod tests {
             "Instructions unexpectedly small: {} bytes",
             instructions.len()
         );
+    }
+
+    #[test]
+    fn disabled_search_omits_search_section() {
+        let sets = EnabledToolSets::from_csv("analytics,flock,breed");
+        let instructions = build_instructions(&sets);
+        assert!(
+            !instructions.contains("## Search & Retrieval Tools"),
+            "Search section should be omitted"
+        );
+        assert!(instructions.contains("## Analytics Tools"));
+    }
+
+    #[test]
+    fn disabled_analytics_omits_analytics_section() {
+        let sets = EnabledToolSets::from_csv("search,flock,breed");
+        let instructions = build_instructions(&sets);
+        assert!(
+            !instructions.contains("## Analytics Tools"),
+            "Analytics section should be omitted"
+        );
+        assert!(instructions.contains("## Search & Retrieval Tools"));
+    }
+
+    #[test]
+    fn disabled_all_tool_sets_still_has_header_and_resources() {
+        let sets = EnabledToolSets::from_csv("");
+        let instructions = build_instructions(&sets);
+        assert!(instructions.contains("NSIP Livestock Intelligence Server"));
+        assert!(instructions.contains("## Resources"));
+        assert!(instructions.contains("## Guided Prompts"));
+        assert!(!instructions.contains("## Search & Retrieval Tools"));
+        assert!(!instructions.contains("## Analytics Tools"));
+        assert!(!instructions.contains("## Flock Tools"));
+        assert!(!instructions.contains("## Breed Tools"));
     }
 }

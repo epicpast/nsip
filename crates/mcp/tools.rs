@@ -197,11 +197,21 @@ fn json_result(value: &impl serde::Serialize) -> Result<CallToolResult, McpError
 
 #[tool_router]
 impl super::NsipServer {
-    /// Creates a new NSIP MCP server.
+    /// Creates a new NSIP MCP server with all tool sets enabled.
     pub fn new() -> Self {
+        Self::with_tool_sets(super::tool_sets::EnabledToolSets::all())
+    }
+
+    /// Creates a new NSIP MCP server with the specified tool sets.
+    pub fn with_tool_sets(sets: super::tool_sets::EnabledToolSets) -> Self {
+        let mut router = Self::tool_router();
+        for name in sets.disabled_tool_names() {
+            router.remove_route(name);
+        }
         Self {
-            tool_router: Self::tool_router(),
+            tool_router: router,
             client: NsipClient::new(),
+            enabled_tools: sets,
         }
     }
 
@@ -211,6 +221,7 @@ impl super::NsipServer {
         Self {
             tool_router: Self::tool_router(),
             client: NsipClient::with_base_url(url),
+            enabled_tools: super::tool_sets::EnabledToolSets::all(),
         }
     }
 
