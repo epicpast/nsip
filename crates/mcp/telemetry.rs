@@ -407,6 +407,125 @@ mod tests {
         assert_eq!(&adapter.0, b"hello");
     }
 
+    #[test]
+    fn otel_layer_creates_from_provider() {
+        let provider = init_tracer_provider();
+        // Just verify it doesn't panic — the concrete type isn't important
+        let _layer = otel_layer::<tracing_subscriber::Registry>(&provider);
+    }
+
+    #[test]
+    fn fmt_write_adapter_write_returns_correct_count() {
+        let buf = Vec::new();
+        let mut adapter = FmtWriteAdapter(buf);
+        let n = io::Write::write(&mut adapter, b"test").unwrap();
+        assert_eq!(n, 4);
+        assert_eq!(&adapter.0, b"test");
+    }
+
+    #[test]
+    fn fmt_write_adapter_empty_write() {
+        let buf = Vec::new();
+        let mut adapter = FmtWriteAdapter(buf);
+        let n = io::Write::write(&mut adapter, b"").unwrap();
+        assert_eq!(n, 0);
+        assert!(adapter.0.is_empty());
+    }
+
+    #[test]
+    fn fmt_write_adapter_multiple_writes() {
+        let buf = Vec::new();
+        let mut adapter = FmtWriteAdapter(buf);
+        io::Write::write_all(&mut adapter, b"hello ").unwrap();
+        io::Write::write_all(&mut adapter, b"world").unwrap();
+        assert_eq!(&adapter.0, b"hello world");
+    }
+
+    #[test]
+    fn otel_json_format_produces_json_output() {
+        use tracing_subscriber::layer::SubscriberExt as _;
+
+        // Set up a subscriber that writes to a buffer
+        let buf = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let buf_clone = buf.clone();
+        let make_writer = move || -> Box<dyn io::Write> {
+            Box::new(FmtWriteAdapter(WriterCapture(buf_clone.clone())))
+        };
+
+        let provider = init_tracer_provider();
+        let otel = otel_layer(&provider);
+
+        let subscriber = tracing_subscriber::registry()
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .with_writer(make_writer)
+                    .event_format(OtelJsonFormat::default())
+                    .fmt_fields(tracing_subscriber::fmt::format::JsonFields::default()),
+            )
+            .with(otel);
+
+        // Use the subscriber for a single event
+        tracing::subscriber::with_default(subscriber, || {
+            tracing::info!(key = "value", "test event");
+        });
+
+        let output_str = {
+            let guard = buf.lock().unwrap();
+            String::from_utf8_lossy(&guard).into_owned()
+        };
+        // Should be valid JSON
+        let json: serde_json::Value = serde_json::from_str(output_str.trim()).unwrap();
+        assert_eq!(json["level"], "INFO");
+        assert!(json["timestamp"].is_string());
+        assert!(json["fields"].is_object());
+        assert!(json["target"].is_string());
+    }
+
+    #[test]
+    fn otel_json_format_without_span_has_null_trace_ids() {
+        use tracing_subscriber::layer::SubscriberExt as _;
+
+        let buf = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let buf_clone = buf.clone();
+        let make_writer = move || -> Box<dyn io::Write> {
+            Box::new(FmtWriteAdapter(WriterCapture(buf_clone.clone())))
+        };
+
+        let subscriber = tracing_subscriber::registry().with(
+            tracing_subscriber::fmt::layer()
+                .with_writer(make_writer)
+                .event_format(OtelJsonFormat::default())
+                .fmt_fields(tracing_subscriber::fmt::format::JsonFields::default()),
+        );
+
+        tracing::subscriber::with_default(subscriber, || {
+            tracing::info!("no span event");
+        });
+
+        let output_str = {
+            let guard = buf.lock().unwrap();
+            String::from_utf8_lossy(&guard).into_owned()
+        };
+        let json: serde_json::Value = serde_json::from_str(output_str.trim()).unwrap();
+        assert!(json["trace_id"].is_null());
+        assert!(json["span_id"].is_null());
+    }
+
+    use std::sync::Arc;
+
+    /// A writer that captures output into a shared buffer.
+    struct WriterCapture(Arc<std::sync::Mutex<Vec<u8>>>);
+
+    impl io::Write for WriterCapture {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.0.lock().unwrap().extend_from_slice(buf);
+            Ok(buf.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
     // Dummy callsites for field tests.
     static CALLSITE: FakeCallsite = FakeCallsite;
     static CALLSITE_F64: FakeCallsite = FakeCallsite;

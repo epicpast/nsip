@@ -219,4 +219,141 @@ mod tests {
             "https://127.0.0.1:9090/callback"
         ));
     }
+
+    // --- Handler tests ---
+
+    use std::sync::Arc;
+
+    use axum::Router;
+    use axum::body::Body;
+    use axum::http::Request;
+    use axum::routing::get as get_route;
+    use tower::ServiceExt as _;
+
+    use crate::mcp::oauth::OAuthState;
+    use crate::mcp::oauth::config::OAuthConfig;
+    use crate::mcp::oauth::store::{InMemoryOAuthStore, OAuthStoreBackend, RegisteredClient};
+
+    fn test_state() -> OAuthState {
+        let config = OAuthConfig {
+            github_client_id: "gh-id".into(),
+            github_client_secret: "gh-secret".into(),
+            base_url: "https://example.com".into(),
+            issuer: "https://example.com".into(),
+            auth_secret: "test-secret-key-that-is-long-enough-32".into(),
+            token_ttl_secs: 3600,
+            allowed_users: None,
+        };
+        let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
+        OAuthState::new(config, store)
+    }
+
+    fn authorize_app(state: OAuthState) -> Router {
+        Router::new()
+            .route("/authorize", get_route(authorize))
+            .with_state(state)
+    }
+
+    #[tokio::test]
+    async fn authorize_invalid_response_type() {
+        let state = test_state();
+        let app = authorize_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/authorize?client_id=c1&response_type=token&redirect_uri=http://localhost/cb&code_challenge=abc&code_challenge_method=S256&state=s1")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn authorize_invalid_code_challenge_method() {
+        let state = test_state();
+        let app = authorize_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/authorize?client_id=c1&response_type=code&redirect_uri=http://localhost/cb&code_challenge=abc&code_challenge_method=plain&state=s1")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn authorize_unknown_client() {
+        let state = test_state();
+        let app = authorize_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/authorize?client_id=nonexistent&response_type=code&redirect_uri=http://localhost/cb&code_challenge=abc&code_challenge_method=S256&state=s1")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn authorize_redirect_uri_mismatch() {
+        let state = test_state();
+        // Register a client first
+        state
+            .store
+            .register_client(RegisteredClient {
+                client_id: "client-1".into(),
+                redirect_uris: vec!["http://localhost:8080/cb".into()],
+                created_at: chrono::Utc::now(),
+            })
+            .await
+            .unwrap();
+
+        let app = authorize_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/authorize?client_id=client-1&response_type=code&redirect_uri=http://evil.com/cb&code_challenge=abc&code_challenge_method=S256&state=s1")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn authorize_valid_request_redirects_to_github() {
+        let state = test_state();
+        state
+            .store
+            .register_client(RegisteredClient {
+                client_id: "client-1".into(),
+                redirect_uris: vec!["http://localhost:8080/cb".into()],
+                created_at: chrono::Utc::now(),
+            })
+            .await
+            .unwrap();
+
+        let app = authorize_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/authorize?client_id=client-1&response_type=code&redirect_uri=http://localhost:8080/cb&code_challenge=abc123&code_challenge_method=S256&state=client-state")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(
+            resp.status().is_redirection(),
+            "expected redirect, got {}",
+            resp.status()
+        );
+        let location = resp.headers().get("location").unwrap().to_str().unwrap();
+        assert!(location.contains("github.com/login/oauth/authorize"));
+        assert!(location.contains("client_id=gh-id"));
+    }
 }

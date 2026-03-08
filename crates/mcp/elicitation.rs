@@ -89,6 +89,7 @@ where
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
@@ -148,5 +149,152 @@ mod tests {
         let mc2: MatingConstraints = serde_json::from_str(&json).unwrap();
         assert_eq!(mc2.max_coi, Some(0.0625));
         assert_eq!(mc2.breeding_objective.as_deref(), Some("Dual"));
+    }
+
+    #[test]
+    fn compare_preferences_with_traits() {
+        let cp = ComparePreferences {
+            traits: Some("WWT,YWT".to_string()),
+        };
+        let json = serde_json::to_value(&cp).unwrap();
+        assert_eq!(json["traits"], "WWT,YWT");
+    }
+
+    #[test]
+    fn mating_constraints_with_all_fields() {
+        let mc = MatingConstraints {
+            max_coi: Some(0.125),
+            breeding_objective: Some("Growth".to_string()),
+        };
+        let json = serde_json::to_value(&mc).unwrap();
+        assert_eq!(json["max_coi"], 0.125);
+        assert_eq!(json["breeding_objective"], "Growth");
+    }
+
+    #[test]
+    fn flock_context_with_all_fields() {
+        let fc = FlockContext {
+            breeding_objective: Some("Maternal".to_string()),
+            flock_size: Some(200),
+        };
+        let json = serde_json::to_value(&fc).unwrap();
+        assert_eq!(json["breeding_objective"], "Maternal");
+        assert_eq!(json["flock_size"], 200);
+    }
+
+    #[test]
+    fn selection_criteria_with_all_fields() {
+        let sc = SelectionCriteria {
+            min_accuracy: Some(60),
+            priority_traits: Some("BWT,NLB".to_string()),
+        };
+        let json = serde_json::to_value(&sc).unwrap();
+        assert_eq!(json["min_accuracy"], 60);
+        assert_eq!(json["priority_traits"], "BWT,NLB");
+    }
+
+    #[test]
+    fn compare_preferences_debug_format() {
+        let cp = ComparePreferences {
+            traits: Some("WWT".into()),
+        };
+        let debug = format!("{cp:?}");
+        assert!(debug.contains("WWT"));
+    }
+
+    #[test]
+    fn mating_constraints_debug_format() {
+        let mc = MatingConstraints {
+            max_coi: Some(0.0625),
+            breeding_objective: None,
+        };
+        let debug = format!("{mc:?}");
+        assert!(debug.contains("0.0625"));
+    }
+
+    #[test]
+    fn flock_context_debug_format() {
+        let fc = FlockContext {
+            breeding_objective: None,
+            flock_size: Some(100),
+        };
+        let debug = format!("{fc:?}");
+        assert!(debug.contains("100"));
+    }
+
+    #[test]
+    fn selection_criteria_debug_format() {
+        let sc = SelectionCriteria {
+            min_accuracy: Some(50),
+            priority_traits: None,
+        };
+        let debug = format!("{sc:?}");
+        assert!(debug.contains("50"));
+    }
+
+    #[test]
+    fn mating_constraints_schema_has_max_coi_field() {
+        let schema = schemars::schema_for!(MatingConstraints);
+        let json = serde_json::to_value(&schema).unwrap();
+        let props = json["properties"].as_object().unwrap();
+        assert!(props.contains_key("max_coi"));
+        assert!(props.contains_key("breeding_objective"));
+    }
+
+    #[test]
+    fn selection_criteria_schema_has_fields() {
+        let schema = schemars::schema_for!(SelectionCriteria);
+        let json = serde_json::to_value(&schema).unwrap();
+        let props = json["properties"].as_object().unwrap();
+        assert!(props.contains_key("min_accuracy"));
+        assert!(props.contains_key("priority_traits"));
+    }
+
+    #[test]
+    fn flock_context_schema_has_fields() {
+        let schema = schemars::schema_for!(FlockContext);
+        let json = serde_json::to_value(&schema).unwrap();
+        let props = json["properties"].as_object().unwrap();
+        assert!(props.contains_key("breeding_objective"));
+        assert!(props.contains_key("flock_size"));
+    }
+
+    #[test]
+    fn compare_preferences_schema_has_traits_field() {
+        let schema = schemars::schema_for!(ComparePreferences);
+        let json = serde_json::to_value(&schema).unwrap();
+        let props = json["properties"].as_object().unwrap();
+        assert!(props.contains_key("traits"));
+    }
+
+    #[test]
+    fn compare_preferences_deserialize_with_traits() {
+        let json = r#"{"traits":"EMD,FAT"}"#;
+        let cp: ComparePreferences = serde_json::from_str(json).unwrap();
+        assert_eq!(cp.traits.as_deref(), Some("EMD,FAT"));
+    }
+
+    #[test]
+    fn flock_context_round_trip() {
+        let fc = FlockContext {
+            breeding_objective: Some("Dual".to_string()),
+            flock_size: Some(350),
+        };
+        let json = serde_json::to_string(&fc).unwrap();
+        let fc2: FlockContext = serde_json::from_str(&json).unwrap();
+        assert_eq!(fc2.breeding_objective.as_deref(), Some("Dual"));
+        assert_eq!(fc2.flock_size, Some(350));
+    }
+
+    #[test]
+    fn selection_criteria_round_trip() {
+        let sc = SelectionCriteria {
+            min_accuracy: Some(70),
+            priority_traits: Some("WWT,EMD".to_string()),
+        };
+        let json = serde_json::to_string(&sc).unwrap();
+        let sc2: SelectionCriteria = serde_json::from_str(&json).unwrap();
+        assert_eq!(sc2.min_accuracy, Some(70));
+        assert_eq!(sc2.priority_traits.as_deref(), Some("WWT,EMD"));
     }
 }

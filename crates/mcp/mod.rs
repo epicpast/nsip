@@ -307,4 +307,76 @@ mod tests {
         let info = cloned.get_info();
         assert_eq!(info.protocol_version, ProtocolVersion::LATEST);
     }
+
+    // --- Paginate tests ---
+
+    #[test]
+    fn paginate_first_page() {
+        let items: Vec<i32> = (0..10).collect();
+        let (page, next) = paginate(&items, None, 3).unwrap();
+        assert_eq!(page, vec![0, 1, 2]);
+        assert_eq!(next.as_deref(), Some("3"));
+    }
+
+    #[test]
+    fn paginate_middle_page() {
+        let items: Vec<i32> = (0..10).collect();
+        let (page, next) = paginate(&items, Some("3"), 3).unwrap();
+        assert_eq!(page, vec![3, 4, 5]);
+        assert_eq!(next.as_deref(), Some("6"));
+    }
+
+    #[test]
+    fn paginate_last_page() {
+        let items: Vec<i32> = (0..10).collect();
+        let (page, next) = paginate(&items, Some("9"), 3).unwrap();
+        assert_eq!(page, vec![9]);
+        assert!(next.is_none());
+    }
+
+    #[test]
+    fn paginate_exact_boundary() {
+        let items: Vec<i32> = (0..6).collect();
+        let (page, next) = paginate(&items, Some("3"), 3).unwrap();
+        assert_eq!(page, vec![3, 4, 5]);
+        assert!(next.is_none());
+    }
+
+    #[test]
+    fn paginate_empty_items() {
+        let items: Vec<i32> = vec![];
+        let (page, next) = paginate(&items, None, 5).unwrap();
+        assert!(page.is_empty());
+        assert!(next.is_none());
+    }
+
+    #[test]
+    fn paginate_invalid_cursor() {
+        let items: Vec<i32> = (0..5).collect();
+        let result = paginate(&items, Some("not-a-number"), 3);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn paginate_cursor_out_of_range() {
+        let items: Vec<i32> = (0..5).collect();
+        let result = paginate(&items, Some("100"), 3);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn paginate_cursor_at_end() {
+        let items: Vec<i32> = (0..5).collect();
+        let (page, next) = paginate(&items, Some("5"), 3).unwrap();
+        assert!(page.is_empty());
+        assert!(next.is_none());
+    }
+
+    #[test]
+    fn paginate_page_size_larger_than_items() {
+        let items: Vec<i32> = (0..3).collect();
+        let (page, next) = paginate(&items, None, 100).unwrap();
+        assert_eq!(page, vec![0, 1, 2]);
+        assert!(next.is_none());
+    }
 }

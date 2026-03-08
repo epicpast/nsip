@@ -78,3 +78,184 @@ pub async fn register_client(
         redirect_uris: body.redirect_uris,
     }))
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use std::sync::Arc;
+
+    use axum::{
+        Router,
+        body::Body,
+        http::{Request, StatusCode},
+        routing::post,
+    };
+    use tower::ServiceExt as _;
+
+    use super::*;
+    use crate::mcp::oauth::{
+        OAuthState,
+        config::OAuthConfig,
+        store::{InMemoryOAuthStore, OAuthStoreBackend},
+    };
+
+    fn test_state() -> OAuthState {
+        let config = OAuthConfig {
+            github_client_id: "gh-id".into(),
+            github_client_secret: "gh-secret".into(),
+            base_url: "https://example.com".into(),
+            issuer: "https://example.com".into(),
+            auth_secret: "test-secret-key-that-is-long-enough-32".into(),
+            token_ttl_secs: 3600,
+            allowed_users: None,
+        };
+        let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
+        OAuthState::new(config, store)
+    }
+
+    fn register_app(state: OAuthState) -> Router {
+        Router::new()
+            .route("/register", post(register_client))
+            .with_state(state)
+    }
+
+    #[tokio::test]
+    async fn register_valid_client() {
+        let state = test_state();
+        let app = register_app(state);
+        let body = serde_json::json!({
+            "redirect_uris": ["http://localhost:8080/callback"],
+            "grant_types": ["authorization_code"],
+            "client_name": "Test Client"
+        });
+        let resp = app
+            .oneshot(
+                Request::post("/register")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(json["client_id"].is_string());
+        assert!(!json["client_id"].as_str().unwrap().is_empty());
+        assert_eq!(
+            json["redirect_uris"],
+            serde_json::json!(["http://localhost:8080/callback"])
+        );
+    }
+
+    #[tokio::test]
+    async fn register_empty_redirect_uris_fails() {
+        let state = test_state();
+        let app = register_app(state);
+        let body = serde_json::json!({
+            "redirect_uris": [],
+        });
+        let resp = app
+            .oneshot(
+                Request::post("/register")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn register_unsupported_grant_type_fails() {
+        let state = test_state();
+        let app = register_app(state);
+        let body = serde_json::json!({
+            "redirect_uris": ["http://localhost/cb"],
+            "grant_types": ["client_credentials"],
+        });
+        let resp = app
+            .oneshot(
+                Request::post("/register")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn register_minimal_request() {
+        let state = test_state();
+        let app = register_app(state);
+        let body = serde_json::json!({
+            "redirect_uris": ["http://localhost:3000/callback"],
+        });
+        let resp = app
+            .oneshot(
+                Request::post("/register")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn register_multiple_redirect_uris() {
+        let state = test_state();
+        let app = register_app(state);
+        let body = serde_json::json!({
+            "redirect_uris": ["http://localhost:8080/cb", "http://localhost:9090/cb"],
+        });
+        let resp = app
+            .oneshot(
+                Request::post("/register")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(json["redirect_uris"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn registration_request_deserialize() {
+        let json = r#"{"redirect_uris":["http://localhost/cb"],"grant_types":["authorization_code"],"client_name":"Test"}"#;
+        let req: RegistrationRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.redirect_uris.len(), 1);
+        assert_eq!(req.grant_types.len(), 1);
+        assert_eq!(req.client_name.as_deref(), Some("Test"));
+    }
+
+    #[test]
+    fn registration_request_defaults() {
+        let json = r#"{"redirect_uris":["http://localhost/cb"]}"#;
+        let req: RegistrationRequest = serde_json::from_str(json).unwrap();
+        assert!(req.grant_types.is_empty());
+        assert!(req.client_name.is_none());
+    }
+
+    #[test]
+    fn registration_response_serialize() {
+        let resp = RegistrationResponse {
+            client_id: "abc-123".to_owned(),
+            redirect_uris: vec!["http://localhost/cb".to_owned()],
+        };
+        let json = serde_json::to_value(&resp).unwrap();
+        assert_eq!(json["client_id"], "abc-123");
+    }
+}

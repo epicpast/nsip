@@ -147,13 +147,22 @@ async fn validate_origin(
         .get(http::header::ORIGIN)
         .and_then(|v| v.to_str().ok())
     {
-        let host = origin
+        let authority = origin
             .strip_prefix("http://")
             .or_else(|| origin.strip_prefix("https://"))
-            .unwrap_or(origin)
-            .split(':')
-            .next()
             .unwrap_or(origin);
+
+        // IPv6 addresses are wrapped in brackets (e.g. `[::1]:9090`).
+        // Split on `:` would break them, so handle bracketed hosts first.
+        let host = if authority.starts_with('[') {
+            authority
+                .split_once(']')
+                .map_or(authority, |(bracket, _)| bracket)
+                .strip_prefix('[')
+                .unwrap_or(authority)
+        } else {
+            authority.split(':').next().unwrap_or(authority)
+        };
 
         let is_local = matches!(
             host,
@@ -197,4 +206,325 @@ async fn ensure_sse_accept(
     }
 
     next.run(req).await
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+
+    use axum::{
+        Router,
+        body::Body,
+        http::{Request, StatusCode},
+        middleware as mw,
+        routing::get,
+    };
+    use tower::ServiceExt as _;
+
+    async fn ok_handler() -> &'static str {
+        "ok"
+    }
+
+    async fn unauthorized_handler() -> StatusCode {
+        StatusCode::UNAUTHORIZED
+    }
+
+    /// Handler that echoes back the Accept header value in the response body.
+    async fn echo_accept(req: axum::extract::Request) -> String {
+        req.headers()
+            .get(http::header::ACCEPT)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("<missing>")
+            .to_owned()
+    }
+
+    // ── validate_origin ──────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn validate_origin_no_header_passes() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_localhost_passes() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "http://localhost:8080")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_loopback_passes() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "http://127.0.0.1:3000")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_ipv6_loopback_passes() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "http://[::1]:9090")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_all_interfaces_passes() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "http://0.0.0.0:8080")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_evil_domain_rejected() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "https://evil.com")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_example_com_rejected() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "http://example.com:8080")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
+    // ── ensure_sse_accept ────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn ensure_sse_accept_no_header_adds_sse() {
+        let app = Router::new()
+            .route("/", get(echo_accept))
+            .layer(mw::from_fn(ensure_sse_accept));
+
+        let resp = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(resp.into_body(), 1024).await.unwrap();
+        let accept = String::from_utf8(body.to_vec()).unwrap();
+        assert!(
+            accept.contains("text/event-stream"),
+            "expected text/event-stream in Accept, got: {accept}"
+        );
+    }
+
+    #[tokio::test]
+    async fn ensure_sse_accept_json_only_adds_sse() {
+        let app = Router::new()
+            .route("/", get(echo_accept))
+            .layer(mw::from_fn(ensure_sse_accept));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ACCEPT, "application/json")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(resp.into_body(), 1024).await.unwrap();
+        let accept = String::from_utf8(body.to_vec()).unwrap();
+        assert!(
+            accept.contains("text/event-stream"),
+            "expected text/event-stream in Accept, got: {accept}"
+        );
+    }
+
+    #[tokio::test]
+    async fn ensure_sse_accept_already_present_unchanged() {
+        let app = Router::new()
+            .route("/", get(echo_accept))
+            .layer(mw::from_fn(ensure_sse_accept));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ACCEPT, "text/event-stream")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(resp.into_body(), 1024).await.unwrap();
+        let accept = String::from_utf8(body.to_vec()).unwrap();
+        assert_eq!(accept, "text/event-stream");
+    }
+
+    // ── fix_rmcp_session_status ──────────────────────────────────────
+
+    #[tokio::test]
+    async fn fix_rmcp_get_mcp_401_becomes_404() {
+        let app = Router::new()
+            .route("/mcp", get(unauthorized_handler))
+            .layer(mw::from_fn(fix_rmcp_session_status));
+
+        let resp = app
+            .oneshot(Request::builder().uri("/mcp").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn fix_rmcp_post_mcp_401_stays_401() {
+        let app = Router::new()
+            .route("/mcp", axum::routing::post(unauthorized_handler))
+            .layer(mw::from_fn(fix_rmcp_session_status));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::POST)
+                    .uri("/mcp")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn fix_rmcp_get_other_401_stays_401() {
+        let app = Router::new()
+            .route("/other", get(unauthorized_handler))
+            .layer(mw::from_fn(fix_rmcp_session_status));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/other")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn fix_rmcp_get_mcp_200_stays_200() {
+        let app = Router::new()
+            .route("/mcp", get(ok_handler))
+            .layer(mw::from_fn(fix_rmcp_session_status));
+
+        let resp = app
+            .oneshot(Request::builder().uri("/mcp").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    // ── log_requests ─────────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn log_requests_passes_through() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(log_requests));
+
+        let resp = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
 }

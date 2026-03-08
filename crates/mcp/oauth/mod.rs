@@ -138,4 +138,12 @@ mod tests {
         let state = OAuthState::new(config, store);
         assert!(state.pat_cache.read().unwrap().is_empty());
     }
+
+    #[test]
+    fn oauth_router_builds_without_panic() {
+        let config = make_config();
+        let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
+        let state = OAuthState::new(config, store);
+        let _router = super::oauth_router(state);
+    }
 }

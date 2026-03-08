@@ -87,3 +87,192 @@ pub async fn callback(
 
     Ok(Redirect::to(&redirect_url).into_response())
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+    use std::future::Future;
+    use std::pin::Pin;
+    use std::sync::Arc;
+
+    use axum::Router;
+    use axum::body::Body;
+    use axum::http::Request;
+    use axum::routing::get;
+    use tower::ServiceExt as _;
+
+    use crate::mcp::oauth::config::OAuthConfig;
+    use crate::mcp::oauth::error::OAuthError;
+    use crate::mcp::oauth::github::{GitHubApi, GitHubUser};
+    use crate::mcp::oauth::jwt::JwtManager;
+    use crate::mcp::oauth::middleware::new_pat_cache;
+    use crate::mcp::oauth::store::{InMemoryOAuthStore, OAuthStoreBackend, PendingAuth};
+
+    type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+    struct MockGitHub {
+        user: GitHubUser,
+    }
+
+    impl GitHubApi for MockGitHub {
+        fn exchange_code(&self, _code: &str) -> BoxFut<'_, Result<String, OAuthError>> {
+            Box::pin(async { Ok("mock-token".into()) })
+        }
+        fn get_user(&self, _token: &str) -> BoxFut<'_, Result<GitHubUser, OAuthError>> {
+            let user = self.user.clone();
+            Box::pin(async move { Ok(user) })
+        }
+    }
+
+    fn test_state_with_mock() -> OAuthState {
+        let config = OAuthConfig {
+            github_client_id: "gh-id".into(),
+            github_client_secret: "gh-secret".into(),
+            base_url: "https://example.com".into(),
+            issuer: "https://example.com".into(),
+            auth_secret: "test-secret-key-that-is-long-enough-32".into(),
+            token_ttl_secs: 3600,
+            allowed_users: None,
+        };
+        let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
+        let jwt = JwtManager::new(&config.auth_secret, &config.issuer, config.token_ttl_secs);
+        let github: Arc<dyn GitHubApi> = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "testuser".into(),
+                id: 42,
+                name: Some("Test".into()),
+            },
+        });
+        OAuthState {
+            config: Arc::new(config),
+            store,
+            jwt,
+            github,
+            pat_cache: new_pat_cache(),
+        }
+    }
+
+    fn callback_app(state: OAuthState) -> Router {
+        Router::new()
+            .route("/callback", get(callback))
+            .with_state(state)
+    }
+
+    #[tokio::test]
+    async fn callback_unknown_state_returns_error() {
+        let state = test_state_with_mock();
+        let app = callback_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/callback?code=gh-code&state=unknown-state")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn callback_valid_state_redirects() {
+        let state = test_state_with_mock();
+        // Seed a pending auth
+        state
+            .store
+            .store_pending(
+                "internal-state-123".into(),
+                PendingAuth {
+                    client_id: "client-1".into(),
+                    redirect_uri: "http://localhost:8080/cb".into(),
+                    code_challenge: "challenge".into(),
+                    original_state: "client-original-state".into(),
+                    created_at: Utc::now(),
+                },
+            )
+            .await
+            .unwrap();
+
+        let app = callback_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/callback?code=gh-code-123&state=internal-state-123")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        // Should redirect (3xx)
+        assert!(
+            resp.status().is_redirection(),
+            "expected redirect, got {}",
+            resp.status()
+        );
+        let location = resp.headers().get("location").unwrap().to_str().unwrap();
+        assert!(location.starts_with("http://localhost:8080/cb"));
+        assert!(location.contains("code="));
+        assert!(location.contains("state=client-original-state"));
+    }
+
+    #[tokio::test]
+    async fn callback_with_allowed_users_denies_unlisted() {
+        let config = OAuthConfig {
+            github_client_id: "gh-id".into(),
+            github_client_secret: "gh-secret".into(),
+            base_url: "https://example.com".into(),
+            issuer: "https://example.com".into(),
+            auth_secret: "test-secret-key-that-is-long-enough-32".into(),
+            token_ttl_secs: 3600,
+            allowed_users: Some(vec!["allowed-user".into()]),
+        };
+        let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
+        let jwt = JwtManager::new(&config.auth_secret, &config.issuer, config.token_ttl_secs);
+        let github: Arc<dyn GitHubApi> = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "testuser".into(),
+                id: 42,
+                name: None,
+            },
+        });
+        let state = OAuthState {
+            config: Arc::new(config),
+            store: store.clone(),
+            jwt,
+            github,
+            pat_cache: new_pat_cache(),
+        };
+
+        store
+            .store_pending(
+                "state-deny".into(),
+                PendingAuth {
+                    client_id: "client-1".into(),
+                    redirect_uri: "http://localhost/cb".into(),
+                    code_challenge: "challenge".into(),
+                    original_state: "orig".into(),
+                    created_at: Utc::now(),
+                },
+            )
+            .await
+            .unwrap();
+
+        let app = callback_app(state);
+        let resp = app
+            .oneshot(
+                Request::get("/callback?code=code&state=state-deny")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(resp.status().is_client_error());
+    }
+
+    #[test]
+    fn callback_params_deserialize() {
+        let json = r#"{"code":"abc","state":"xyz"}"#;
+        let params: CallbackParams = serde_json::from_str(json).unwrap();
+        assert_eq!(params.code, "abc");
+        assert_eq!(params.state, "xyz");
+    }
+}
