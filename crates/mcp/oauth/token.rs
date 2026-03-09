@@ -57,8 +57,8 @@ pub struct TokenResponse {
 
 /// Generate an opaque refresh token.
 fn generate_refresh_token() -> String {
-    use rand::Rng as _;
-    let bytes: [u8; 32] = rand::rng().random();
+    let mut bytes = [0u8; 32];
+    rand::fill(&mut bytes);
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
