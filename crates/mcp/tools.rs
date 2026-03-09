@@ -637,6 +637,9 @@ fn build_comparison(
     })
 }
 
+/// Traits where lower EBV values are desirable (e.g. birth weight, parasite resistance).
+const NEGATIVE_SELECTION_TRAITS: &[&str] = &["BWT", "DAG", "WEC", "FEC"];
+
 /// Build default weights from a comma-separated list of target traits.
 fn build_target_weights(target_traits: Option<&str>) -> HashMap<String, f64> {
     let mut weights = HashMap::new();
@@ -644,7 +647,7 @@ fn build_target_weights(target_traits: Option<&str>) -> HashMap<String, f64> {
     if let Some(traits_str) = target_traits {
         for trait_name in traits_str.split(',') {
             let name = trait_name.trim().to_uppercase();
-            let weight = if matches!(name.as_str(), "BWT" | "DAG" | "WEC" | "FEC") {
+            let weight = if NEGATIVE_SELECTION_TRAITS.contains(&name.as_str()) {
                 -1.0
             } else {
                 1.0

@@ -12,6 +12,11 @@ use crate::NsipClient;
 
 use super::analytics::ebv_glossary;
 
+/// Map a crate-level error into an MCP internal error with context.
+fn resource_err(context: &str, e: impl std::fmt::Display) -> rmcp::ErrorData {
+    rmcp::ErrorData::internal_error(format!("{context}: {e}"), None)
+}
+
 // ---------------------------------------------------------------------------
 // URI parsing
 // ---------------------------------------------------------------------------
@@ -342,21 +347,24 @@ pub async fn read_resource(
         )])),
 
         NsipUri::Breeds => {
-            let groups = client.breed_groups().await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch breeds: {e}"), None)
-            })?;
+            let groups = client
+                .breed_groups()
+                .await
+                .map_err(|e| resource_err("Failed to fetch breeds", e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &groups,
             )]))
         },
 
         NsipUri::Status => {
-            let updated = client.date_last_updated().await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch status: {e}"), None)
-            })?;
-            let statuses = client.statuses().await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch statuses: {e}"), None)
-            })?;
+            let updated = client
+                .date_last_updated()
+                .await
+                .map_err(|e| resource_err("Failed to fetch status", e))?;
+            let statuses = client
+                .statuses()
+                .await
+                .map_err(|e| resource_err("Failed to fetch statuses", e))?;
             let status_obj = serde_json::json!({
                 "last_updated": updated.data,
                 "statuses": statuses,
@@ -368,27 +376,30 @@ pub async fn read_resource(
         },
 
         NsipUri::Animal { lpn_id } => {
-            let profile = client.search_by_lpn(&lpn_id).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch animal: {e}"), None)
-            })?;
+            let profile = client
+                .search_by_lpn(&lpn_id)
+                .await
+                .map_err(|e| resource_err("Failed to fetch animal", e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &profile,
             )]))
         },
 
         NsipUri::AnimalPedigree { lpn_id } => {
-            let lineage = client.lineage(&lpn_id).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch lineage: {e}"), None)
-            })?;
+            let lineage = client
+                .lineage(&lpn_id)
+                .await
+                .map_err(|e| resource_err("Failed to fetch lineage", e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &lineage,
             )]))
         },
 
         NsipUri::AnimalProgeny { lpn_id } => {
-            let progeny = client.progeny(&lpn_id, 0, 25).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch progeny: {e}"), None)
-            })?;
+            let progeny = client
+                .progeny(&lpn_id, 0, 25)
+                .await
+                .map_err(|e| resource_err("Failed to fetch progeny", e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &progeny,
             )]))
@@ -398,9 +409,10 @@ pub async fn read_resource(
             let id: i64 = breed_id.parse().map_err(|_| {
                 rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id}"), None)
             })?;
-            let ranges = client.trait_ranges(id).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch ranges: {e}"), None)
-            })?;
+            let ranges = client
+                .trait_ranges(id)
+                .await
+                .map_err(|e| resource_err("Failed to fetch ranges", e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &ranges,
             )]))

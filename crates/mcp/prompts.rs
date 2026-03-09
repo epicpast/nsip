@@ -12,6 +12,11 @@ use rmcp::model::{
 
 use crate::NsipClient;
 
+/// Map a crate-level error into an MCP internal error with context.
+fn prompt_err(context: &str, e: impl std::fmt::Display) -> rmcp::ErrorData {
+    rmcp::ErrorData::internal_error(format!("{context}: {e}"), None)
+}
+
 // ---------------------------------------------------------------------------
 // Prompt definitions
 // ---------------------------------------------------------------------------
@@ -201,9 +206,10 @@ async fn evaluate_animal<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let lpn_id = require_arg(args, "lpn_id")?;
 
-    let details = client.animal_details(lpn_id).await.map_err(|e| {
-        rmcp::ErrorData::internal_error(format!("Failed to fetch animal: {e}"), None)
-    })?;
+    let details = client
+        .animal_details(lpn_id)
+        .await
+        .map_err(|e| prompt_err("Failed to fetch animal", e))?;
 
     let details_json = serde_json::to_string_pretty(&details).unwrap_or_default();
 
@@ -267,9 +273,10 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
 
     let mut animals_data = Vec::new();
     for id in &ids {
-        let details = client.animal_details(id).await.map_err(|e| {
-            rmcp::ErrorData::internal_error(format!("Failed to fetch {id}: {e}"), None)
-        })?;
+        let details = client
+            .animal_details(id)
+            .await
+            .map_err(|e| prompt_err(&format!("Failed to fetch {id}"), e))?;
         animals_data.push(details);
     }
 
@@ -313,14 +320,10 @@ async fn plan_mating<S: BuildHasher + Sync>(
         client.lineage(dam_id),
     );
 
-    let sire_details = sire_details
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Failed to fetch sire: {e}"), None))?;
-    let dam_details = dam_details
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Failed to fetch dam: {e}"), None))?;
-    let sire_lineage = sire_lineage
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Sire lineage failed: {e}"), None))?;
-    let dam_lineage = dam_lineage
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Dam lineage failed: {e}"), None))?;
+    let sire_details = sire_details.map_err(|e| prompt_err("Failed to fetch sire", e))?;
+    let dam_details = dam_details.map_err(|e| prompt_err("Failed to fetch dam", e))?;
+    let sire_lineage = sire_lineage.map_err(|e| prompt_err("Sire lineage failed", e))?;
+    let dam_lineage = dam_lineage.map_err(|e| prompt_err("Dam lineage failed", e))?;
 
     let coi = super::analytics::calculate_coi(&sire_lineage, &dam_lineage);
     let complementarity = super::analytics::trait_complementarity(&sire_details, &dam_details);
@@ -393,10 +396,8 @@ async fn flock_improvement<S: BuildHasher + Sync>(
         client.trait_ranges(breed_id),
     );
 
-    let results = results
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Search failed: {e}"), None))?;
-    let ranges = ranges
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Trait ranges failed: {e}"), None))?;
+    let results = results.map_err(|e| prompt_err("Search failed", e))?;
+    let ranges = ranges.map_err(|e| prompt_err("Trait ranges failed", e))?;
 
     let flock_ctx = super::elicitation::try_elicit_opt::<super::elicitation::FlockContext>(
         context,
@@ -471,7 +472,7 @@ async fn select_replacement<S: BuildHasher + Sync>(
             Some(&criteria),
         )
         .await
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Search failed: {e}"), None))?;
+        .map_err(|e| prompt_err("Search failed", e))?;
 
     let candidate_data = serde_json::json!({
         "breed_id": breed_id,
@@ -512,9 +513,10 @@ async fn interpret_ebvs<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let lpn_id = require_arg(args, "lpn_id")?;
 
-    let details = client.animal_details(lpn_id).await.map_err(|e| {
-        rmcp::ErrorData::internal_error(format!("Failed to fetch animal: {e}"), None)
-    })?;
+    let details = client
+        .animal_details(lpn_id)
+        .await
+        .map_err(|e| prompt_err("Failed to fetch animal", e))?;
 
     let details_json = serde_json::to_string_pretty(&details).unwrap_or_default();
 
