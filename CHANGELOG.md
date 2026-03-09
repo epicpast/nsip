@@ -5,55 +5,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0-rc1] - 2026-03-09
+## [0.4.0] - 2026-03-09
 
 ### Added
 
-- **mcp**: Upgrade to MCP protocol 2025-06-18 with tool sets, OAuth, and telemetry (#143)
+- **mcp**: Upgrade to MCP protocol 2025-06-18 with full specification alignment (#143)
+  - Dynamic tool sets: `--tools search,breed` to expose only specific tool categories
+  - OAuth 2.1 + PKCE authentication with GitHub identity provider (`--auth`)
+  - Personal Access Token (PAT) bearer auth for simplified HTTP access
+  - Feature-gated OpenTelemetry tracing (`--features telemetry`)
+  - Server identity (`nsip-mcp`) and `logging/setLevel` handler
+  - CORS headers for `mcp-protocol-version` and `mcp-session-id` (MCP Inspector compatible)
+  - Friendly error messages for `trait_ranges` with invalid breed IDs
+- **docs**: Adopt Diátaxis documentation framework with 16 new guides
+  - Tutorials, how-to guides, explanations, and reference documents
+  - Rewritten with NSIP research accuracy and domain expertise
+  - Library API reference: `TraitDefinition`, `ebv_glossary`, MCP module docs
+  - Comprehensive agentic workflows documentation
+- **ci**: Daily full security audit job to surface when ignored advisories get fixes
+
+### Security
+
+- **jsonwebtoken**: Upgrade from v9 to v10 with `rust_crypto` backend (#151)
+- **rand**: Upgrade from v0.9 to v0.10, replace deprecated `Rng::random` API
+- **ci**: Add `RUSTSEC-2023-0071` ignore with tracking — RSA timing side-channel
+  in transitive dep; NSIP only uses HMAC-SHA256, never RSA
+- **transport**: Tighten CORS to localhost origins, fix IPv6 bind
+- **oauth**: Bearer auth middleware with JWT validation and PAT cache with TTL
+
+### Fixed
+
+- **mcp**: Wire elicitation support, fix protocol stubs — 14 audit findings resolved
+- **mcp**: Server declares `nsip-mcp` identity instead of default `rmcp`
+- **mcp**: Implement `logging/setLevel` handler (was declared but missing)
+- **mcp**: CORS allows `mcp-protocol-version` header for MCP Inspector compatibility
+- **mcp**: `trait_ranges` returns friendly message instead of raw API error on HTTP 400
+- **ci**: Repair three release-triggered workflow failures (signed-releases race,
+  SBOM duplicate asset, changelog branch protection)
+- **ci**: Release workflow auto-detects pre-release tags (alpha/beta/rc)
+- **ci**: Use `workflow_run` trigger for homebrew packaging and signed releases
+- **ci**: Unblock daily-qa network access and add issue input (#115)
 
 ### Documentation
 
-- Update CHANGELOG.md for v0.3.3
 - Adopt Diátaxis framework for user documentation
 - Add 16 Diátaxis documentation files
 - Rewrite existing docs with NSIP research accuracy
 - Reference structured-MADR (SMADR) instead of MADR
 - Fix broken SearchCriteria reference link (#77)
-- Add mcp module reference to LIBRARY-API.md
+- Add MCP module reference to LIBRARY-API.md
 - Add TraitDefinition and ebv_glossary to LIBRARY-API reference
 - Add comprehensive agentic workflows documentation
-- Apply review feedback to AGENTIC-WORKFLOWS.md and README.md
-
-### Fixed
-
-- **ci**: Enable persist-credentials in update-docs workflow
-- **ci**: Use correct adrscope action input names
-- **ci**: Add structured MADR frontmatter to ADR files
-- **ci**: Use full structured-MADR frontmatter in ADRs
-- **ci**: Use workflow_run trigger for homebrew packaging
-- **ci**: Apply review feedback to package-homebrew.yml
-- **ci**: Unblock daily-qa network access and add issue input (#115)
 
 ### Miscellaneous
 
-- **deps**: Bump clap from 4.5.58 to 4.5.60 (#101)
-- **deps**: Bump rmcp from 0.15.0 to 0.16.0 (#102)
-- **deps**: Bump the github-actions group with 4 updates (#103)
-- **deps**: Bump actions/setup-node from 4.2.0 to 6.2.0 (#104)
-- **deps**: Bump zircote/adrscope (#107)
-- **deps**: Bump peter-evans/dockerhub-description from 4.0.0 to 5.0.0 (#105)
-- **deps**: Update dtolnay/rust-toolchain requirement to efa25f7f19611383d5b0ccf2d1c8914531636bf9 (#106)
-- **deps**: Bump tempfile from 3.25.0 to 3.26.0 (#123)
-- **deps**: Bump rmcp from 0.16.0 to 0.17.0 (#124)
-- **deps**: Bump the github-actions group with 3 updates (#125)
-- **deps**: Bump actions/attest-build-provenance from 3.2.0 to 4.1.0 (#128)
-- **deps**: Bump zircote/adrscope (#127)
-- **deps**: Bump actions/download-artifact from 6.0.0 to 8.0.0 (#126)
-- **deps**: Bump aquasecurity/trivy-action (#129)
+- **deps**: Bump rmcp from 0.15.0 to 1.1.1
+- **deps**: Bump jsonwebtoken from 9.3.1 to 10.3.0
+- **deps**: Bump rand from 0.9.2 to 0.10.0
+- **deps**: Bump chrono from 0.4.43 to 0.4.44
+- **deps**: Bump tokio from 1.49.0 to 1.50.0
+- **deps**: Bump clap from 4.5.58 to 4.5.60
+- **deps**: Bump tempfile from 3.25.0 to 3.26.0
+- **deps**: Bump docker/build-push-action from 6.19.2 to 7.0.0
+- **deps**: Bump docker/metadata-action from 5.10.0 to 6.0.0
+- **deps**: Bump actions/upload-artifact from 4.6.2 to 7.0.0
+- **deps**: Bump actions/download-artifact from 6.0.0 to 8.0.0
+- **deps**: Bump actions/attest-build-provenance from 3.2.0 to 4.1.0
 
-### Performance
-
-- **.claude**: Sync agents and spec-orchestrator from rust-template
+[0.4.0]: https://github.com/zircote/nsip/compare/v0.3.3...v0.4.0
 
 ## [0.3.3] - 2026-02-16
 
