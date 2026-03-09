@@ -21,7 +21,11 @@ feature-depth = 1
 version = 2
 # Check for security advisories
 # All advisory types (vulnerability, unmaintained, unsound, notice, yanked) default to deny
-ignore = []
+ignore = [
+    # rsa crate timing side-channel — we only use HMAC-SHA256 via jsonwebtoken,
+    # never RSA. Transitive dep from rust_crypto feature.
+    "RUSTSEC-2023-0071",
+]
 
 [licenses]
 version = 2
