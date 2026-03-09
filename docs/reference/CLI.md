@@ -355,17 +355,49 @@ sudo nsip man-pages --out-dir /usr/local/share/man/man1
 
 ### mcp
 
-Start the MCP (Model Context Protocol) server for AI assistant integration. Communicates over stdio using JSON-RPC.
+Start the MCP (Model Context Protocol) server for AI assistant integration.
 
 ```
+nsip mcp [OPTIONS]
+```
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--transport` | string | `stdio` | Transport type: `stdio` or `http` |
+| `--host` | string | `127.0.0.1` | Host address to bind to (HTTP transport only) |
+| `--port` | integer | `8080` | Port to bind to (HTTP transport only) |
+| `--tools` | string | all | Comma-separated tool sets to enable: `search`, `analytics`, `flock`, `breed` |
+| `--auth` | flag | disabled | Enable OAuth 2.1 + GitHub PAT bearer auth (HTTP transport only) |
+
+**Examples:**
+
+```bash
+# Stdio transport (default) — all tools
 nsip mcp
-```
 
-**Arguments:** None
+# HTTP transport on port 9090
+nsip mcp --transport http --port 9090
+
+# Only search and breed tools
+nsip mcp --tools search,breed
+
+# HTTP with OAuth authentication
+nsip mcp --transport http --port 8080 --auth
+
+# Combine tool filtering and auth
+nsip mcp --transport http --tools search --auth
+```
 
 **Notes:**
-- Runs as a long-lived process reading JSON-RPC from stdin and writing to stdout
+- Stdio transport reads JSON-RPC from stdin and writes to stdout
+- HTTP transport serves a single MCP endpoint at `/mcp` with SSE support
+- `--auth` requires environment variables: `NSIP_GITHUB_CLIENT_ID`, `NSIP_GITHUB_CLIENT_SECRET`, `NSIP_AUTH_SECRET`, `NSIP_AUTH_BASE_URL`
+- `--auth` is ignored for stdio transport
+- When compiled with `--features telemetry`, logs use JSON format with W3C trace context
 - Logging goes to stderr
+- See [MCP Server Configuration](MCP-SERVER-CONFIGURATION.md) for full configuration reference
 - See [MCP Tools Reference](MCP-TOOLS.md) for the full tool catalog
 
 ---

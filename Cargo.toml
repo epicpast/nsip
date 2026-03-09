@@ -1,6 +1,6 @@
 [package]
 name = "nsip"
-version = "0.3.3"
+version = "0.4.0-rc1"
 edition = "2024"
 rust-version = "1.92"
 description = "NSIP Search API client for nsipsearch.nsip.org/api"
@@ -31,6 +31,7 @@ tokio = { version = "1.0", features = ["full"] }
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+schemars = "1.0"
 
 # Regex (for parsing HTML in lineage responses)
 regex = "1"
@@ -44,10 +45,38 @@ clap_complete = "4.5"
 clap_mangen = "0.2"
 
 # MCP server
-rmcp = { version = "0.17", features = ["server", "transport-io"] }
+rmcp = { version = "1.1", features = [
+    "server",
+    "transport-io",
+    "transport-streamable-http-server",
+    "transport-streamable-http-server-session",
+    "elicitation",
+    "schemars",
+] }
+
+# HTTP transport for MCP
+axum = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+
+# OAuth 2.1
+jsonwebtoken = "9"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+sha2 = "0.10"
+subtle = "2"
+base64 = "0.22"
+rand = "0.9"
 
 # Logging
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# OpenTelemetry (optional, behind `telemetry` feature)
+opentelemetry = { version = "0.31", optional = true }
+opentelemetry_sdk = { version = "0.31", optional = true }
+opentelemetry-otlp = { version = "0.31", optional = true }
+tracing-opentelemetry = { version = "0.32", optional = true }
 
 [dev-dependencies]
 # Testing
@@ -116,5 +145,9 @@ multiple_crate_versions = "allow"
 
 [features]
 default = []
-# Add feature flags here
-# full = ["feature1", "feature2"]
+telemetry = [
+    "dep:opentelemetry",
+    "dep:opentelemetry_sdk",
+    "dep:opentelemetry-otlp",
+    "dep:tracing-opentelemetry",
+]

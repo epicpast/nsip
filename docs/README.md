@@ -37,6 +37,10 @@ Problem-oriented guides for accomplishing specific tasks.
 | [Compare Animals](how-to/COMPARE-ANIMALS.md) | Side-by-side genetic trait comparisons via CLI, library, or MCP |
 | [Filter Search Results](how-to/FILTER-SEARCH-RESULTS.md) | Use SearchCriteria to filter by breed, gender, status, date, and trait ranges |
 | [Use MCP Tools](how-to/USE-MCP-TOOLS.md) | Invoke the 13 MCP server tools from AI assistants |
+| [MCP Tool Sets](how-to/MCP-TOOL-SETS.md) | Enable specific tool categories with `--tools` |
+| [OAuth Authentication](how-to/OAUTH-AUTHENTICATION.md) | Secure the MCP HTTP transport with GitHub OAuth or PAT |
+| [Telemetry](how-to/TELEMETRY.md) | Enable OpenTelemetry trace context in server logs |
+| [Mating Recommendations](how-to/MATING-RECOMMENDATIONS.md) | Use analytics tools for breeding decisions |
 | [Export JSON](how-to/EXPORT-JSON.md) | Export data as JSON using the `--json` flag or library serialization |
 | [Batch Query Animals](how-to/BATCH-QUERY.md) | Query multiple animals concurrently with Tokio |
 | [Scripting Integration](how-to/SCRIPTING-INTEGRATION.md) | Integrate nsip into shell scripts, CI pipelines, and automation workflows |
@@ -54,6 +58,9 @@ Understanding-oriented discussions of key concepts.
 | [Genetic Evaluation](explanation/GENETIC-EVALUATION.md) | How BLUP works, pedigree and genomic data, and the evaluation pipeline |
 | [Breed Groups and Traits](explanation/BREED-GROUPS-AND-TRAITS.md) | Understanding breed group categories and the 13 EBV trait abbreviations |
 | [From Data to Decisions](explanation/DATA-TO-DECISIONS.md) | How NSIP API data connects to real-world breeding decisions |
+| [MCP Security](explanation/MCP-SECURITY.md) | OAuth 2.1, PKCE, GitHub PAT authentication, and DNS rebinding protection |
+| [Telemetry](explanation/TELEMETRY.md) | W3C trace context, distributed tracing, and the OpenTelemetry integration |
+| [Dynamic Instructions](explanation/DYNAMIC-INSTRUCTIONS.md) | How server instructions adapt to enabled tool sets |
 
 ---
 
@@ -68,6 +75,7 @@ Information-oriented technical descriptions.
 | [MCP Tools](reference/MCP-TOOLS.md) | All 13 MCP server tools with parameters, return types, and examples |
 | [Error Handling](reference/ERROR-HANDLING.md) | Complete `Error` enum reference with handling patterns |
 | [Configuration](reference/CONFIGURATION.md) | Client builder options, defaults, retry behavior, and environment |
+| [MCP Server Configuration](reference/MCP-SERVER-CONFIGURATION.md) | Transport, tool sets, OAuth, telemetry, and middleware configuration |
 | [MCP Server API](MCP.md) | Full MCP server reference: tools, resources, prompts, and analytics |
 
 ---

@@ -4,13 +4,18 @@
 //! dynamic resources backed by the NSIP API.
 
 use rmcp::model::{
-    ListResourceTemplatesResult, ListResourcesResult, RawResource, RawResourceTemplate,
-    ReadResourceRequestParams, ReadResourceResult, ResourceContents,
+    AnnotateAble, ListResourceTemplatesResult, ListResourcesResult, RawResource,
+    RawResourceTemplate, ReadResourceRequestParams, ReadResourceResult, ResourceContents, Role,
 };
 
 use crate::NsipClient;
 
 use super::analytics::ebv_glossary;
+
+/// Map a crate-level error into an MCP internal error with context.
+fn resource_err(context: &str, e: impl std::fmt::Display) -> rmcp::ErrorData {
+    rmcp::ErrorData::internal_error(format!("{context}: {e}"), None)
+}
 
 // ---------------------------------------------------------------------------
 // URI parsing
@@ -157,7 +162,7 @@ fn inbreeding_guide_content() -> String {
 /// Build the list of static resources.
 #[must_use]
 pub fn list_resources() -> ListResourcesResult {
-    use rmcp::model::AnnotateAble;
+    let audience = vec![Role::User, Role::Assistant];
 
     let resources = vec![
         RawResource {
@@ -173,7 +178,8 @@ pub fn list_resources() -> ListResourcesResult {
             icons: None,
             meta: None,
         }
-        .no_annotation(),
+        .with_priority(0.8)
+        .with_audience(audience.clone()),
         RawResource {
             uri: "nsip://breeds".to_string(),
             name: "Breed Directory".to_string(),
@@ -186,7 +192,8 @@ pub fn list_resources() -> ListResourcesResult {
             icons: None,
             meta: None,
         }
-        .no_annotation(),
+        .with_priority(0.7)
+        .with_audience(audience.clone()),
         RawResource {
             uri: "nsip://guide/selection".to_string(),
             name: "Selection Guide".to_string(),
@@ -200,7 +207,8 @@ pub fn list_resources() -> ListResourcesResult {
             icons: None,
             meta: None,
         }
-        .no_annotation(),
+        .with_priority(0.8)
+        .with_audience(audience.clone()),
         RawResource {
             uri: "nsip://guide/inbreeding".to_string(),
             name: "Inbreeding Guide".to_string(),
@@ -213,7 +221,8 @@ pub fn list_resources() -> ListResourcesResult {
             icons: None,
             meta: None,
         }
-        .no_annotation(),
+        .with_priority(0.8)
+        .with_audience(audience.clone()),
         RawResource {
             uri: "nsip://status".to_string(),
             name: "Database Status".to_string(),
@@ -226,7 +235,8 @@ pub fn list_resources() -> ListResourcesResult {
             icons: None,
             meta: None,
         }
-        .no_annotation(),
+        .with_priority(0.5)
+        .with_audience(audience),
     ];
 
     ListResourcesResult {
@@ -239,8 +249,6 @@ pub fn list_resources() -> ListResourcesResult {
 /// Build the list of resource templates.
 #[must_use]
 pub fn list_resource_templates() -> ListResourceTemplatesResult {
-    use rmcp::model::AnnotateAble;
-
     let templates = vec![
         RawResourceTemplate {
             uri_template: "nsip://animal/{lpn_id}".to_string(),
@@ -323,80 +331,91 @@ pub async fn read_resource(
     let uri = &request.uri;
 
     match parse_nsip_uri(uri) {
-        NsipUri::Glossary => Ok(ReadResourceResult {
-            contents: vec![markdown_resource_content(uri, glossary_content())],
-        }),
+        NsipUri::Glossary => Ok(ReadResourceResult::new(vec![markdown_resource_content(
+            uri,
+            glossary_content(),
+        )])),
 
-        NsipUri::SelectionGuide => Ok(ReadResourceResult {
-            contents: vec![markdown_resource_content(uri, selection_guide_content())],
-        }),
+        NsipUri::SelectionGuide => Ok(ReadResourceResult::new(vec![markdown_resource_content(
+            uri,
+            selection_guide_content(),
+        )])),
 
-        NsipUri::InbreedingGuide => Ok(ReadResourceResult {
-            contents: vec![markdown_resource_content(uri, inbreeding_guide_content())],
-        }),
+        NsipUri::InbreedingGuide => Ok(ReadResourceResult::new(vec![markdown_resource_content(
+            uri,
+            inbreeding_guide_content(),
+        )])),
 
         NsipUri::Breeds => {
-            let groups = client.breed_groups().await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch breeds: {e}"), None)
-            })?;
-            Ok(ReadResourceResult {
-                contents: vec![json_resource_content(uri, &groups)],
-            })
+            let groups = client
+                .breed_groups()
+                .await
+                .map_err(|e| resource_err("Failed to fetch breeds", e))?;
+            Ok(ReadResourceResult::new(vec![json_resource_content(
+                uri, &groups,
+            )]))
         },
 
         NsipUri::Status => {
-            let updated = client.date_last_updated().await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch status: {e}"), None)
-            })?;
-            let statuses = client.statuses().await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch statuses: {e}"), None)
-            })?;
+            let updated = client
+                .date_last_updated()
+                .await
+                .map_err(|e| resource_err("Failed to fetch status", e))?;
+            let statuses = client
+                .statuses()
+                .await
+                .map_err(|e| resource_err("Failed to fetch statuses", e))?;
             let status_obj = serde_json::json!({
                 "last_updated": updated.data,
                 "statuses": statuses,
             });
-            Ok(ReadResourceResult {
-                contents: vec![json_resource_content(uri, &status_obj)],
-            })
+            Ok(ReadResourceResult::new(vec![json_resource_content(
+                uri,
+                &status_obj,
+            )]))
         },
 
         NsipUri::Animal { lpn_id } => {
-            let profile = client.search_by_lpn(&lpn_id).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch animal: {e}"), None)
-            })?;
-            Ok(ReadResourceResult {
-                contents: vec![json_resource_content(uri, &profile)],
-            })
+            let profile = client
+                .search_by_lpn(&lpn_id)
+                .await
+                .map_err(|e| resource_err("Failed to fetch animal", e))?;
+            Ok(ReadResourceResult::new(vec![json_resource_content(
+                uri, &profile,
+            )]))
         },
 
         NsipUri::AnimalPedigree { lpn_id } => {
-            let lineage = client.lineage(&lpn_id).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch lineage: {e}"), None)
-            })?;
-            Ok(ReadResourceResult {
-                contents: vec![json_resource_content(uri, &lineage)],
-            })
+            let lineage = client
+                .lineage(&lpn_id)
+                .await
+                .map_err(|e| resource_err("Failed to fetch lineage", e))?;
+            Ok(ReadResourceResult::new(vec![json_resource_content(
+                uri, &lineage,
+            )]))
         },
 
         NsipUri::AnimalProgeny { lpn_id } => {
-            let progeny = client.progeny(&lpn_id, 0, 25).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch progeny: {e}"), None)
-            })?;
-            Ok(ReadResourceResult {
-                contents: vec![json_resource_content(uri, &progeny)],
-            })
+            let progeny = client
+                .progeny(&lpn_id, 0, 25)
+                .await
+                .map_err(|e| resource_err("Failed to fetch progeny", e))?;
+            Ok(ReadResourceResult::new(vec![json_resource_content(
+                uri, &progeny,
+            )]))
         },
 
         NsipUri::BreedRanges { breed_id } => {
             let id: i64 = breed_id.parse().map_err(|_| {
                 rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id}"), None)
             })?;
-            let ranges = client.trait_ranges(id).await.map_err(|e| {
-                rmcp::ErrorData::internal_error(format!("Failed to fetch ranges: {e}"), None)
-            })?;
-            Ok(ReadResourceResult {
-                contents: vec![json_resource_content(uri, &ranges)],
-            })
+            let ranges = client
+                .trait_ranges(id)
+                .await
+                .map_err(|e| resource_err("Failed to fetch ranges", e))?;
+            Ok(ReadResourceResult::new(vec![json_resource_content(
+                uri, &ranges,
+            )]))
         },
 
         NsipUri::Unknown => Err(rmcp::ErrorData::resource_not_found(
@@ -815,10 +834,7 @@ mod tests {
     #[tokio::test]
     async fn read_resource_glossary() {
         let client = NsipClient::new();
-        let request = ReadResourceRequestParams {
-            uri: "nsip://glossary".to_string(),
-            meta: None,
-        };
+        let request = ReadResourceRequestParams::new("nsip://glossary");
         let res = read_resource(&client, &request).await.unwrap();
         assert_eq!(res.contents.len(), 1);
         let (_, mime, text) = extract_text_content(&res.contents[0]);
@@ -830,10 +846,7 @@ mod tests {
     #[tokio::test]
     async fn read_resource_selection_guide() {
         let client = NsipClient::new();
-        let request = ReadResourceRequestParams {
-            uri: "nsip://guide/selection".to_string(),
-            meta: None,
-        };
+        let request = ReadResourceRequestParams::new("nsip://guide/selection");
         let res = read_resource(&client, &request).await.unwrap();
         assert_eq!(res.contents.len(), 1);
         let (_, mime, text) = extract_text_content(&res.contents[0]);
@@ -844,10 +857,7 @@ mod tests {
     #[tokio::test]
     async fn read_resource_inbreeding_guide() {
         let client = NsipClient::new();
-        let request = ReadResourceRequestParams {
-            uri: "nsip://guide/inbreeding".to_string(),
-            meta: None,
-        };
+        let request = ReadResourceRequestParams::new("nsip://guide/inbreeding");
         let res = read_resource(&client, &request).await.unwrap();
         assert_eq!(res.contents.len(), 1);
         let (_, mime, text) = extract_text_content(&res.contents[0]);
@@ -858,10 +868,7 @@ mod tests {
     #[tokio::test]
     async fn read_resource_unknown_uri_returns_error() {
         let client = NsipClient::new();
-        let request = ReadResourceRequestParams {
-            uri: "nsip://nonexistent".to_string(),
-            meta: None,
-        };
+        let request = ReadResourceRequestParams::new("nsip://nonexistent");
         let result = read_resource(&client, &request).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -871,10 +878,7 @@ mod tests {
     #[tokio::test]
     async fn read_resource_invalid_breed_id_returns_error() {
         let client = NsipClient::new();
-        let request = ReadResourceRequestParams {
-            uri: "nsip://breed/not_a_number/ranges".to_string(),
-            meta: None,
-        };
+        let request = ReadResourceRequestParams::new("nsip://breed/not_a_number/ranges");
         let result = read_resource(&client, &request).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -918,10 +922,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let request = ReadResourceRequestParams {
-                uri: "nsip://breeds".to_string(),
-                meta: None,
-            };
+            let request = ReadResourceRequestParams::new("nsip://breeds");
             let result = read_resource(&client, &request).await.unwrap();
             assert_eq!(result.contents.len(), 1);
             let (text, mime) = extract_text(&result);
@@ -949,10 +950,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let request = ReadResourceRequestParams {
-                uri: "nsip://status".to_string(),
-                meta: None,
-            };
+            let request = ReadResourceRequestParams::new("nsip://status");
             let result = read_resource(&client, &request).await.unwrap();
             assert_eq!(result.contents.len(), 1);
             let (text, _) = extract_text(&result);
@@ -994,10 +992,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let request = ReadResourceRequestParams {
-                uri: "nsip://animal/TEST1".to_string(),
-                meta: None,
-            };
+            let request = ReadResourceRequestParams::new("nsip://animal/TEST1");
             let result = read_resource(&client, &request).await.unwrap();
             assert_eq!(result.contents.len(), 1);
             let (text, mime) = extract_text(&result);
@@ -1024,10 +1019,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let request = ReadResourceRequestParams {
-                uri: "nsip://animal/PED1/pedigree".to_string(),
-                meta: None,
-            };
+            let request = ReadResourceRequestParams::new("nsip://animal/PED1/pedigree");
             let result = read_resource(&client, &request).await.unwrap();
             let (text, _) = extract_text(&result);
             assert!(text.contains("PED1"));
@@ -1050,10 +1042,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let request = ReadResourceRequestParams {
-                uri: "nsip://animal/PARENT1/progeny".to_string(),
-                meta: None,
-            };
+            let request = ReadResourceRequestParams::new("nsip://animal/PARENT1/progeny");
             let result = read_resource(&client, &request).await.unwrap();
             let (text, _) = extract_text(&result);
             assert!(text.contains("OFF1"));
@@ -1074,10 +1063,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let request = ReadResourceRequestParams {
-                uri: "nsip://breed/640/ranges".to_string(),
-                meta: None,
-            };
+            let request = ReadResourceRequestParams::new("nsip://breed/640/ranges");
             let result = read_resource(&client, &request).await.unwrap();
             let (text, mime) = extract_text(&result);
             assert_eq!(mime, Some("application/json"));
@@ -1096,10 +1082,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let req = ReadResourceRequestParams {
-                uri: "nsip://breeds".into(),
-                meta: None,
-            };
+            let req = ReadResourceRequestParams::new("nsip://breeds");
             let err = read_resource(&client, &req).await.unwrap_err();
             assert!(err.message.contains("Failed to fetch breeds"));
         }
@@ -1114,10 +1097,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let req = ReadResourceRequestParams {
-                uri: "nsip://status".into(),
-                meta: None,
-            };
+            let req = ReadResourceRequestParams::new("nsip://status");
             let err = read_resource(&client, &req).await.unwrap_err();
             assert!(err.message.contains("Failed to fetch status"));
         }
@@ -1132,10 +1112,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let req = ReadResourceRequestParams {
-                uri: "nsip://animal/X1".into(),
-                meta: None,
-            };
+            let req = ReadResourceRequestParams::new("nsip://animal/X1");
             let err = read_resource(&client, &req).await.unwrap_err();
             assert!(err.message.contains("Failed to fetch animal"));
         }
@@ -1150,10 +1127,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let req = ReadResourceRequestParams {
-                uri: "nsip://animal/X1/pedigree".into(),
-                meta: None,
-            };
+            let req = ReadResourceRequestParams::new("nsip://animal/X1/pedigree");
             let err = read_resource(&client, &req).await.unwrap_err();
             assert!(err.message.contains("Failed to fetch lineage"));
         }
@@ -1168,10 +1142,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let req = ReadResourceRequestParams {
-                uri: "nsip://animal/X1/progeny".into(),
-                meta: None,
-            };
+            let req = ReadResourceRequestParams::new("nsip://animal/X1/progeny");
             let err = read_resource(&client, &req).await.unwrap_err();
             assert!(err.message.contains("Failed to fetch progeny"));
         }
@@ -1186,10 +1157,7 @@ mod tests {
                 .await;
 
             let client = mock_client(&server.uri());
-            let req = ReadResourceRequestParams {
-                uri: "nsip://breed/640/ranges".into(),
-                meta: None,
-            };
+            let req = ReadResourceRequestParams::new("nsip://breed/640/ranges");
             let err = read_resource(&client, &req).await.unwrap_err();
             assert!(err.message.contains("Failed to fetch ranges"));
         }

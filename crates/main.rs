@@ -150,7 +150,30 @@ enum Commands {
     },
 
     /// Start the MCP server for AI assistant integration.
-    Mcp,
+    Mcp {
+        /// Transport type: stdio (default) or http.
+        #[arg(long, default_value = "stdio")]
+        transport: String,
+
+        /// Host address to bind to (HTTP transport only).
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+
+        /// Port to bind to (HTTP transport only).
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
+
+        /// Comma-separated tool sets to enable (search,analytics,flock,breed).
+        /// Defaults to all sets enabled.
+        #[arg(long)]
+        tools: Option<String>,
+
+        /// Enable OAuth 2.1 + GitHub PAT bearer auth (HTTP transport only).
+        /// Requires `NSIP_GITHUB_CLIENT_ID`, `NSIP_GITHUB_CLIENT_SECRET`,
+        /// `NSIP_AUTH_SECRET`, and `NSIP_AUTH_BASE_URL` environment variables.
+        #[arg(long)]
+        auth: bool,
+    },
 }
 
 /// Generate man pages to a directory or stdout.
@@ -193,6 +216,43 @@ fn render_man_page(
     let filename = format!("{name}.1");
     std::fs::write(dir.join(&filename), buf)
         .map_err(|e| nsip::Error::Validation(format!("cannot write {filename}: {e}")))
+}
+
+/// Initialise the tracing subscriber.
+///
+/// When compiled with the `telemetry` feature and `NSIP_OTLP_ENDPOINT` is set,
+/// the subscriber includes an `OpenTelemetry` layer that attaches W3C trace
+/// context (`trace_id`, `span_id`) to every JSON log line. Otherwise a plain
+/// text subscriber writing to stderr is used.
+fn init_tracing() {
+    init_tracing_inner();
+}
+
+#[cfg(feature = "telemetry")]
+fn init_tracing_inner() {
+    use tracing_subscriber::layer::SubscriberExt as _;
+    use tracing_subscriber::util::SubscriberInitExt as _;
+
+    let provider = nsip::mcp::telemetry::init_tracer_provider();
+    let otel_layer = nsip::mcp::telemetry::otel_layer(&provider);
+
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_writer(std::io::stderr)
+                .event_format(nsip::mcp::telemetry::OtelJsonFormat::default())
+                .fmt_fields(tracing_subscriber::fmt::format::JsonFields::default()),
+        )
+        .with(otel_layer)
+        .init();
+}
+
+#[cfg(not(feature = "telemetry"))]
+fn init_tracing_inner() {
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .init();
 }
 
 /// Runs the application logic.
@@ -403,11 +463,46 @@ async fn run() -> Result<(), nsip::Error> {
             generate_man_pages(out_dir)?;
         },
 
-        Commands::Mcp => {
-            tracing_subscriber::fmt()
-                .with_writer(std::io::stderr)
-                .init();
-            nsip::mcp::serve_stdio().await?;
+        Commands::Mcp {
+            transport,
+            host,
+            port,
+            tools,
+            auth,
+        } => {
+            init_tracing();
+            let sets = tools.map_or_else(nsip::mcp::tool_sets::EnabledToolSets::all, |csv| {
+                nsip::mcp::tool_sets::EnabledToolSets::from_csv(&csv)
+            });
+            let oauth_state = if auth {
+                let config =
+                    nsip::mcp::oauth::config::OAuthConfig::try_from_env().ok_or_else(|| {
+                        nsip::Error::Validation(
+                            "--auth requires NSIP_GITHUB_CLIENT_ID, NSIP_GITHUB_CLIENT_SECRET, \
+                         NSIP_AUTH_SECRET, and NSIP_AUTH_BASE_URL environment variables"
+                                .into(),
+                        )
+                    })?;
+                let store = std::sync::Arc::new(nsip::mcp::oauth::store::InMemoryOAuthStore::new())
+                    as std::sync::Arc<dyn nsip::mcp::oauth::store::OAuthStoreBackend>;
+                Some(nsip::mcp::oauth::OAuthState::new(config, store))
+            } else {
+                None
+            };
+            match transport.as_str() {
+                "stdio" => {
+                    if auth {
+                        eprintln!("warning: --auth is ignored for stdio transport");
+                    }
+                    nsip::mcp::serve_stdio(sets).await?;
+                },
+                "http" => nsip::mcp::serve_http(&host, port, sets, oauth_state).await?,
+                other => {
+                    return Err(nsip::Error::Validation(format!(
+                        "unknown transport: {other}, expected 'stdio' or 'http'"
+                    )));
+                },
+            }
         },
     }
 

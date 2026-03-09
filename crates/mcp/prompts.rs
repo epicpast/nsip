@@ -12,6 +12,11 @@ use rmcp::model::{
 
 use crate::NsipClient;
 
+/// Map a crate-level error into an MCP internal error with context.
+fn prompt_err(context: &str, e: impl std::fmt::Display) -> rmcp::ErrorData {
+    rmcp::ErrorData::internal_error(format!("{context}: {e}"), None)
+}
+
 // ---------------------------------------------------------------------------
 // Prompt definitions
 // ---------------------------------------------------------------------------
@@ -42,12 +47,12 @@ fn prompt_evaluate_ram() -> Prompt {
         Some(
             "Evaluate a ram's breeding value — fetches EBVs, breed ranges, and constructs a comprehensive assessment",
         ),
-        Some(vec![PromptArgument {
-            name: "lpn_id".to_string(),
-            title: Some("LPN ID".to_string()),
-            description: Some("LPN ID of the ram to evaluate".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("lpn_id")
+                .with_title("LPN ID")
+                .with_description("LPN ID of the ram to evaluate")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -55,12 +60,12 @@ fn prompt_evaluate_ewe() -> Prompt {
     Prompt::new(
         "evaluate-ewe",
         Some("Evaluate a ewe's breeding value — emphasizes maternal traits (NLB, NWT, PWT)"),
-        Some(vec![PromptArgument {
-            name: "lpn_id".to_string(),
-            title: Some("LPN ID".to_string()),
-            description: Some("LPN ID of the ewe to evaluate".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("lpn_id")
+                .with_title("LPN ID")
+                .with_description("LPN ID of the ewe to evaluate")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -70,12 +75,12 @@ fn prompt_compare_breeding_stock() -> Prompt {
         Some(
             "Compare multiple animals side-by-side with trait analysis and breeding recommendations",
         ),
-        Some(vec![PromptArgument {
-            name: "animal_ids".to_string(),
-            title: Some("Animal IDs".to_string()),
-            description: Some("Comma-separated LPN IDs of animals to compare (2-5)".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("animal_ids")
+                .with_title("Animal IDs")
+                .with_description("Comma-separated LPN IDs of animals to compare (2-5)")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -84,18 +89,14 @@ fn prompt_plan_mating() -> Prompt {
         "plan-mating",
         Some("Plan a specific mating — COI check, trait complementarity, and offspring prediction"),
         Some(vec![
-            PromptArgument {
-                name: "sire_id".to_string(),
-                title: Some("Sire LPN ID".to_string()),
-                description: Some("LPN ID of the sire".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "dam_id".to_string(),
-                title: Some("Dam LPN ID".to_string()),
-                description: Some("LPN ID of the dam".to_string()),
-                required: Some(true),
-            },
+            PromptArgument::new("sire_id")
+                .with_title("Sire LPN ID")
+                .with_description("LPN ID of the sire")
+                .with_required(true),
+            PromptArgument::new("dam_id")
+                .with_title("Dam LPN ID")
+                .with_description("LPN ID of the dam")
+                .with_required(true),
         ]),
     )
 }
@@ -105,18 +106,14 @@ fn prompt_flock_improvement() -> Prompt {
         "flock-improvement",
         Some("Analyze a breed or flock for trait gaps and improvement opportunities"),
         Some(vec![
-            PromptArgument {
-                name: "breed_id".to_string(),
-                title: Some("Breed ID".to_string()),
-                description: Some("Breed ID to analyze".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "flock_id".to_string(),
-                title: Some("Flock ID".to_string()),
-                description: Some("Optional flock ID to narrow analysis".to_string()),
-                required: Some(false),
-            },
+            PromptArgument::new("breed_id")
+                .with_title("Breed ID")
+                .with_description("Breed ID to analyze")
+                .with_required(true),
+            PromptArgument::new("flock_id")
+                .with_title("Flock ID")
+                .with_description("Optional flock ID to narrow analysis")
+                .with_required(false),
         ]),
     )
 }
@@ -126,24 +123,18 @@ fn prompt_select_replacement() -> Prompt {
         "select-replacement",
         Some("Find top replacement candidates within a breed by gender and target trait"),
         Some(vec![
-            PromptArgument {
-                name: "breed_id".to_string(),
-                title: Some("Breed ID".to_string()),
-                description: Some("Breed ID to search within".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "gender".to_string(),
-                title: Some("Gender".to_string()),
-                description: Some("Gender of replacement animals (Male or Female)".to_string()),
-                required: Some(true),
-            },
-            PromptArgument {
-                name: "target_trait".to_string(),
-                title: Some("Target Trait".to_string()),
-                description: Some("Primary trait to optimize (e.g. WWT, NLB)".to_string()),
-                required: Some(true),
-            },
+            PromptArgument::new("breed_id")
+                .with_title("Breed ID")
+                .with_description("Breed ID to search within")
+                .with_required(true),
+            PromptArgument::new("gender")
+                .with_title("Gender")
+                .with_description("Gender of replacement animals (Male or Female)")
+                .with_required(true),
+            PromptArgument::new("target_trait")
+                .with_title("Target Trait")
+                .with_description("Primary trait to optimize (e.g. WWT, NLB)")
+                .with_required(true),
         ]),
     )
 }
@@ -152,12 +143,12 @@ fn prompt_interpret_ebvs() -> Prompt {
     Prompt::new(
         "interpret-ebvs",
         Some("Plain-language explanation of an animal's EBVs with breed-relative context"),
-        Some(vec![PromptArgument {
-            name: "lpn_id".to_string(),
-            title: Some("LPN ID".to_string()),
-            description: Some("LPN ID of the animal to interpret".to_string()),
-            required: Some(true),
-        }]),
+        Some(vec![
+            PromptArgument::new("lpn_id")
+                .with_title("LPN ID")
+                .with_description("LPN ID of the animal to interpret")
+                .with_required(true),
+        ]),
     )
 }
 
@@ -165,7 +156,14 @@ fn prompt_interpret_ebvs() -> Prompt {
 // Prompt execution
 // ---------------------------------------------------------------------------
 
+/// Type alias for the MCP request context used by elicitation-capable prompts.
+pub(crate) type PromptContext<'a> =
+    Option<&'a rmcp::service::RequestContext<rmcp::service::RoleServer>>;
+
 /// Execute a prompt by name with the given arguments.
+///
+/// The `context` parameter is forwarded to prompt handlers that support
+/// elicitation, allowing them to request structured input from the user.
 ///
 /// # Errors
 ///
@@ -174,14 +172,15 @@ pub async fn get_prompt<S: BuildHasher + Sync>(
     client: &NsipClient,
     name: &str,
     arguments: &std::collections::HashMap<String, String, S>,
+    context: PromptContext<'_>,
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     match name {
         "evaluate-ram" => evaluate_animal(client, arguments, AnimalType::Ram).await,
         "evaluate-ewe" => evaluate_animal(client, arguments, AnimalType::Ewe).await,
-        "compare-breeding-stock" => compare_breeding_stock(client, arguments).await,
-        "plan-mating" => plan_mating(client, arguments).await,
-        "flock-improvement" => flock_improvement(client, arguments).await,
-        "select-replacement" => select_replacement(client, arguments).await,
+        "compare-breeding-stock" => compare_breeding_stock(client, arguments, context).await,
+        "plan-mating" => plan_mating(client, arguments, context).await,
+        "flock-improvement" => flock_improvement(client, arguments, context).await,
+        "select-replacement" => select_replacement(client, arguments, context).await,
         "interpret-ebvs" => interpret_ebvs(client, arguments).await,
         _ => Err(rmcp::ErrorData::invalid_params(
             format!("Unknown prompt: {name}"),
@@ -207,9 +206,10 @@ async fn evaluate_animal<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let lpn_id = require_arg(args, "lpn_id")?;
 
-    let details = client.animal_details(lpn_id).await.map_err(|e| {
-        rmcp::ErrorData::internal_error(format!("Failed to fetch animal: {e}"), None)
-    })?;
+    let details = client
+        .animal_details(lpn_id)
+        .await
+        .map_err(|e| prompt_err("Failed to fetch animal", e))?;
 
     let details_json = serde_json::to_string_pretty(&details).unwrap_or_default();
 
@@ -241,19 +241,18 @@ async fn evaluate_animal<S: BuildHasher + Sync>(
          How should it be used in a breeding program?"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Breeding evaluation for {type_name} {lpn_id}")),
-        messages: vec![
-            PromptMessage::new_text(PromptMessageRole::User, system_msg),
-            PromptMessage::new_text(PromptMessageRole::User, user_msg),
-        ],
-    })
+    Ok(GetPromptResult::new(vec![
+        PromptMessage::new_text(PromptMessageRole::User, system_msg),
+        PromptMessage::new_text(PromptMessageRole::User, user_msg),
+    ])
+    .with_description(format!("Breeding evaluation for {type_name} {lpn_id}")))
 }
 
 /// Compare multiple animals side-by-side.
 async fn compare_breeding_stock<S: BuildHasher + Sync>(
     client: &NsipClient,
     args: &std::collections::HashMap<String, String, S>,
+    context: PromptContext<'_>,
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let ids_str = require_arg(args, "animal_ids")?;
     let ids: Vec<&str> = ids_str.split(',').map(str::trim).collect();
@@ -265,15 +264,27 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
         ));
     }
 
+    // Elicit trait preferences if the client supports it.
+    let prefs = super::elicitation::try_elicit_opt::<super::elicitation::ComparePreferences>(
+        context,
+        "Which traits should the comparison focus on?",
+    )
+    .await;
+
     let mut animals_data = Vec::new();
     for id in &ids {
-        let details = client.animal_details(id).await.map_err(|e| {
-            rmcp::ErrorData::internal_error(format!("Failed to fetch {id}: {e}"), None)
-        })?;
+        let details = client
+            .animal_details(id)
+            .await
+            .map_err(|e| prompt_err(&format!("Failed to fetch {id}"), e))?;
         animals_data.push(details);
     }
 
     let data_json = serde_json::to_string_pretty(&animals_data).unwrap_or_default();
+
+    let trait_focus = prefs.and_then(|p| p.traits).map_or_else(String::new, |t| {
+        format!("\n\nFocus especially on these traits: {t}")
+    });
 
     let system_msg = format!(
         "You are a sheep breeding advisor comparing {} animals side-by-side. \
@@ -281,21 +292,23 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
          1. A trait-by-trait comparison highlighting differences\n\
          2. Each animal's relative strengths and weaknesses\n\
          3. Which animal is best suited for different breeding goals\n\
-         4. Any trade-offs to consider\n\n\
+         4. Any trade-offs to consider{trait_focus}\n\n\
          ## Animal Data\n\n```json\n{data_json}\n```",
         ids.len()
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Comparison of {} breeding animals", ids.len())),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Comparison of {} breeding animals", ids.len())))
 }
 
 /// Plan a specific mating.
 async fn plan_mating<S: BuildHasher + Sync>(
     client: &NsipClient,
     args: &std::collections::HashMap<String, String, S>,
+    context: PromptContext<'_>,
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let sire_id = require_arg(args, "sire_id")?;
     let dam_id = require_arg(args, "dam_id")?;
@@ -307,17 +320,19 @@ async fn plan_mating<S: BuildHasher + Sync>(
         client.lineage(dam_id),
     );
 
-    let sire_details = sire_details
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Failed to fetch sire: {e}"), None))?;
-    let dam_details = dam_details
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Failed to fetch dam: {e}"), None))?;
-    let sire_lineage = sire_lineage
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Sire lineage failed: {e}"), None))?;
-    let dam_lineage = dam_lineage
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Dam lineage failed: {e}"), None))?;
+    let sire_details = sire_details.map_err(|e| prompt_err("Failed to fetch sire", e))?;
+    let dam_details = dam_details.map_err(|e| prompt_err("Failed to fetch dam", e))?;
+    let sire_lineage = sire_lineage.map_err(|e| prompt_err("Sire lineage failed", e))?;
+    let dam_lineage = dam_lineage.map_err(|e| prompt_err("Dam lineage failed", e))?;
 
     let coi = super::analytics::calculate_coi(&sire_lineage, &dam_lineage);
     let complementarity = super::analytics::trait_complementarity(&sire_details, &dam_details);
+
+    let constraints = super::elicitation::try_elicit_opt::<super::elicitation::MatingConstraints>(
+        context,
+        "Any breeding constraints for this mating? (max COI, breeding objective)",
+    )
+    .await;
 
     let mating_data = serde_json::json!({
         "sire": sire_details,
@@ -329,6 +344,10 @@ async fn plan_mating<S: BuildHasher + Sync>(
             "shared_ancestors": coi.shared_ancestors,
         },
         "predicted_offspring_ebvs": complementarity,
+        "user_constraints": constraints.map(|c| serde_json::json!({
+            "max_coi": c.max_coi,
+            "breeding_objective": c.breeding_objective,
+        })),
     });
 
     let data_json = serde_json::to_string_pretty(&mating_data).unwrap_or_default();
@@ -345,16 +364,18 @@ async fn plan_mating<S: BuildHasher + Sync>(
          ## Mating Analysis Data\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Mating plan: {sire_id} x {dam_id}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Mating plan: {sire_id} x {dam_id}")))
 }
 
 /// Analyze a breed or flock for improvement opportunities.
 async fn flock_improvement<S: BuildHasher + Sync>(
     client: &NsipClient,
     args: &std::collections::HashMap<String, String, S>,
+    context: PromptContext<'_>,
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let breed_id_str = require_arg(args, "breed_id")?;
     let breed_id: i64 = breed_id_str.parse().map_err(|_| {
@@ -375,16 +396,24 @@ async fn flock_improvement<S: BuildHasher + Sync>(
         client.trait_ranges(breed_id),
     );
 
-    let results = results
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Search failed: {e}"), None))?;
-    let ranges = ranges
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Trait ranges failed: {e}"), None))?;
+    let results = results.map_err(|e| prompt_err("Search failed", e))?;
+    let ranges = ranges.map_err(|e| prompt_err("Trait ranges failed", e))?;
+
+    let flock_ctx = super::elicitation::try_elicit_opt::<super::elicitation::FlockContext>(
+        context,
+        "Tell us about your flock goals (breeding objective, flock size)",
+    )
+    .await;
 
     let flock_data = serde_json::json!({
         "total_animals": results.total_count,
         "sample_size": results.results.len(),
         "breed_trait_ranges": ranges,
         "animals_sample": results.results,
+        "user_context": flock_ctx.map(|c| serde_json::json!({
+            "breeding_objective": c.breeding_objective,
+            "flock_size": c.flock_size,
+        })),
     });
 
     let data_json = serde_json::to_string_pretty(&flock_data).unwrap_or_default();
@@ -402,16 +431,18 @@ async fn flock_improvement<S: BuildHasher + Sync>(
          ## Flock/Breed Analysis Data\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Flock improvement analysis for {scope}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Flock improvement analysis for {scope}")))
 }
 
 /// Find top replacement candidates.
 async fn select_replacement<S: BuildHasher + Sync>(
     client: &NsipClient,
     args: &std::collections::HashMap<String, String, S>,
+    context: PromptContext<'_>,
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let breed_id_str = require_arg(args, "breed_id")?;
     let breed_id: i64 = breed_id_str.parse().map_err(|_| {
@@ -419,6 +450,12 @@ async fn select_replacement<S: BuildHasher + Sync>(
     })?;
     let gender = require_arg(args, "gender")?;
     let target_trait = require_arg(args, "target_trait")?;
+
+    let selection = super::elicitation::try_elicit_opt::<super::elicitation::SelectionCriteria>(
+        context,
+        "Any selection criteria? (minimum accuracy, priority traits)",
+    )
+    .await;
 
     let criteria = crate::SearchCriteria::new()
         .with_breed_id(breed_id)
@@ -435,7 +472,7 @@ async fn select_replacement<S: BuildHasher + Sync>(
             Some(&criteria),
         )
         .await
-        .map_err(|e| rmcp::ErrorData::internal_error(format!("Search failed: {e}"), None))?;
+        .map_err(|e| prompt_err("Search failed", e))?;
 
     let candidate_data = serde_json::json!({
         "breed_id": breed_id,
@@ -443,6 +480,10 @@ async fn select_replacement<S: BuildHasher + Sync>(
         "target_trait": target_trait,
         "total_candidates": results.total_count,
         "top_candidates": results.results,
+        "user_criteria": selection.map(|c| serde_json::json!({
+            "min_accuracy": c.min_accuracy,
+            "priority_traits": c.priority_traits,
+        })),
     });
 
     let data_json = serde_json::to_string_pretty(&candidate_data).unwrap_or_default();
@@ -458,10 +499,11 @@ async fn select_replacement<S: BuildHasher + Sync>(
          ## Replacement Candidates\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("Replacement {gender} selection for {target_trait}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("Replacement {gender} selection for {target_trait}")))
 }
 
 /// Plain-language EBV interpretation.
@@ -471,9 +513,10 @@ async fn interpret_ebvs<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let lpn_id = require_arg(args, "lpn_id")?;
 
-    let details = client.animal_details(lpn_id).await.map_err(|e| {
-        rmcp::ErrorData::internal_error(format!("Failed to fetch animal: {e}"), None)
-    })?;
+    let details = client
+        .animal_details(lpn_id)
+        .await
+        .map_err(|e| prompt_err("Failed to fetch animal", e))?;
 
     let details_json = serde_json::to_string_pretty(&details).unwrap_or_default();
 
@@ -498,10 +541,11 @@ async fn interpret_ebvs<S: BuildHasher + Sync>(
          Summarize what this animal would contribute to a breeding program."
     );
 
-    Ok(GetPromptResult {
-        description: Some(format!("EBV interpretation for {lpn_id}")),
-        messages: vec![PromptMessage::new_text(PromptMessageRole::User, system_msg)],
-    })
+    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+        PromptMessageRole::User,
+        system_msg,
+    )])
+    .with_description(format!("EBV interpretation for {lpn_id}")))
 }
 
 // ---------------------------------------------------------------------------
@@ -755,7 +799,7 @@ mod tests {
     async fn get_prompt_unknown_name_returns_error() {
         let client = NsipClient::new();
         let args = std::collections::HashMap::new();
-        let result = get_prompt(&client, "nonexistent-prompt", &args).await;
+        let result = get_prompt(&client, "nonexistent-prompt", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -769,7 +813,7 @@ mod tests {
         let client = NsipClient::new();
         let args = std::collections::HashMap::new();
         // evaluate-ram requires lpn_id
-        let result = get_prompt(&client, "evaluate-ram", &args).await;
+        let result = get_prompt(&client, "evaluate-ram", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -783,7 +827,7 @@ mod tests {
         let client = NsipClient::new();
         let mut args = std::collections::HashMap::new();
         args.insert("animal_ids".to_string(), "SINGLE_ID".to_string());
-        let result = get_prompt(&client, "compare-breeding-stock", &args).await;
+        let result = get_prompt(&client, "compare-breeding-stock", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -797,7 +841,7 @@ mod tests {
         let client = NsipClient::new();
         let mut args = std::collections::HashMap::new();
         args.insert("animal_ids".to_string(), "A,B,C,D,E,F".to_string());
-        let result = get_prompt(&client, "compare-breeding-stock", &args).await;
+        let result = get_prompt(&client, "compare-breeding-stock", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -811,7 +855,7 @@ mod tests {
         let client = NsipClient::new();
         let mut args = std::collections::HashMap::new();
         args.insert("breed_id".to_string(), "not_a_number".to_string());
-        let result = get_prompt(&client, "flock-improvement", &args).await;
+        let result = get_prompt(&client, "flock-improvement", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
@@ -827,7 +871,7 @@ mod tests {
         args.insert("breed_id".to_string(), "abc".to_string());
         args.insert("gender".to_string(), "Male".to_string());
         args.insert("target_trait".to_string(), "WWT".to_string());
-        let result = get_prompt(&client, "select-replacement", &args).await;
+        let result = get_prompt(&client, "select-replacement", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.message.contains("Invalid breed_id"));
@@ -839,7 +883,7 @@ mod tests {
         let mut args = std::collections::HashMap::new();
         args.insert("breed_id".to_string(), "640".to_string());
         // missing gender and target_trait
-        let result = get_prompt(&client, "select-replacement", &args).await;
+        let result = get_prompt(&client, "select-replacement", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.message.contains("gender"));
@@ -849,7 +893,7 @@ mod tests {
     async fn get_prompt_evaluate_ewe_missing_lpn() {
         let client = NsipClient::new();
         let args = std::collections::HashMap::new();
-        let result = get_prompt(&client, "evaluate-ewe", &args).await;
+        let result = get_prompt(&client, "evaluate-ewe", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.message.contains("lpn_id"));
@@ -859,7 +903,7 @@ mod tests {
     async fn get_prompt_interpret_ebvs_missing_lpn() {
         let client = NsipClient::new();
         let args = std::collections::HashMap::new();
-        let result = get_prompt(&client, "interpret-ebvs", &args).await;
+        let result = get_prompt(&client, "interpret-ebvs", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.message.contains("lpn_id"));
@@ -871,7 +915,7 @@ mod tests {
         let mut args = std::collections::HashMap::new();
         args.insert("sire_id".to_string(), "SIRE001".to_string());
         // missing dam_id
-        let result = get_prompt(&client, "plan-mating", &args).await;
+        let result = get_prompt(&client, "plan-mating", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.message.contains("dam_id"));
@@ -882,7 +926,7 @@ mod tests {
         let client = NsipClient::new();
         let args = std::collections::HashMap::new();
         // missing both
-        let result = get_prompt(&client, "plan-mating", &args).await;
+        let result = get_prompt(&client, "plan-mating", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.message.contains("sire_id"));
@@ -1034,7 +1078,9 @@ mod tests {
             let mut args = std::collections::HashMap::new();
             args.insert("lpn_id".to_string(), "RAM001".to_string());
 
-            let result = get_prompt(&client, "evaluate-ram", &args).await.unwrap();
+            let result = get_prompt(&client, "evaluate-ram", &args, None)
+                .await
+                .unwrap();
 
             assert_eq!(result.messages.len(), 2);
             assert!(result.description.as_deref().unwrap().contains("ram"));
@@ -1060,7 +1106,9 @@ mod tests {
             let mut args = std::collections::HashMap::new();
             args.insert("lpn_id".to_string(), "EWE001".to_string());
 
-            let result = get_prompt(&client, "evaluate-ewe", &args).await.unwrap();
+            let result = get_prompt(&client, "evaluate-ewe", &args, None)
+                .await
+                .unwrap();
 
             assert_eq!(result.messages.len(), 2);
             assert!(result.description.as_deref().unwrap().contains("ewe"));
@@ -1095,7 +1143,7 @@ mod tests {
             let mut args = std::collections::HashMap::new();
             args.insert("animal_ids".to_string(), "CMP1, CMP2".to_string());
 
-            let result = get_prompt(&client, "compare-breeding-stock", &args)
+            let result = get_prompt(&client, "compare-breeding-stock", &args, None)
                 .await
                 .unwrap();
 
@@ -1148,7 +1196,9 @@ mod tests {
             args.insert("sire_id".to_string(), "SIRE01".to_string());
             args.insert("dam_id".to_string(), "DAM01".to_string());
 
-            let result = get_prompt(&client, "plan-mating", &args).await.unwrap();
+            let result = get_prompt(&client, "plan-mating", &args, None)
+                .await
+                .unwrap();
 
             assert_eq!(result.messages.len(), 1);
             let desc = result.description.as_deref().unwrap();
@@ -1181,7 +1231,7 @@ mod tests {
             let mut args = std::collections::HashMap::new();
             args.insert("breed_id".to_string(), "640".to_string());
 
-            let result = get_prompt(&client, "flock-improvement", &args)
+            let result = get_prompt(&client, "flock-improvement", &args, None)
                 .await
                 .unwrap();
 
@@ -1212,7 +1262,7 @@ mod tests {
             args.insert("breed_id".to_string(), "640".to_string());
             args.insert("flock_id".to_string(), "FLOCK42".to_string());
 
-            let result = get_prompt(&client, "flock-improvement", &args)
+            let result = get_prompt(&client, "flock-improvement", &args, None)
                 .await
                 .unwrap();
 
@@ -1238,7 +1288,7 @@ mod tests {
             args.insert("gender".to_string(), "Male".to_string());
             args.insert("target_trait".to_string(), "WWT".to_string());
 
-            let result = get_prompt(&client, "select-replacement", &args)
+            let result = get_prompt(&client, "select-replacement", &args, None)
                 .await
                 .unwrap();
 
@@ -1267,7 +1317,9 @@ mod tests {
             let mut args = std::collections::HashMap::new();
             args.insert("lpn_id".to_string(), "INTERP01".to_string());
 
-            let result = get_prompt(&client, "interpret-ebvs", &args).await.unwrap();
+            let result = get_prompt(&client, "interpret-ebvs", &args, None)
+                .await
+                .unwrap();
 
             assert_eq!(result.messages.len(), 1);
             let desc = result.description.as_deref().unwrap();
@@ -1289,7 +1341,7 @@ mod tests {
             let mut args = std::collections::HashMap::new();
             args.insert("lpn_id".to_string(), "FAIL001".to_string());
 
-            let result = get_prompt(&client, "evaluate-ram", &args).await;
+            let result = get_prompt(&client, "evaluate-ram", &args, None).await;
             assert!(result.is_err());
             let err = result.unwrap_err();
             assert!(err.message.contains("Failed to fetch animal"));
@@ -1320,7 +1372,7 @@ mod tests {
             args.insert("sire_id".to_string(), "S1".to_string());
             args.insert("dam_id".to_string(), "D1".to_string());
 
-            let result = get_prompt(&client, "plan-mating", &args).await;
+            let result = get_prompt(&client, "plan-mating", &args, None).await;
             assert!(result.is_err());
             let err = result.unwrap_err();
             assert!(
@@ -1352,7 +1404,7 @@ mod tests {
             let mut args = std::collections::HashMap::new();
             args.insert("breed_id".to_string(), "640".to_string());
 
-            let result = get_prompt(&client, "flock-improvement", &args).await;
+            let result = get_prompt(&client, "flock-improvement", &args, None).await;
             assert!(result.is_err());
         }
 
@@ -1372,7 +1424,7 @@ mod tests {
             args.insert("gender".to_string(), "Female".to_string());
             args.insert("target_trait".to_string(), "BWT".to_string());
 
-            let result = get_prompt(&client, "select-replacement", &args).await;
+            let result = get_prompt(&client, "select-replacement", &args, None).await;
             assert!(result.is_err());
             let err = result.unwrap_err();
             assert!(err.message.contains("Search failed"));
