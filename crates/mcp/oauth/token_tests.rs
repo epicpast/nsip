@@ -543,6 +543,242 @@ async fn exchange_token_form_encoded_unsupported_grant() {
 }
 
 #[tokio::test]
+async fn exchange_token_form_encoded_authorization_code_success() {
+    let state = test_oauth_state();
+
+    let verifier = "form-encoded-verifier-string-here";
+    let digest = sha2::Sha256::digest(verifier.as_bytes());
+    let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(digest);
+
+    state
+        .store
+        .store_auth_code(IssuedAuthCode {
+            code: "form-code-123".into(),
+            client_id: "form-client".into(),
+            redirect_uri: "http://localhost/cb".into(),
+            code_challenge: challenge,
+            github_login: "formuser".into(),
+            created_at: chrono::Utc::now(),
+        })
+        .await
+        .unwrap();
+
+    let app = token_app(state);
+    // Use a simple redirect_uri without special chars to avoid URL-encoding in test
+    let form_body = format!(
+        "grant_type=authorization_code&code=form-code-123&redirect_uri=http%3A%2F%2Flocalhost%2Fcb&code_verifier={verifier}&client_id=form-client",
+    );
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from(form_body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(json["token_type"], "bearer");
+    assert!(json["access_token"].is_string());
+}
+
+#[tokio::test]
+async fn exchange_token_malformed_json_body() {
+    let state = test_oauth_state();
+    let app = token_app(state);
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/json")
+                .body(Body::from("not-valid-json!!!"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(resp.status().is_client_error());
+}
+
+#[tokio::test]
+async fn exchange_token_form_encoded_refresh_token_success() {
+    let state = test_oauth_state();
+
+    let verifier = "form-rt-verifier";
+    let digest = sha2::Sha256::digest(verifier.as_bytes());
+    let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(digest);
+
+    state
+        .store
+        .store_auth_code(IssuedAuthCode {
+            code: "code-for-form-rt".into(),
+            client_id: "form-rt-client".into(),
+            redirect_uri: "https://example.com/cb".into(),
+            code_challenge: challenge,
+            github_login: "formuser2".into(),
+            created_at: chrono::Utc::now(),
+        })
+        .await
+        .unwrap();
+
+    // First get a refresh token via JSON
+    let app = token_app(state.clone());
+    let body = serde_json::json!({
+        "grant_type": "authorization_code",
+        "code": "code-for-form-rt",
+        "redirect_uri": "https://example.com/cb",
+        "code_verifier": verifier,
+        "client_id": "form-rt-client"
+    });
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let rt = json["refresh_token"].as_str().unwrap().to_owned();
+
+    // Now exchange via form-encoded
+    let app = token_app(state);
+    let form_body = format!("grant_type=refresh_token&refresh_token={rt}");
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from(form_body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn exchange_token_missing_refresh_token_field() {
+    let state = test_oauth_state();
+    let app = token_app(state);
+    let body = serde_json::json!({"grant_type": "refresh_token"});
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(resp.status().is_client_error());
+}
+
+#[tokio::test]
+async fn exchange_token_authorization_code_missing_redirect_uri() {
+    let state = test_oauth_state();
+    let app = token_app(state);
+    let body = serde_json::json!({
+        "grant_type": "authorization_code",
+        "code": "some-code",
+        "code_verifier": "some-verifier",
+        "client_id": "some-client"
+    });
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(resp.status().is_client_error());
+}
+
+#[tokio::test]
+async fn exchange_token_authorization_code_missing_code_verifier() {
+    let state = test_oauth_state();
+    let app = token_app(state);
+    let body = serde_json::json!({
+        "grant_type": "authorization_code",
+        "code": "some-code",
+        "redirect_uri": "https://example.com/cb",
+        "client_id": "some-client"
+    });
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(resp.status().is_client_error());
+}
+
+#[tokio::test]
+async fn exchange_token_authorization_code_bad_pkce() {
+    let state = test_oauth_state();
+
+    state
+        .store
+        .store_auth_code(IssuedAuthCode {
+            code: "code-bad-pkce".into(),
+            client_id: "client-pkce".into(),
+            redirect_uri: "https://example.com/cb".into(),
+            code_challenge: "correct-challenge-hash".into(),
+            github_login: "pkcefailuser".into(),
+            created_at: chrono::Utc::now(),
+        })
+        .await
+        .unwrap();
+
+    let app = token_app(state);
+    let body = serde_json::json!({
+        "grant_type": "authorization_code",
+        "code": "code-bad-pkce",
+        "redirect_uri": "https://example.com/cb",
+        "code_verifier": "wrong-verifier",
+        "client_id": "client-pkce"
+    });
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/token")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert!(resp.status().is_client_error());
+}
+
+#[tokio::test]
 async fn exchange_token_client_id_and_redirect_mismatch() {
     let state = test_oauth_state();
 

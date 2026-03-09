@@ -77,7 +77,7 @@ pub struct SearchParams {
 pub struct AnimalIdParams {
     /// LPN ID or registration number of the animal.
     #[schemars(description = "LPN ID or registration number of the animal")]
-    pub animal_id: String,
+    pub lpn_id: String,
 }
 
 /// Parameters for getting animal progeny.
@@ -85,7 +85,7 @@ pub struct AnimalIdParams {
 pub struct ProgenyParams {
     /// LPN ID of the animal.
     #[schemars(description = "LPN ID of the animal")]
-    pub animal_id: String,
+    pub lpn_id: String,
 
     /// Page number (0-indexed).
     #[schemars(description = "Page number (0-indexed)")]
@@ -101,7 +101,7 @@ pub struct ProgenyParams {
 pub struct CompareParams {
     /// LPN IDs of animals to compare (2-5).
     #[schemars(description = "LPN IDs of animals to compare (2-5)")]
-    pub animal_ids: Vec<String>,
+    pub lpn_ids: Vec<String>,
 
     /// Only show specific traits (comma-separated, e.g. BWT,WWT,YWT).
     #[schemars(description = "Only show specific traits (comma-separated, e.g. BWT,WWT,YWT)")]
@@ -149,7 +149,7 @@ pub struct InbreedingParams {
 pub struct MatingParams {
     /// LPN ID of the animal to find mates for.
     #[schemars(description = "LPN ID of the animal to find mates for")]
-    pub animal_id: String,
+    pub lpn_id: String,
 
     /// Breed ID to search for potential mates.
     #[schemars(description = "Breed ID to search for potential mates")]
@@ -190,9 +190,45 @@ pub struct BreedIdParams {
 
 /// Serialize a value to a JSON `CallToolResult`.
 fn json_result(value: &impl serde::Serialize) -> Result<CallToolResult, McpError> {
-    let json = serde_json::to_string_pretty(value)
-        .map_err(|e| McpError::internal_error(format!("Serialization failed: {e}"), None))?;
+    let json =
+        serde_json::to_string_pretty(value).map_err(|e| api_err("Serialization failed", e))?;
     Ok(CallToolResult::success(vec![Content::text(json)]))
+}
+
+/// Build an `McpError::internal_error` from an API context label and error value.
+fn api_err(context: &str, e: impl std::fmt::Display) -> McpError {
+    McpError::internal_error(format!("{context}: {e}"), None)
+}
+
+impl From<SearchParams> for SearchCriteria {
+    fn from(p: SearchParams) -> Self {
+        let mut c = Self::new();
+        if let Some(bg) = p.breed_group_id {
+            c = c.with_breed_group_id(bg);
+        }
+        if let Some(bid) = p.breed_id {
+            c = c.with_breed_id(bid);
+        }
+        if let Some(s) = p.status {
+            c = c.with_status(s);
+        }
+        if let Some(g) = p.gender {
+            c = c.with_gender(g);
+        }
+        if let Some(date) = p.born_after {
+            c = c.with_born_after(date);
+        }
+        if let Some(date) = p.born_before {
+            c = c.with_born_before(date);
+        }
+        if p.proven_only == Some(true) {
+            c = c.with_proven_only(true);
+        }
+        if let Some(fid) = p.flock_id {
+            c = c.with_flock_id(fid);
+        }
+        c
+    }
 }
 
 #[tool_router]
@@ -223,50 +259,25 @@ impl super::NsipServer {
         &self,
         Parameters(params): Parameters<SearchParams>,
     ) -> Result<CallToolResult, McpError> {
-        let mut criteria = SearchCriteria::new();
-
-        if let Some(bg) = params.breed_group_id {
-            criteria = criteria.with_breed_group_id(bg);
-        }
-        if let Some(bid) = params.breed_id {
-            criteria = criteria.with_breed_id(bid);
-        }
-        if let Some(s) = params.status {
-            criteria = criteria.with_status(s);
-        }
-        if let Some(g) = params.gender {
-            criteria = criteria.with_gender(g);
-        }
-        if let Some(date) = params.born_after {
-            criteria = criteria.with_born_after(date);
-        }
-        if let Some(date) = params.born_before {
-            criteria = criteria.with_born_before(date);
-        }
-        if params.proven_only == Some(true) {
-            criteria = criteria.with_proven_only(true);
-        }
-        if let Some(fid) = params.flock_id {
-            criteria = criteria.with_flock_id(fid);
-        }
-
         let page = params.page.unwrap_or(0);
         let page_size = params.page_size.unwrap_or(15);
-        let sorted_trait = params.sort_by.as_deref();
+        let breed_id = params.breed_id;
+        let sort_by = params.sort_by.clone();
         let reverse = params.reverse;
+        let criteria = SearchCriteria::from(params);
 
         let results = self
             .client
             .search_animals(
                 page,
                 page_size,
-                params.breed_id,
-                sorted_trait,
+                breed_id,
+                sort_by.as_deref(),
                 reverse,
                 Some(&criteria),
             )
             .await
-            .map_err(|e| McpError::internal_error(format!("Search failed: {e}"), None))?;
+            .map_err(|e| api_err("Search failed", e))?;
 
         json_result(&results)
     }
@@ -281,9 +292,9 @@ impl super::NsipServer {
     ) -> Result<CallToolResult, McpError> {
         let animal = self
             .client
-            .animal_details(&params.animal_id)
+            .animal_details(&params.lpn_id)
             .await
-            .map_err(|e| McpError::internal_error(format!("Failed to fetch details: {e}"), None))?;
+            .map_err(|e| api_err("Failed to fetch details", e))?;
 
         json_result(&animal)
     }
@@ -296,10 +307,11 @@ impl super::NsipServer {
         &self,
         Parameters(params): Parameters<AnimalIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        let lineage =
-            self.client.lineage(&params.animal_id).await.map_err(|e| {
-                McpError::internal_error(format!("Failed to fetch lineage: {e}"), None)
-            })?;
+        let lineage = self
+            .client
+            .lineage(&params.lpn_id)
+            .await
+            .map_err(|e| api_err("Failed to fetch lineage", e))?;
 
         json_result(&lineage)
     }
@@ -315,9 +327,9 @@ impl super::NsipServer {
 
         let progeny = self
             .client
-            .progeny(&params.animal_id, page, page_size)
+            .progeny(&params.lpn_id, page, page_size)
             .await
-            .map_err(|e| McpError::internal_error(format!("Failed to fetch progeny: {e}"), None))?;
+            .map_err(|e| api_err("Failed to fetch progeny", e))?;
 
         json_result(&progeny)
     }
@@ -332,9 +344,9 @@ impl super::NsipServer {
     ) -> Result<CallToolResult, McpError> {
         let profile = self
             .client
-            .search_by_lpn(&params.animal_id)
+            .search_by_lpn(&params.lpn_id)
             .await
-            .map_err(|e| McpError::internal_error(format!("Failed to fetch profile: {e}"), None))?;
+            .map_err(|e| api_err("Failed to fetch profile", e))?;
 
         json_result(&profile)
     }
@@ -342,9 +354,11 @@ impl super::NsipServer {
     /// List all available breed groups and their breeds.
     #[tool(description = "List all breed groups and individual breeds in the NSIP database")]
     async fn breed_groups(&self) -> Result<CallToolResult, McpError> {
-        let groups = self.client.breed_groups().await.map_err(|e| {
-            McpError::internal_error(format!("Failed to fetch breed groups: {e}"), None)
-        })?;
+        let groups = self
+            .client
+            .breed_groups()
+            .await
+            .map_err(|e| api_err("Failed to fetch breed groups", e))?;
 
         json_result(&groups)
     }
@@ -361,9 +375,7 @@ impl super::NsipServer {
             .client
             .trait_ranges(params.breed_id)
             .await
-            .map_err(|e| {
-                McpError::internal_error(format!("Failed to fetch trait ranges: {e}"), None)
-            })?;
+            .map_err(|e| api_err("Failed to fetch trait ranges", e))?;
 
         json_result(&ranges)
     }
@@ -376,18 +388,20 @@ impl super::NsipServer {
         &self,
         Parameters(params): Parameters<CompareParams>,
     ) -> Result<CallToolResult, McpError> {
-        if params.animal_ids.len() < 2 || params.animal_ids.len() > 5 {
+        if params.lpn_ids.len() < 2 || params.lpn_ids.len() > 5 {
             return Err(McpError::invalid_params(
-                "animal_ids must contain 2-5 LPN IDs",
+                "lpn_ids must contain 2-5 LPN IDs",
                 None,
             ));
         }
 
         let mut animals = Vec::new();
-        for id in &params.animal_ids {
-            let details = self.client.animal_details(id).await.map_err(|e| {
-                McpError::internal_error(format!("Failed to fetch {id}: {e}"), None)
-            })?;
+        for id in &params.lpn_ids {
+            let details = self
+                .client
+                .animal_details(id)
+                .await
+                .map_err(|e| api_err(&format!("Failed to fetch {id}"), e))?;
             animals.push(details);
         }
 
@@ -419,7 +433,7 @@ impl super::NsipServer {
             .client
             .search_animals(0, 100, Some(params.breed_id), None, None, Some(&criteria))
             .await
-            .map_err(|e| McpError::internal_error(format!("Search failed: {e}"), None))?;
+            .map_err(|e| api_err("Search failed", e))?;
 
         let animals = parse_search_result_animals(&results.results);
         let mut ranked = analytics::rank_animals(&animals, &params.weights);
@@ -443,12 +457,8 @@ impl super::NsipServer {
             self.client.lineage(&params.dam_id),
         );
 
-        let sire_lineage = sire_lineage.map_err(|e| {
-            McpError::internal_error(format!("Failed to fetch sire lineage: {e}"), None)
-        })?;
-        let dam_lineage = dam_lineage.map_err(|e| {
-            McpError::internal_error(format!("Failed to fetch dam lineage: {e}"), None)
-        })?;
+        let sire_lineage = sire_lineage.map_err(|e| api_err("Failed to fetch sire lineage", e))?;
+        let dam_lineage = dam_lineage.map_err(|e| api_err("Failed to fetch dam lineage", e))?;
 
         let result = analytics::calculate_coi(&sire_lineage, &dam_lineage);
         json_result(&result)
@@ -464,9 +474,9 @@ impl super::NsipServer {
     ) -> Result<CallToolResult, McpError> {
         let animal_details = self
             .client
-            .animal_details(&params.animal_id)
+            .animal_details(&params.lpn_id)
             .await
-            .map_err(|e| McpError::internal_error(format!("Failed to fetch animal: {e}"), None))?;
+            .map_err(|e| api_err("Failed to fetch animal", e))?;
 
         let mate_gender = match animal_details.gender.as_deref() {
             Some("Male") => "Female",
@@ -485,7 +495,7 @@ impl super::NsipServer {
             .client
             .search_animals(0, 50, Some(params.breed_id), None, None, Some(&criteria))
             .await
-            .map_err(|e| McpError::internal_error(format!("Search failed: {e}"), None))?;
+            .map_err(|e| api_err("Search failed", e))?;
 
         let candidate_animals = parse_search_result_animals(&candidates.results);
         let ranked = analytics::rank_animals(&candidate_animals, &weights);
@@ -493,10 +503,11 @@ impl super::NsipServer {
         let max_results = params.max_results.unwrap_or(5);
         let top_candidates: Vec<&RankedAnimal> = ranked.iter().take(max_results).collect();
 
-        let animal_lineage =
-            self.client.lineage(&params.animal_id).await.map_err(|e| {
-                McpError::internal_error(format!("Failed to fetch lineage: {e}"), None)
-            })?;
+        let animal_lineage = self
+            .client
+            .lineage(&params.lpn_id)
+            .await
+            .map_err(|e| api_err("Failed to fetch lineage", e))?;
 
         let mut recommendations = Vec::new();
         for candidate in top_candidates {
@@ -548,7 +559,7 @@ impl super::NsipServer {
             .client
             .search_animals(0, 100, params.breed_id, None, None, Some(&criteria))
             .await
-            .map_err(|e| McpError::internal_error(format!("Search failed: {e}"), None))?;
+            .map_err(|e| api_err("Search failed", e))?;
 
         let animals = parse_search_result_animals(&results.results);
         let summary = build_flock_summary(&params.flock_id, &animals, results.total_count);
@@ -562,11 +573,8 @@ impl super::NsipServer {
         let (updated, statuses) =
             tokio::join!(self.client.date_last_updated(), self.client.statuses(),);
 
-        let updated = updated
-            .map_err(|e| McpError::internal_error(format!("Failed to fetch date: {e}"), None))?;
-        let statuses = statuses.map_err(|e| {
-            McpError::internal_error(format!("Failed to fetch statuses: {e}"), None)
-        })?;
+        let updated = updated.map_err(|e| api_err("Failed to fetch date", e))?;
+        let statuses = statuses.map_err(|e| api_err("Failed to fetch statuses", e))?;
 
         let result = serde_json::json!({
             "last_updated": updated.data,
@@ -636,7 +644,7 @@ fn build_target_weights(target_traits: Option<&str>) -> HashMap<String, f64> {
     if let Some(traits_str) = target_traits {
         for trait_name in traits_str.split(',') {
             let name = trait_name.trim().to_uppercase();
-            let weight = if name == "BWT" || name == "DAG" || name == "WEC" || name == "FEC" {
+            let weight = if matches!(name.as_str(), "BWT" | "DAG" | "WEC" | "FEC") {
                 -1.0
             } else {
                 1.0
@@ -1197,7 +1205,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .details(Parameters(AnimalIdParams {
-                    animal_id: "LPN1".to_string(),
+                    lpn_id: "LPN1".to_string(),
                 }))
                 .await
                 .unwrap();
@@ -1224,7 +1232,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .lineage(Parameters(AnimalIdParams {
-                    animal_id: "LPN1".to_string(),
+                    lpn_id: "LPN1".to_string(),
                 }))
                 .await
                 .unwrap();
@@ -1256,7 +1264,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .progeny(Parameters(ProgenyParams {
-                    animal_id: "LPN1".to_string(),
+                    lpn_id: "LPN1".to_string(),
                     page: Some(0),
                     page_size: Some(10),
                 }))
@@ -1285,7 +1293,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .progeny(Parameters(ProgenyParams {
-                    animal_id: "LPN1".to_string(),
+                    lpn_id: "LPN1".to_string(),
                     page: None,
                     page_size: None,
                 }))
@@ -1326,7 +1334,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .profile(Parameters(AnimalIdParams {
-                    animal_id: "LPN1".to_string(),
+                    lpn_id: "LPN1".to_string(),
                 }))
                 .await
                 .unwrap();
@@ -1421,7 +1429,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .compare(Parameters(CompareParams {
-                    animal_ids: vec!["A1".to_string(), "A2".to_string()],
+                    lpn_ids: vec!["A1".to_string(), "A2".to_string()],
                     traits: None,
                 }))
                 .await
@@ -1456,7 +1464,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .compare(Parameters(CompareParams {
-                    animal_ids: vec!["A1".to_string(), "A2".to_string()],
+                    lpn_ids: vec!["A1".to_string(), "A2".to_string()],
                     traits: Some("BWT".to_string()),
                 }))
                 .await
@@ -1476,7 +1484,7 @@ mod tests {
             let server = mock_server("http://unused");
             let err = server
                 .compare(Parameters(CompareParams {
-                    animal_ids: vec!["A1".to_string()],
+                    lpn_ids: vec!["A1".to_string()],
                     traits: None,
                 }))
                 .await;
@@ -1489,7 +1497,7 @@ mod tests {
             let server = mock_server("http://unused");
             let err = server
                 .compare(Parameters(CompareParams {
-                    animal_ids: vec![
+                    lpn_ids: vec![
                         "A1".into(),
                         "A2".into(),
                         "A3".into(),
@@ -1728,7 +1736,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .mating_recommendations(Parameters(MatingParams {
-                    animal_id: "RAM1".to_string(),
+                    lpn_id: "RAM1".to_string(),
                     breed_id: 640,
                     target_traits: Some("WWT,BWT".to_string()),
                     max_results: Some(1),
@@ -1785,7 +1793,7 @@ mod tests {
             let server = mock_server(&mock.uri());
             let result = server
                 .mating_recommendations(Parameters(MatingParams {
-                    animal_id: "EWE1".to_string(),
+                    lpn_id: "EWE1".to_string(),
                     breed_id: 640,
                     target_traits: None,
                     max_results: None,

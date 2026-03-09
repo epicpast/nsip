@@ -56,6 +56,24 @@ pub(crate) struct SelectionCriteria {
 
 rmcp::elicit_safe!(SelectionCriteria);
 
+/// Attempt to elicit structured data from an optional prompt context.
+///
+/// Convenience wrapper around [`try_elicit`] for use in prompt handlers where
+/// `context` is `Option<&RequestContext>`. Returns `None` when the context is
+/// absent, or forwards the result of `try_elicit` otherwise.
+pub(crate) async fn try_elicit_opt<T>(
+    context: super::prompts::PromptContext<'_>,
+    message: &str,
+) -> Option<T>
+where
+    T: rmcp::service::ElicitationSafe + for<'de> serde::Deserialize<'de>,
+{
+    match context {
+        Some(ctx) => try_elicit(ctx, message).await,
+        None => None,
+    }
+}
+
 /// Attempt to elicit structured data from the user.
 ///
 /// Returns `Some(data)` if the user accepted, `None` if elicitation is

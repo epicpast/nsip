@@ -543,6 +543,68 @@ mod tests {
         assert_eq!(resp.status(), StatusCode::OK);
     }
 
+    #[tokio::test]
+    async fn validate_origin_https_localhost_passes() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "https://localhost:3000")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_ipv6_loopback_no_port_passes() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        // Bare IPv6 loopback without port
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "http://[::1]")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn validate_origin_subdomain_localhost_rejected() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(validate_origin));
+
+        // Subdomain of localhost should be rejected (DNS rebinding vector)
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(http::header::ORIGIN, "http://evil.localhost:8080")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
     // ── log_requests ─────────────────────────────────────────────────
 
     #[tokio::test]
@@ -553,6 +615,40 @@ mod tests {
 
         let resp = app
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn log_requests_error_response_passes_through() {
+        let app = Router::new()
+            .route("/", get(unauthorized_handler))
+            .layer(mw::from_fn(log_requests));
+
+        let resp = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn log_requests_with_session_id_header() {
+        let app = Router::new()
+            .route("/", get(ok_handler))
+            .layer(mw::from_fn(log_requests));
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header("mcp-session-id", "test-session-abc")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 

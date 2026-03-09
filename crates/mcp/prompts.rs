@@ -259,15 +259,11 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
     }
 
     // Elicit trait preferences if the client supports it.
-    let prefs = if let Some(ctx) = context {
-        super::elicitation::try_elicit::<super::elicitation::ComparePreferences>(
-            ctx,
-            "Which traits should the comparison focus on?",
-        )
-        .await
-    } else {
-        None
-    };
+    let prefs = super::elicitation::try_elicit_opt::<super::elicitation::ComparePreferences>(
+        context,
+        "Which traits should the comparison focus on?",
+    )
+    .await;
 
     let mut animals_data = Vec::new();
     for id in &ids {
@@ -329,15 +325,11 @@ async fn plan_mating<S: BuildHasher + Sync>(
     let coi = super::analytics::calculate_coi(&sire_lineage, &dam_lineage);
     let complementarity = super::analytics::trait_complementarity(&sire_details, &dam_details);
 
-    let constraints = if let Some(ctx) = context {
-        super::elicitation::try_elicit::<super::elicitation::MatingConstraints>(
-            ctx,
-            "Any breeding constraints for this mating? (max COI, breeding objective)",
-        )
-        .await
-    } else {
-        None
-    };
+    let constraints = super::elicitation::try_elicit_opt::<super::elicitation::MatingConstraints>(
+        context,
+        "Any breeding constraints for this mating? (max COI, breeding objective)",
+    )
+    .await;
 
     let mating_data = serde_json::json!({
         "sire": sire_details,
@@ -406,15 +398,11 @@ async fn flock_improvement<S: BuildHasher + Sync>(
     let ranges = ranges
         .map_err(|e| rmcp::ErrorData::internal_error(format!("Trait ranges failed: {e}"), None))?;
 
-    let flock_ctx = if let Some(ctx) = context {
-        super::elicitation::try_elicit::<super::elicitation::FlockContext>(
-            ctx,
-            "Tell us about your flock goals (breeding objective, flock size)",
-        )
-        .await
-    } else {
-        None
-    };
+    let flock_ctx = super::elicitation::try_elicit_opt::<super::elicitation::FlockContext>(
+        context,
+        "Tell us about your flock goals (breeding objective, flock size)",
+    )
+    .await;
 
     let flock_data = serde_json::json!({
         "total_animals": results.total_count,
@@ -462,15 +450,11 @@ async fn select_replacement<S: BuildHasher + Sync>(
     let gender = require_arg(args, "gender")?;
     let target_trait = require_arg(args, "target_trait")?;
 
-    let selection = if let Some(ctx) = context {
-        super::elicitation::try_elicit::<super::elicitation::SelectionCriteria>(
-            ctx,
-            "Any selection criteria? (minimum accuracy, priority traits)",
-        )
-        .await
-    } else {
-        None
-    };
+    let selection = super::elicitation::try_elicit_opt::<super::elicitation::SelectionCriteria>(
+        context,
+        "Any selection criteria? (minimum accuracy, priority traits)",
+    )
+    .await;
 
     let criteria = crate::SearchCriteria::new()
         .with_breed_id(breed_id)
