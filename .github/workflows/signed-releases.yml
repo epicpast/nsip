@@ -76,9 +76,9 @@ jobs:
             --repo "${{ github.repository }}" \
             --json body -q .body)
 
-          cat > release_notes.md <<NOTES
-          ${EXISTING}
+          printf '%s\n' "$EXISTING" > release_notes.md
 
+          cat <<'NOTES' >> release_notes.md
           ## Verification
 
           All release assets are signed with [Sigstore Cosign](https://github.com/sigstore/cosign).
