@@ -183,22 +183,13 @@ async fn validate_origin(
             .or_else(|| origin.strip_prefix("https://"))
             .unwrap_or(origin);
 
-        // IPv6 addresses are wrapped in brackets (e.g. `[::1]:9090`).
-        // Split on `:` would break them, so handle bracketed hosts first.
-        let host = if authority.starts_with('[') {
-            authority
-                .split_once(']')
-                .map_or(authority, |(bracket, _)| bracket)
-                .strip_prefix('[')
-                .unwrap_or(authority)
-        } else {
-            authority.split(':').next().unwrap_or(authority)
-        };
-
-        let is_local = matches!(
-            host,
-            "localhost" | "127.0.0.1" | "[::1]" | "::1" | "0.0.0.0"
+        // Extract the host portion, handling IPv6 bracket notation (e.g. `[::1]:9090`).
+        let host = authority.strip_prefix('[').map_or_else(
+            || authority.split(':').next().unwrap_or(authority),
+            |bracketed| bracketed.split_once(']').map_or(authority, |(h, _)| h),
         );
+
+        let is_local = matches!(host, "localhost" | "127.0.0.1" | "::1" | "0.0.0.0");
 
         if !is_local {
             tracing::warn!(origin = %origin, "rejected non-local Origin (DNS rebinding protection)");

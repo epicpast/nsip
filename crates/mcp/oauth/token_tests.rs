@@ -341,6 +341,34 @@ fn token_app(state: OAuthState) -> Router {
         .with_state(state)
 }
 
+/// Build a POST request to `/token` with the given content type and body.
+fn token_request(content_type: &str, body: impl Into<Body>) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/token")
+        .header("content-type", content_type)
+        .body(body.into())
+        .unwrap()
+}
+
+/// Build a JSON POST request to `/token`.
+fn json_token_request(body: &serde_json::Value) -> Request<Body> {
+    token_request("application/json", serde_json::to_vec(body).unwrap())
+}
+
+/// Build a form-encoded POST request to `/token`.
+fn form_token_request(body: impl Into<String>) -> Request<Body> {
+    token_request("application/x-www-form-urlencoded", body.into())
+}
+
+/// Extract the response body as a JSON value.
+async fn response_json(resp: axum::response::Response) -> serde_json::Value {
+    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    serde_json::from_slice(&bytes).unwrap()
+}
+
 #[tokio::test]
 async fn exchange_token_authorization_code_full_flow() {
     let state = test_oauth_state();
@@ -372,23 +400,10 @@ async fn exchange_token_authorization_code_full_flow() {
         "client_id": "client-1"
     });
 
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
+    let resp = app.oneshot(json_token_request(&body)).await.unwrap();
 
     assert_eq!(resp.status(), StatusCode::OK);
-    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let json = response_json(resp).await;
     assert_eq!(json["token_type"], "bearer");
     assert!(json["access_token"].is_string());
     assert!(json["refresh_token"].is_string());
@@ -425,43 +440,17 @@ async fn exchange_token_refresh_token_flow() {
         "code_verifier": verifier,
         "client_id": "client-2"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
+    let resp = app.oneshot(json_token_request(&body)).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let json = response_json(resp).await;
     let rt = json["refresh_token"].as_str().unwrap().to_owned();
 
     // Exchange the refresh token (rotation)
     let app = token_app(state);
     let body = serde_json::json!({"grant_type": "refresh_token", "refresh_token": rt});
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
+    let resp = app.oneshot(json_token_request(&body)).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let json = response_json(resp).await;
     assert_eq!(json["token_type"], "bearer");
     assert!(json["access_token"].is_string());
     assert_ne!(json["refresh_token"].as_str().unwrap(), rt);
@@ -472,52 +461,28 @@ async fn exchange_token_error_paths() {
     let state = test_oauth_state();
 
     // Unsupported grant type
-    let app = token_app(state.clone());
     let body = serde_json::json!({"grant_type": "client_credentials"});
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(state.clone())
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
 
     // Missing code for authorization_code grant
-    let app = token_app(state.clone());
     let body = serde_json::json!({"grant_type": "authorization_code"});
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(state.clone())
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
 
     // Invalid refresh token
-    let app = token_app(state);
     let body = serde_json::json!({
         "grant_type": "refresh_token",
         "refresh_token": "bad"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(state)
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -526,17 +491,8 @@ async fn exchange_token_error_paths() {
 #[tokio::test]
 async fn exchange_token_form_encoded_unsupported_grant() {
     let state = test_oauth_state();
-    let app = token_app(state);
-    let form_body = "grant_type=client_credentials";
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/x-www-form-urlencoded")
-                .body(Body::from(form_body))
-                .unwrap(),
-        )
+    let resp = token_app(state)
+        .oneshot(form_token_request("grant_type=client_credentials"))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -563,45 +519,24 @@ async fn exchange_token_form_encoded_authorization_code_success() {
         .await
         .unwrap();
 
-    let app = token_app(state);
-    // Use a simple redirect_uri without special chars to avoid URL-encoding in test
     let form_body = format!(
         "grant_type=authorization_code&code=form-code-123&redirect_uri=http%3A%2F%2Flocalhost%2Fcb&code_verifier={verifier}&client_id=form-client",
     );
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/x-www-form-urlencoded")
-                .body(Body::from(form_body))
-                .unwrap(),
-        )
+    let resp = token_app(state)
+        .oneshot(form_token_request(form_body))
         .await
         .unwrap();
 
     assert_eq!(resp.status(), StatusCode::OK);
-    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let json = response_json(resp).await;
     assert_eq!(json["token_type"], "bearer");
     assert!(json["access_token"].is_string());
 }
 
 #[tokio::test]
 async fn exchange_token_malformed_json_body() {
-    let state = test_oauth_state();
-    let app = token_app(state);
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from("not-valid-json!!!"))
-                .unwrap(),
-        )
+    let resp = token_app(test_oauth_state())
+        .oneshot(token_request("application/json", "not-valid-json!!!"))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -629,7 +564,6 @@ async fn exchange_token_form_encoded_refresh_token_success() {
         .unwrap();
 
     // First get a refresh token via JSON
-    let app = token_app(state.clone());
     let body = serde_json::json!({
         "grant_type": "authorization_code",
         "code": "code-for-form-rt",
@@ -637,36 +571,19 @@ async fn exchange_token_form_encoded_refresh_token_success() {
         "code_verifier": verifier,
         "client_id": "form-rt-client"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(state.clone())
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let json = response_json(resp).await;
     let rt = json["refresh_token"].as_str().unwrap().to_owned();
 
     // Now exchange via form-encoded
-    let app = token_app(state);
-    let form_body = format!("grant_type=refresh_token&refresh_token={rt}");
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/x-www-form-urlencoded")
-                .body(Body::from(form_body))
-                .unwrap(),
-        )
+    let resp = token_app(state)
+        .oneshot(form_token_request(format!(
+            "grant_type=refresh_token&refresh_token={rt}"
+        )))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
@@ -674,18 +591,9 @@ async fn exchange_token_form_encoded_refresh_token_success() {
 
 #[tokio::test]
 async fn exchange_token_missing_refresh_token_field() {
-    let state = test_oauth_state();
-    let app = token_app(state);
     let body = serde_json::json!({"grant_type": "refresh_token"});
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(test_oauth_state())
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -693,23 +601,14 @@ async fn exchange_token_missing_refresh_token_field() {
 
 #[tokio::test]
 async fn exchange_token_authorization_code_missing_redirect_uri() {
-    let state = test_oauth_state();
-    let app = token_app(state);
     let body = serde_json::json!({
         "grant_type": "authorization_code",
         "code": "some-code",
         "code_verifier": "some-verifier",
         "client_id": "some-client"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(test_oauth_state())
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -717,23 +616,14 @@ async fn exchange_token_authorization_code_missing_redirect_uri() {
 
 #[tokio::test]
 async fn exchange_token_authorization_code_missing_code_verifier() {
-    let state = test_oauth_state();
-    let app = token_app(state);
     let body = serde_json::json!({
         "grant_type": "authorization_code",
         "code": "some-code",
         "redirect_uri": "https://example.com/cb",
         "client_id": "some-client"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(test_oauth_state())
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -756,7 +646,6 @@ async fn exchange_token_authorization_code_bad_pkce() {
         .await
         .unwrap();
 
-    let app = token_app(state);
     let body = serde_json::json!({
         "grant_type": "authorization_code",
         "code": "code-bad-pkce",
@@ -764,15 +653,8 @@ async fn exchange_token_authorization_code_bad_pkce() {
         "code_verifier": "wrong-verifier",
         "client_id": "client-pkce"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(state)
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -800,7 +682,6 @@ async fn exchange_token_client_id_and_redirect_mismatch() {
         .unwrap();
 
     // Wrong client_id
-    let app = token_app(state.clone());
     let body = serde_json::json!({
         "grant_type": "authorization_code",
         "code": "code-mismatch-cid",
@@ -808,15 +689,8 @@ async fn exchange_token_client_id_and_redirect_mismatch() {
         "code_verifier": verifier,
         "client_id": "wrong-client"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(state.clone())
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());
@@ -835,7 +709,6 @@ async fn exchange_token_client_id_and_redirect_mismatch() {
         .await
         .unwrap();
 
-    let app = token_app(state);
     let body = serde_json::json!({
         "grant_type": "authorization_code",
         "code": "code-mismatch-redir",
@@ -843,15 +716,8 @@ async fn exchange_token_client_id_and_redirect_mismatch() {
         "code_verifier": verifier,
         "client_id": "real-client"
     });
-    let resp = app
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/token")
-                .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_vec(&body).unwrap()))
-                .unwrap(),
-        )
+    let resp = token_app(state)
+        .oneshot(json_token_request(&body))
         .await
         .unwrap();
     assert!(resp.status().is_client_error());

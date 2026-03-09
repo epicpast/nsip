@@ -549,4 +549,371 @@ mod tests {
         assert!(abbreviations.contains(&"NLB"));
         assert!(abbreviations.contains(&"FEC"));
     }
+
+    // ── ancestor_path_combinations ────────────────────────────────────
+
+    #[test]
+    fn ancestor_path_combinations_single_depth_each() {
+        let combos = ancestor_path_combinations("A1", &[2], &[3]);
+        assert_eq!(combos.len(), 1);
+        assert_eq!(combos[0].lpn_id, "A1");
+        assert_eq!(combos[0].sire_depth, 2);
+        assert_eq!(combos[0].dam_depth, 3);
+    }
+
+    #[test]
+    fn ancestor_path_combinations_multiple_depths() {
+        // 2 sire depths × 2 dam depths = 4 combinations
+        let combos = ancestor_path_combinations("B1", &[0, 1], &[1, 2]);
+        assert_eq!(combos.len(), 4);
+        // All should carry the correct lpn_id
+        assert!(combos.iter().all(|c| c.lpn_id == "B1"));
+        // Verify one specific pairing exists
+        assert!(combos.iter().any(|c| c.sire_depth == 0 && c.dam_depth == 2));
+        assert!(combos.iter().any(|c| c.sire_depth == 1 && c.dam_depth == 1));
+    }
+
+    #[test]
+    fn ancestor_path_combinations_empty_sire_depths() {
+        let combos = ancestor_path_combinations("C1", &[], &[1, 2]);
+        assert!(combos.is_empty());
+    }
+
+    #[test]
+    fn ancestor_path_combinations_empty_dam_depths() {
+        let combos = ancestor_path_combinations("D1", &[0], &[]);
+        assert!(combos.is_empty());
+    }
+
+    // ── collect_ancestor_depths ───────────────────────────────────────
+
+    #[test]
+    fn collect_ancestor_depths_no_parents() {
+        let lineage = make_lineage("SUBJ", None, None, vec![]);
+        let depths = collect_ancestor_depths(&lineage);
+        assert!(depths.is_empty());
+    }
+
+    #[test]
+    fn collect_ancestor_depths_parents_only() {
+        let lineage = make_lineage("SUBJ", Some("SIRE"), Some("DAM"), vec![]);
+        let depths = collect_ancestor_depths(&lineage);
+        assert_eq!(depths.len(), 2);
+        assert_eq!(depths["SIRE"], vec![0]);
+        assert_eq!(depths["DAM"], vec![0]);
+    }
+
+    #[test]
+    fn collect_ancestor_depths_with_generations() {
+        let lineage = make_lineage(
+            "SUBJ",
+            Some("SIRE"),
+            Some("DAM"),
+            vec![
+                vec!["GP1", "GP2"],   // depth 1 (grandparents)
+                vec!["GGP1", "GGP2"], // depth 2 (great-grandparents)
+            ],
+        );
+        let depths = collect_ancestor_depths(&lineage);
+        assert_eq!(depths["SIRE"], vec![0]);
+        assert_eq!(depths["DAM"], vec![0]);
+        assert_eq!(depths["GP1"], vec![1]);
+        assert_eq!(depths["GP2"], vec![1]);
+        assert_eq!(depths["GGP1"], vec![2]);
+        assert_eq!(depths["GGP2"], vec![2]);
+    }
+
+    #[test]
+    fn collect_ancestor_depths_same_animal_at_multiple_depths() {
+        // Same ancestor appears in generation 0 and generation 1 (inbred pedigree)
+        let lineage = make_lineage(
+            "SUBJ",
+            Some("SIRE"),
+            None,
+            vec![
+                vec!["COMMON"], // depth 1
+                vec!["COMMON"], // depth 2 — same animal again
+            ],
+        );
+        let depths = collect_ancestor_depths(&lineage);
+        let common_depths = &depths["COMMON"];
+        assert!(common_depths.contains(&1));
+        assert!(common_depths.contains(&2));
+        assert_eq!(common_depths.len(), 2);
+    }
+
+    // ── find_shared_ancestors ─────────────────────────────────────────
+
+    #[test]
+    fn find_shared_ancestors_no_overlap() {
+        let sire_lin = make_lineage("S", Some("A"), Some("B"), vec![]);
+        let dam_lin = make_lineage("D", Some("C"), Some("E"), vec![]);
+        let shared = find_shared_ancestors(&sire_lin, &dam_lin);
+        assert!(shared.is_empty());
+    }
+
+    #[test]
+    fn find_shared_ancestors_parent_level() {
+        // Both have the same sire parent
+        let sire_lin = make_lineage("S", Some("COMMON"), Some("X"), vec![]);
+        let dam_lin = make_lineage("D", Some("COMMON"), Some("Y"), vec![]);
+        let shared = find_shared_ancestors(&sire_lin, &dam_lin);
+        assert_eq!(shared.len(), 1);
+        assert_eq!(shared[0].lpn_id, "COMMON");
+        assert_eq!(shared[0].sire_depth, 0);
+        assert_eq!(shared[0].dam_depth, 0);
+    }
+
+    #[test]
+    fn find_shared_ancestors_multiple_at_different_depths() {
+        // COMMON_A appears at depth 0 in sire and depth 1 in dam
+        // COMMON_B appears at depth 1 in sire and depth 0 in dam
+        let sire_lin = make_lineage(
+            "S",
+            Some("COMMON_A"),
+            Some("X"),
+            vec![vec!["COMMON_B", "GP2"]],
+        );
+        let dam_lin = make_lineage(
+            "D",
+            Some("COMMON_B"),
+            Some("Y"),
+            vec![vec!["COMMON_A", "GP3"]],
+        );
+        let shared = find_shared_ancestors(&sire_lin, &dam_lin);
+        assert_eq!(shared.len(), 2);
+        let ids: Vec<&str> = shared.iter().map(|s| s.lpn_id.as_str()).collect();
+        assert!(ids.contains(&"COMMON_A"));
+        assert!(ids.contains(&"COMMON_B"));
+    }
+
+    // ── calculate_coi ────────────────────────────────────────────────
+
+    #[test]
+    fn calculate_coi_empty_pedigrees() {
+        let sire_lin = make_lineage("S", None, None, vec![]);
+        let dam_lin = make_lineage("D", None, None, vec![]);
+        let result = calculate_coi(&sire_lin, &dam_lin);
+        assert!((result.coefficient - 0.0).abs() < f64::EPSILON);
+        assert_eq!(result.rating, CoiRating::Green);
+        assert!(result.shared_ancestors.is_empty());
+    }
+
+    #[test]
+    fn calculate_coi_parent_in_common_depth0() {
+        // Shared parent at depth 0 on both sides: 0.5^(0+0+1) = 0.5
+        let sire_lin = make_lineage("S", Some("COMMON"), None, vec![]);
+        let dam_lin = make_lineage("D", Some("COMMON"), None, vec![]);
+        let result = calculate_coi(&sire_lin, &dam_lin);
+        assert!((result.coefficient - 0.5).abs() < f64::EPSILON);
+        assert_eq!(result.rating, CoiRating::Red);
+    }
+
+    #[test]
+    fn calculate_coi_three_generation_overlap() {
+        // Great-grandparent in common at depth 2 in both sire and dam trees:
+        // COI contribution = 0.5^(2+2+1) = 0.5^5 = 0.03125
+        let sire_lin = make_lineage(
+            "S",
+            Some("SS"),
+            Some("SD"),
+            vec![
+                vec!["SSS", "SSD", "SDS", "SDD"],                  // depth 1
+                vec!["COMMON", "X", "Y", "Z", "A", "B", "C", "D"], // depth 2
+            ],
+        );
+        let dam_lin = make_lineage(
+            "D",
+            Some("DS"),
+            Some("DD"),
+            vec![
+                vec!["DSS", "DSD", "DDS", "DDD"],                  // depth 1
+                vec!["COMMON", "P", "Q", "R", "E", "F", "G", "H"], // depth 2
+            ],
+        );
+        let result = calculate_coi(&sire_lin, &dam_lin);
+        assert!(
+            (result.coefficient - 0.03125).abs() < 1e-9,
+            "Expected 0.03125, got {}",
+            result.coefficient
+        );
+        assert_eq!(result.rating, CoiRating::Green);
+    }
+
+    // ── rank_animals edge cases ───────────────────────────────────────
+
+    #[test]
+    fn rank_animals_negative_weights() {
+        let animals = vec![
+            make_animal("LOW_BWT", &[("BWT", -2.0, 100)]),
+            make_animal("HIGH_BWT", &[("BWT", 2.0, 100)]),
+        ];
+        let mut weights = HashMap::new();
+        weights.insert("BWT".to_string(), -1.0); // Lower BWT is better → negative weight
+
+        let ranked = rank_animals(&animals, &weights);
+        // LOW_BWT score = -2.0 * -1.0 * 1.0 = 2.0
+        // HIGH_BWT score = 2.0 * -1.0 * 1.0 = -2.0
+        assert_eq!(ranked[0].lpn_id, "LOW_BWT");
+        assert!((ranked[0].score - 2.0).abs() < f64::EPSILON);
+        assert_eq!(ranked[1].lpn_id, "HIGH_BWT");
+    }
+
+    #[test]
+    fn rank_animals_missing_trait_ignored() {
+        let animals = vec![
+            make_animal("A", &[("WWT", 10.0, 80)]),
+            make_animal("B", &[("WWT", 5.0, 80), ("BWT", 1.0, 90)]),
+        ];
+        let mut weights = HashMap::new();
+        weights.insert("WWT".to_string(), 1.0);
+        weights.insert("BWT".to_string(), -1.0);
+
+        let ranked = rank_animals(&animals, &weights);
+        // A: only WWT → 10.0 * 1.0 * 0.8 = 8.0
+        // B: WWT=5*1*0.8=4.0, BWT=1*-1*0.9=-0.9, total=3.1
+        assert_eq!(ranked[0].lpn_id, "A");
+        assert!((ranked[0].score - 8.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn rank_animals_tie_breaking_stable() {
+        // Two animals with identical scores should both appear in output
+        let animals = vec![
+            make_animal("T1", &[("WWT", 10.0, 100)]),
+            make_animal("T2", &[("WWT", 10.0, 100)]),
+        ];
+        let mut weights = HashMap::new();
+        weights.insert("WWT".to_string(), 1.0);
+
+        let ranked = rank_animals(&animals, &weights);
+        assert_eq!(ranked.len(), 2);
+        assert!((ranked[0].score - ranked[1].score).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn rank_animals_empty_input() {
+        let animals: Vec<AnimalDetails> = vec![];
+        let mut weights = HashMap::new();
+        weights.insert("WWT".to_string(), 1.0);
+        let ranked = rank_animals(&animals, &weights);
+        assert!(ranked.is_empty());
+    }
+
+    #[test]
+    fn rank_animals_zero_accuracy() {
+        // Accuracy 0 → accuracy_factor = 0.0 → score = 0
+        let animals = vec![make_animal("Z", &[("WWT", 100.0, 0)])];
+        let mut weights = HashMap::new();
+        weights.insert("WWT".to_string(), 1.0);
+        let ranked = rank_animals(&animals, &weights);
+        assert!((ranked[0].score - 0.0).abs() < f64::EPSILON);
+    }
+
+    // ── trait_complementarity edge cases ─────────────────────────────
+
+    #[test]
+    fn trait_complementarity_no_shared_traits() {
+        let sire = make_animal("S", &[("BWT", 1.0, 80)]);
+        let dam = make_animal("D", &[("NLB", 0.5, 75)]);
+        let comp = trait_complementarity(&sire, &dam);
+        assert!(comp.is_empty());
+    }
+
+    #[test]
+    fn trait_complementarity_both_empty() {
+        let sire = make_animal("S", &[]);
+        let dam = make_animal("D", &[]);
+        let comp = trait_complementarity(&sire, &dam);
+        assert!(comp.is_empty());
+    }
+
+    #[test]
+    fn trait_complementarity_dam_has_extra_traits() {
+        // Traits only in dam should not appear
+        let sire = make_animal("S", &[("WWT", 8.0, 80)]);
+        let dam = make_animal(
+            "D",
+            &[("WWT", 12.0, 85), ("YWT", 20.0, 75), ("EMD", 5.0, 60)],
+        );
+        let comp = trait_complementarity(&sire, &dam);
+        assert_eq!(comp.len(), 1);
+        assert!(comp.contains_key("WWT"));
+        assert!(!comp.contains_key("YWT"));
+        assert!(!comp.contains_key("EMD"));
+        // Midparent = (8.0 + 12.0) / 2.0 = 10.0
+        assert!((comp["WWT"] - 10.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn trait_complementarity_sire_has_extra_traits() {
+        // Traits only in sire should not appear
+        let sire = make_animal("S", &[("WWT", 8.0, 80), ("FAT", 2.0, 70)]);
+        let dam = make_animal("D", &[("WWT", 12.0, 85)]);
+        let comp = trait_complementarity(&sire, &dam);
+        assert_eq!(comp.len(), 1);
+        assert!(!comp.contains_key("FAT"));
+    }
+
+    // ── ebv_glossary ─────────────────────────────────────────────────
+
+    #[test]
+    fn ebv_glossary_all_expected_abbreviations() {
+        let glossary = ebv_glossary();
+        let abbrevs: std::collections::HashSet<&str> =
+            glossary.iter().map(|t| t.abbreviation).collect();
+        for expected in &[
+            "BWT", "WWT", "PWWT", "YWT", "FAT", "EMD", "NLB", "NWT", "PWT", "DAG", "WGR", "WEC",
+            "FEC",
+        ] {
+            assert!(
+                abbrevs.contains(expected),
+                "Missing abbreviation: {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn ebv_glossary_fields_nonempty() {
+        let glossary = ebv_glossary();
+        for entry in &glossary {
+            assert!(
+                !entry.abbreviation.is_empty(),
+                "abbreviation empty for {}",
+                entry.name
+            );
+            assert!(
+                !entry.name.is_empty(),
+                "name empty for {}",
+                entry.abbreviation
+            );
+            assert!(
+                !entry.unit.is_empty(),
+                "unit empty for {}",
+                entry.abbreviation
+            );
+            assert!(
+                !entry.description.is_empty(),
+                "description empty for {}",
+                entry.abbreviation
+            );
+            assert!(
+                !entry.selection_direction.is_empty(),
+                "selection_direction empty for {}",
+                entry.abbreviation
+            );
+        }
+    }
+
+    #[test]
+    fn ebv_glossary_unique_abbreviations() {
+        let glossary = ebv_glossary();
+        let abbrevs: std::collections::HashSet<&str> =
+            glossary.iter().map(|t| t.abbreviation).collect();
+        assert_eq!(
+            abbrevs.len(),
+            glossary.len(),
+            "Duplicate abbreviations found"
+        );
+    }
 }
