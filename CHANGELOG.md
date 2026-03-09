@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add 16 Diátaxis documentation files
 - Rewrite existing docs with NSIP research accuracy
 - Reference structured-MADR (SMADR) instead of MADR
-- Fix broken SearchCriteria reference link
 - Fix broken SearchCriteria reference link (#77)
 - Add mcp module reference to LIBRARY-API.md
 - Add TraitDefinition and ebv_glossary to LIBRARY-API reference
