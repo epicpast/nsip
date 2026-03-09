@@ -54,7 +54,7 @@ jobs:
           body: ${{ steps.changelog.outputs.content }}
           draft: false
           # yamllint disable-line rule:line-length
-          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+          prerelease: ${{ contains(steps.get_version.outputs.version, '-alpha') || contains(steps.get_version.outputs.version, '-beta') || contains(steps.get_version.outputs.version, '-rc') }}
         env:
           # Use PAT so release event propagates to
           # downstream workflows (homebrew, sbom)
