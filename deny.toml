@@ -21,7 +21,13 @@ feature-depth = 1
 version = 2
 # Check for security advisories
 # All advisory types (vulnerability, unmaintained, unsound, notice, yanked) default to deny
-ignore = []
+ignore = [
+    # rsa crate timing side-channel — we only use HMAC-SHA256 via jsonwebtoken,
+    # never RSA. Transitive dep from rust_crypto feature. No upstream fix yet.
+    # Tracked by: daily audit-full job (runs without ignores, surfaces when fix lands)
+    # Review: remove this ignore when rsa >= 0.10 or jsonwebtoken drops rsa dep
+    { id = "RUSTSEC-2023-0071", reason = "transitive dep; we only use HMAC-SHA256, never RSA" },
+]
 
 [licenses]
 version = 2

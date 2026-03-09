@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
+        # yamllint disable-line rule:line-length
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Setup Rust with caching
@@ -35,4 +36,36 @@ jobs:
           tool: cargo-audit
 
       - name: Run security audit
+        # Ignore RUSTSEC-2023-0071 (rsa timing side-channel):
+        # transitive dep from jsonwebtoken rust_crypto feature;
+        # we only use HMAC-SHA256, never RSA.
+        run: >-
+          cargo audit --deny warnings
+          --ignore RUSTSEC-2023-0071
+
+  # Separate job: run audit WITHOUT ignores to surface when
+  # fixes become available. Failures here are informational
+  # (do not block PRs).
+  audit-full:
+    name: Full Audit (informational)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Setup Rust with caching
+        uses: ./.github/actions/setup-rust-cached
+        with:
+          toolchain: stable
+          cache-key: audit-full
+
+      - name: Install cargo-audit
+        uses: ./.github/actions/install-cargo-tool
+        with:
+          tool: cargo-audit
+
+      - name: Run full audit (no ignores)
         run: cargo audit --deny warnings
