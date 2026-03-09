@@ -1414,6 +1414,45 @@ mod tests {
             assert!(json["rangeBWT"]["min"].is_number());
         }
 
+        #[tokio::test]
+        async fn trait_ranges_bad_breed_returns_friendly_message() {
+            let mock = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getTraitRangesByBreed"))
+                .and(query_param("breedId", "25"))
+                .respond_with(ResponseTemplate::new(400).set_body_string("An Error Occured"))
+                .mount(&mock)
+                .await;
+
+            let server = mock_server(&mock.uri());
+            let result = server
+                .trait_ranges(Parameters(BreedIdParams { breed_id: 25 }))
+                .await
+                .unwrap();
+
+            assert!(!result.is_error.unwrap_or(false));
+            let text = &result.content[0].raw.as_text().unwrap().text;
+            assert!(text.contains("No trait range data available for breed 25"));
+            assert!(text.contains("breed_groups"));
+        }
+
+        #[tokio::test]
+        async fn trait_ranges_server_error_returns_mcp_error() {
+            let mock = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getTraitRangesByBreed"))
+                .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
+                .mount(&mock)
+                .await;
+
+            let server = mock_server(&mock.uri());
+            let result = server
+                .trait_ranges(Parameters(BreedIdParams { breed_id: 640 }))
+                .await;
+
+            assert!(result.is_err());
+        }
+
         // -- compare ------------------------------------------------------
 
         #[tokio::test]

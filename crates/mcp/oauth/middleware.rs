@@ -537,4 +537,193 @@ mod tests {
         let result = lookup_pat_cache(&cache, "ghp_nothere");
         assert!(result.is_none());
     }
+
+    #[tokio::test]
+    async fn bearer_auth_well_known_endpoint_bypasses() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "u".into(),
+                id: 1,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let app = Router::new()
+            .route("/.well-known/oauth-authorization-server", get(ok_handler))
+            .route("/.well-known/oauth-protected-resource", get(ok_handler))
+            .layer(axum_middleware::from_fn_with_state(
+                Some(state),
+                bearer_auth,
+            ));
+        let resp = app
+            .oneshot(
+                Request::get("/.well-known/oauth-authorization-server")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn bearer_auth_authorize_endpoint_bypasses() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "u".into(),
+                id: 1,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let app = Router::new().route("/authorize", get(ok_handler)).layer(
+            axum_middleware::from_fn_with_state(Some(state), bearer_auth),
+        );
+        let resp = app
+            .oneshot(Request::get("/authorize").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn bearer_auth_callback_endpoint_bypasses() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "u".into(),
+                id: 1,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let app = Router::new().route("/callback", get(ok_handler)).layer(
+            axum_middleware::from_fn_with_state(Some(state), bearer_auth),
+        );
+        let resp = app
+            .oneshot(Request::get("/callback").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn bearer_auth_token_endpoint_bypasses() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "u".into(),
+                id: 1,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let app = Router::new().route("/token", get(ok_handler)).layer(
+            axum_middleware::from_fn_with_state(Some(state), bearer_auth),
+        );
+        let resp = app
+            .oneshot(Request::get("/token").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn bearer_auth_basic_auth_header_returns_401() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "u".into(),
+                id: 1,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let app = bearer_app(Some(state));
+        let resp = app
+            .oneshot(
+                Request::get("/mcp")
+                    .header("Authorization", "Basic dXNlcjpwYXNz")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn bearer_auth_gho_pat_passes() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "ghouser".into(),
+                id: 2,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let app = bearer_app(Some(state));
+        let resp = app
+            .oneshot(
+                Request::get("/mcp")
+                    .header("Authorization", "Bearer gho_validtoken123456789")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn bearer_auth_github_pat_prefix_passes() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "ghpatuser".into(),
+                id: 3,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let app = bearer_app(Some(state));
+        let resp = app
+            .oneshot(
+                Request::get("/mcp")
+                    .header("Authorization", "Bearer github_pat_11AAA_something")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn bearer_auth_pat_populates_cache() {
+        let github = Arc::new(MockGitHub {
+            user: GitHubUser {
+                login: "cacheuser".into(),
+                id: 10,
+                name: None,
+            },
+        }) as Arc<dyn GitHubApi>;
+        let state = make_oauth_state(github);
+        let pat_cache = state.pat_cache.clone();
+        let app = bearer_app(Some(state));
+        // First request should cache the PAT
+        let resp = app
+            .oneshot(
+                Request::get("/mcp")
+                    .header("Authorization", "Bearer ghp_newtoken999")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        // Verify the PAT was cached
+        let login = pat_cache
+            .read()
+            .unwrap()
+            .get("ghp_newtoken999")
+            .map(|(l, _)| l.clone());
+        assert_eq!(login.as_deref(), Some("cacheuser"));
+    }
 }

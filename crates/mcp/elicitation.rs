@@ -310,4 +310,29 @@ mod tests {
         assert_eq!(sc2.min_accuracy, Some(70));
         assert_eq!(sc2.priority_traits.as_deref(), Some("WWT,EMD"));
     }
+
+    #[tokio::test]
+    async fn try_elicit_opt_returns_none_when_context_is_none() {
+        let result: Option<ComparePreferences> = try_elicit_opt(None, "test message").await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn try_elicit_opt_returns_none_for_mating_constraints_without_context() {
+        let result: Option<MatingConstraints> = try_elicit_opt(None, "provide constraints").await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn try_elicit_opt_returns_none_for_flock_context_without_context() {
+        let result: Option<FlockContext> = try_elicit_opt(None, "provide flock info").await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn try_elicit_opt_returns_none_for_selection_criteria_without_context() {
+        let result: Option<SelectionCriteria> =
+            try_elicit_opt(None, "provide selection criteria").await;
+        assert!(result.is_none());
+    }
 }
