@@ -80,7 +80,7 @@ The first four variables are required when `--auth` is set. The remaining three 
 | `NSIP_GITHUB_CLIENT_SECRET` | Yes | — | GitHub OAuth app client secret |
 | `NSIP_AUTH_SECRET` | Yes | — | HMAC-SHA256 secret for JWT signing (minimum 32 characters recommended) |
 | `NSIP_AUTH_BASE_URL` | Yes | — | External base URL for redirect URIs (e.g. `http://localhost:8080`) |
-| `NSIP_AUTH_ISSUER` | No | value of `NSIP_AUTH_BASE_URL` | JWT `iss` claim value. Override when the public-facing issuer URL differs from the base URL. |
+| `NSIP_AUTH_ISSUER` | No | `https://localhost` | JWT `iss` claim value. Override when the public-facing issuer URL differs from the base URL. |
 | `NSIP_AUTH_TOKEN_TTL` | No | `3600` | JWT token time-to-live in seconds. |
 | `NSIP_AUTH_ALLOWED_USERS` | No | *(none — all users allowed)* | Comma-separated allowlist of GitHub usernames. When set, only listed users may authenticate. |
 

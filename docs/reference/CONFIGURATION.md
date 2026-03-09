@@ -128,6 +128,14 @@ Required when `--auth` is set:
 | `NSIP_AUTH_SECRET` | HMAC-SHA256 secret for JWT signing |
 | `NSIP_AUTH_BASE_URL` | External base URL (e.g. `http://localhost:8080`) |
 
+Optional:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NSIP_AUTH_ISSUER` | `https://localhost` | JWT `iss` claim value |
+| `NSIP_AUTH_TOKEN_TTL` | `3600` | JWT token time-to-live in seconds |
+| `NSIP_AUTH_ALLOWED_USERS` | *(none)* | Comma-separated allowlist of GitHub usernames |
+
 ### Telemetry
 
 When compiled with `--features telemetry`, the server logs in JSON format with W3C trace context (`trace_id`, `span_id`). Default build uses plain text tracing.
