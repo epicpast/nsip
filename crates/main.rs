@@ -220,10 +220,10 @@ fn render_man_page(
 
 /// Initialise the tracing subscriber.
 ///
-/// When compiled with the `telemetry` feature and `NSIP_OTLP_ENDPOINT` is set,
-/// the subscriber includes an `OpenTelemetry` layer that attaches W3C trace
-/// context (`trace_id`, `span_id`) to every JSON log line. Otherwise a plain
-/// text subscriber writing to stderr is used.
+/// When compiled with the `telemetry` feature, the subscriber includes an
+/// `OpenTelemetry` layer that attaches W3C trace context (`trace_id`,
+/// `span_id`) to every JSON log line. Otherwise a plain text subscriber
+/// writing to stderr is used.
 fn init_tracing() {
     init_tracing_inner();
 }

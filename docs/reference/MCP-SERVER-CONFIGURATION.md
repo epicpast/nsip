@@ -72,7 +72,7 @@ Authentication is only meaningful over HTTP. When `--auth` is set, the server re
 
 ### OAuth Environment Variables
 
-The first four variables are required when `--auth` is set. The remaining two are optional with sensible defaults:
+The first four variables are required when `--auth` is set. The remaining three are optional with sensible defaults:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -82,6 +82,7 @@ The first four variables are required when `--auth` is set. The remaining two ar
 | `NSIP_AUTH_BASE_URL` | Yes | — | External base URL for redirect URIs (e.g. `http://localhost:8080`) |
 | `NSIP_AUTH_ISSUER` | No | value of `NSIP_AUTH_BASE_URL` | JWT `iss` claim value. Override when the public-facing issuer URL differs from the base URL. |
 | `NSIP_AUTH_TOKEN_TTL` | No | `3600` | JWT token time-to-live in seconds. |
+| `NSIP_AUTH_ALLOWED_USERS` | No | *(none — all users allowed)* | Comma-separated allowlist of GitHub usernames. When set, only listed users may authenticate. |
 
 ### OAuth Endpoints
 
