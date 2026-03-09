@@ -17,46 +17,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        # v6.0.2
+        # yamllint disable-line rule:line-length
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Generate changelog
-        # v4.5.0
-        uses: orhun/git-cliff-action@c93ef52f3d0ddcdcc9bd5447d98d458a11cd4f72
+        # yamllint disable-line rule:line-length
+        uses: orhun/git-cliff-action@c93ef52f3d0ddcdcc9bd5447d98d458a11cd4f72  # v4.5.0
         with:
           config: cliff.toml
           args: --verbose
         env:
           OUTPUT: CHANGELOG.md
 
-      - name: Commit changelog
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet CHANGELOG.md 2>/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          if git diff --quiet CHANGELOG.md 2>/dev/null; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          REPO="${{ github.repository }}"
-          API_PATH="repos/${REPO}/contents/CHANGELOG.md"
-          CONTENT=$(base64 -i CHANGELOG.md)
-          SHA=$(gh api "$API_PATH" \
-            --jq '.sha' 2>/dev/null || echo "")
-
-          MSG="docs: update CHANGELOG.md for ${TAG_NAME}"
-          ARGS=(
-            -f "message=${MSG}"
-            -f "content=${CONTENT}"
-            -f "branch=main"
-          )
-          if [ -n "$SHA" ]; then
-            ARGS+=(-f "sha=${SHA}")
-          fi
-
-          gh api "$API_PATH" \
-            --method PUT "${ARGS[@]}"
-          echo "Changelog updated via GitHub API"
+          BRANCH="chore/changelog-${TAG_NAME}"
+          git checkout -b "${BRANCH}"
+          git add CHANGELOG.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: update CHANGELOG.md for ${TAG_NAME}"
+          git push origin "${BRANCH}"
+          gh pr create \
+            --title "docs: update CHANGELOG.md for ${TAG_NAME}" \
+            --body "Auto-generated changelog update for ${TAG_NAME}." \
+            --base main \
+            --head "${BRANCH}"
