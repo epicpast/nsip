@@ -44,15 +44,32 @@ pub async fn serve_http(
 
     // CORS: Claude Code sends an OPTIONS preflight before POST. Without
     // this layer rmcp returns 405 and the client never reaches initialize.
+    // Restrict allowed origins to localhost addresses only to prevent
+    // arbitrary web pages from issuing cross-origin requests.
     let cors = tower_http::cors::CorsLayer::new()
-        .allow_origin(tower_http::cors::Any)
+        .allow_origin(tower_http::cors::AllowOrigin::predicate(
+            |origin: &http::HeaderValue, _parts: &http::request::Parts| {
+                origin.to_str().is_ok_and(|o| {
+                    o.starts_with("http://localhost")
+                        || o.starts_with("https://localhost")
+                        || o.starts_with("http://127.0.0.1")
+                        || o.starts_with("http://[::1]")
+                        || o.starts_with("http://0.0.0.0")
+                })
+            },
+        ))
         .allow_methods([
             http::Method::GET,
             http::Method::POST,
             http::Method::DELETE,
             http::Method::OPTIONS,
         ])
-        .allow_headers(tower_http::cors::Any)
+        .allow_headers([
+            http::header::ACCEPT,
+            http::header::CONTENT_TYPE,
+            http::header::AUTHORIZATION,
+            http::HeaderName::from_static("mcp-session-id"),
+        ])
         .expose_headers([http::HeaderName::from_static("mcp-session-id")]);
 
     let mut router = axum::Router::new()
@@ -74,8 +91,22 @@ pub async fn serve_http(
         tracing::info!("OAuth 2.1 + PAT bearer auth enabled");
     }
 
-    let addr = format!("{host}:{port}");
-    let listener = tokio::net::TcpListener::bind(&addr)
+    // Parse host into a SocketAddr so IPv6 literals get proper bracket formatting.
+    let addr: std::net::SocketAddr = host.parse::<std::net::IpAddr>().map_or_else(
+        |_| {
+            // Fallback: treat as hostname string (e.g. "localhost").
+            use std::net::ToSocketAddrs as _;
+            format!("{host}:{port}")
+                .to_socket_addrs()
+                .ok()
+                .and_then(|mut addrs| addrs.next())
+                .unwrap_or_else(|| {
+                    std::net::SocketAddr::new(std::net::Ipv4Addr::LOCALHOST.into(), port)
+                })
+        },
+        |ip| std::net::SocketAddr::new(ip, port),
+    );
+    let listener = tokio::net::TcpListener::bind(addr)
         .await
         .map_err(|e| crate::Error::Connection(format!("Failed to bind {addr}: {e}")))?;
 

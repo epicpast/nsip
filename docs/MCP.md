@@ -111,6 +111,8 @@ nsip mcp --transport http --host 127.0.0.1 --port 8080
 
 This serves a single MCP endpoint at `/mcp` supporting JSON-RPC over POST and SSE via GET, with session management (`Mcp-Session-Id` header) and CORS headers.
 
+> **Security note:** The HTTP endpoint binds to `127.0.0.1` (localhost) by default and restricts CORS to localhost origins. Do **not** expose it on a public interface without protection. For remote access, place the server behind an authenticated reverse proxy or enable `--auth` for OAuth bearer token authentication. See [OAuth Authentication](how-to/OAUTH-AUTHENTICATION.md) and [MCP Security](explanation/MCP-SECURITY.md).
+
 ### Docker transport
 
 ```json
