@@ -677,16 +677,20 @@ Score formula: `Σ (trait_value × weight × accuracy/100)` for each trait.
 
 ```rust
 use std::collections::HashMap;
-use nsip::{NsipClient, mcp::analytics::rank_animals};
+use nsip::{AnimalDetails, NsipClient, SearchCriteria, mcp::analytics::rank_animals};
 
 # async fn example() -> nsip::Result<()> {
 let client = NsipClient::new();
-let search = client.search(
-    nsip::SearchCriteria::new()
-        .with_breed_id(486)
-        .with_gender("Male")
-        .with_status("CURRENT")
-).await?;
+let criteria = SearchCriteria::new()
+    .with_breed_id(486)
+    .with_gender("Male")
+    .with_status("CURRENT");
+let search = client.search_animals(0, 50, Some(486), None, None, Some(&criteria)).await?;
+
+let animals: Vec<AnimalDetails> = search.results
+    .iter()
+    .filter_map(|r| AnimalDetails::from_api_response(r).ok())
+    .collect();
 
 let weights = HashMap::from([
     ("BWT".to_string(), -1.0),
@@ -694,7 +698,7 @@ let weights = HashMap::from([
     ("YWT".to_string(), 1.5),
 ]);
 
-let ranked = rank_animals(&search.animals, &weights);
+let ranked = rank_animals(&animals, &weights);
 for animal in ranked.iter().take(5) {
     println!("{}: {:.2}", animal.lpn_id, animal.score);
 }
@@ -713,8 +717,8 @@ use nsip::{NsipClient, mcp::analytics::trait_complementarity};
 
 # async fn example() -> nsip::Result<()> {
 let client = NsipClient::new();
-let sire = client.details("430735-0032").await?;
-let dam = client.details("430735-0089").await?;
+let sire = client.animal_details("430735-0032").await?;
+let dam = client.animal_details("430735-0089").await?;
 
 let midparent_ebvs = trait_complementarity(&sire, &dam);
 for (trait_name, value) in midparent_ebvs {
