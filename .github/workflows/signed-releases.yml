@@ -1,9 +1,10 @@
-
+---
 name: Signed Releases
 
-on:
-  release:
-    types: [published]
+"on":
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -13,17 +14,27 @@ jobs:
   sign-assets:
     name: Sign Release Assets
     runs-on: ubuntu-latest
-    
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && startsWith(github.event.workflow_run.head_branch, 'v')
     steps:
+      - name: Get tag name
+        id: tag
+        env:
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
       - name: Install Cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        # yamllint disable-line rule:line-length
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad  # v4.0.0
 
       - name: Download release assets
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          gh release download ${{ github.event.release.tag_name }} \
-            --repo ${{ github.repository }} \
+          gh release download "${TAG}" \
+            --repo "${{ github.repository }}" \
             --pattern '*'
 
       - name: Sign assets with Cosign
@@ -48,40 +59,49 @@ jobs:
       - name: Upload signatures
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} \
-            --repo ${{ github.repository }} \
+          gh release upload "${TAG}" \
+            --repo "${{ github.repository }}" \
             --clobber \
             *.sig SHA256SUMS SHA512SUMS
 
       - name: Update release notes
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        # yamllint disable rule:line-length
         run: |
-          cat >> release_notes.md << 'NOTES'
-          
+          EXISTING=$(gh release view "${TAG}" \
+            --repo "${{ github.repository }}" \
+            --json body -q .body)
+
+          printf '%s\n' "$EXISTING" > release_notes.md
+
+          cat <<'NOTES' >> release_notes.md
           ## Verification
-          
+
           All release assets are signed with [Sigstore Cosign](https://github.com/sigstore/cosign).
-          
+
           ### Verify signatures:
-          
-          ```bash
+
+          \`\`\`bash
           # Install cosign
           brew install cosign  # or download from GitHub
-          
+
           # Verify asset signature
-          cosign verify-blob \
-            --signature <file>.sig \
-            --certificate-identity-regexp=".*" \
-            --certificate-oidc-issuer-regexp=".*" \
+          cosign verify-blob \\
+            --signature <file>.sig \\
+            --certificate-identity-regexp=".*" \\
+            --certificate-oidc-issuer-regexp=".*" \\
             <file>
-          
+
           # Verify checksums
           sha256sum --check SHA256SUMS
-          ```
+          \`\`\`
           NOTES
-          
-          gh release edit ${{ github.event.release.tag_name }} \
-            --repo ${{ github.repository }} \
+
+          gh release edit "${TAG}" \
+            --repo "${{ github.repository }}" \
             --notes-file release_notes.md
+        # yamllint enable rule:line-length
