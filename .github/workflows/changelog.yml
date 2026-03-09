@@ -17,46 +17,75 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        # v6.0.2
+        # yamllint disable-line rule:line-length
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Generate changelog
-        # v4.5.0
-        uses: orhun/git-cliff-action@c93ef52f3d0ddcdcc9bd5447d98d458a11cd4f72
+        # yamllint disable-line rule:line-length
+        uses: orhun/git-cliff-action@c93ef52f3d0ddcdcc9bd5447d98d458a11cd4f72  # v4.5.0
         with:
           config: cliff.toml
           args: --verbose
         env:
           OUTPUT: CHANGELOG.md
 
-      - name: Commit changelog
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet CHANGELOG.md 2>/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          if git diff --quiet CHANGELOG.md 2>/dev/null; then
-            echo "No changes to commit"
-            exit 0
+          BRANCH="chore/changelog-${TAG_NAME}"
+
+          # Reuse existing remote branch if it already exists; otherwise create it.
+          if git ls-remote --exit-code origin "${BRANCH}" >/dev/null 2>&1; then
+            echo "Branch ${BRANCH} already exists on origin; checking it out."
+            git fetch origin "${BRANCH}:${BRANCH}"
+            git checkout "${BRANCH}"
+          else
+            echo "Creating new branch ${BRANCH}."
+            git checkout -b "${BRANCH}"
           fi
 
-          REPO="${{ github.repository }}"
-          API_PATH="repos/${REPO}/contents/CHANGELOG.md"
-          CONTENT=$(base64 -i CHANGELOG.md)
-          SHA=$(gh api "$API_PATH" \
-            --jq '.sha' 2>/dev/null || echo "")
+          git add CHANGELOG.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          MSG="docs: update CHANGELOG.md for ${TAG_NAME}"
-          ARGS=(
-            -f "message=${MSG}"
-            -f "content=${CONTENT}"
-            -f "branch=main"
-          )
-          if [ -n "$SHA" ]; then
-            ARGS+=(-f "sha=${SHA}")
+          # Only commit and push if there are staged changes.
+          if git diff --cached --quiet; then
+            echo "No changes to commit on branch ${BRANCH}; skipping commit and push."
+          else
+            git commit -m "docs: update CHANGELOG.md for ${TAG_NAME}"
+            git push origin "${BRANCH}"
           fi
 
-          gh api "$API_PATH" \
-            --method PUT "${ARGS[@]}"
-          echo "Changelog updated via GitHub API"
+          TITLE="docs: update CHANGELOG.md for ${TAG_NAME}"
+          BODY="Auto-generated changelog update for ${TAG_NAME}."
+
+          # Reuse existing open PR for this branch if present; otherwise create a new one.
+          PR_NUMBER="$(gh pr list --head "${BRANCH}" --state open --json number --jq '.[0].number' || true)"
+
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "No existing pull request for ${BRANCH}; creating a new one."
+            gh pr create \
+              --title "${TITLE}" \
+              --body "${BODY}" \
+              --base main \
+              --head "${BRANCH}"
+          else
+            echo "Pull request #${PR_NUMBER} already exists for ${BRANCH}; updating title and body."
+            gh pr edit "${PR_NUMBER}" \
+              --title "${TITLE}" \
+              --body "${BODY}"
+          fi
