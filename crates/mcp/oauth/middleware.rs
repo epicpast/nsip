@@ -515,18 +515,20 @@ mod tests {
     #[test]
     fn lookup_pat_cache_expired_returns_none() {
         let cache = new_pat_cache();
-        // Insert with an instant far in the past
-        cache.write().unwrap().insert(
-            "ghp_expired".to_owned(),
-            (
-                "user".to_owned(),
-                Instant::now()
-                    .checked_sub(Duration::from_secs(600))
-                    .unwrap(),
-            ),
-        );
-        let result = lookup_pat_cache(&cache, "ghp_expired");
-        assert!(result.is_none());
+        // Insert with an instant far enough in the past to exceed PAT_CACHE_TTL
+        // (300s). Use checked_sub because on Windows, Instant is relative to
+        // boot time and freshly provisioned CI runners may have < 600s uptime.
+        let past = Instant::now().checked_sub(Duration::from_secs(600));
+        if let Some(expired_at) = past {
+            cache
+                .write()
+                .unwrap()
+                .insert("ghp_expired".to_owned(), ("user".to_owned(), expired_at));
+            let result = lookup_pat_cache(&cache, "ghp_expired");
+            assert!(result.is_none(), "expired PAT should not be found");
+        }
+        // On platforms where checked_sub returns None, the test is a no-op —
+        // the missing-entry and fresh-entry paths are covered by other tests.
     }
 
     #[test]
