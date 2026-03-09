@@ -23,8 +23,8 @@ use rmcp::{
     model::{
         GetPromptRequestParams, GetPromptResult, ListPromptsResult, ListResourceTemplatesResult,
         ListResourcesResult, PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams,
-        ReadResourceResult, ServerCapabilities, ServerInfo, SubscribeRequestParams,
-        UnsubscribeRequestParams,
+        ReadResourceResult, ServerCapabilities, ServerInfo, SetLevelRequestParams,
+        SubscribeRequestParams, UnsubscribeRequestParams,
     },
     service::{NotificationContext, RequestContext},
     tool_handler,
@@ -98,8 +98,23 @@ impl ServerHandler for NsipServer {
                 .enable_logging()
                 .build(),
         )
+        .with_server_info(rmcp::model::Implementation::new(
+            "nsip-mcp",
+            env!("CARGO_PKG_VERSION"),
+        ))
         .with_protocol_version(ProtocolVersion::LATEST)
         .with_instructions(instructions::build_instructions(&self.enabled_tools))
+    }
+
+    // -- Logging ---------------------------------------------------------------
+
+    async fn set_level(
+        &self,
+        request: SetLevelRequestParams,
+        _context: RequestContext<rmcp::service::RoleServer>,
+    ) -> Result<(), McpError> {
+        tracing::info!(level = ?request.level, "client set logging level");
+        Ok(())
     }
 
     // -- Prompts ---------------------------------------------------------------
@@ -278,12 +293,9 @@ mod tests {
     fn server_info_has_implementation() {
         let server = NsipServer::new();
         let info = server.get_info();
-        // Implementation is built from env at compile time
         let impl_info = &info.server_info;
-        assert!(
-            !impl_info.name.is_empty(),
-            "Server implementation name should not be empty"
-        );
+        assert_eq!(impl_info.name, "nsip-mcp");
+        assert_eq!(impl_info.version, env!("CARGO_PKG_VERSION"));
     }
 
     #[test]

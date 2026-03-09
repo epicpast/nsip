@@ -69,8 +69,12 @@ pub async fn serve_http(
             http::header::CONTENT_TYPE,
             http::header::AUTHORIZATION,
             http::HeaderName::from_static("mcp-session-id"),
+            http::HeaderName::from_static("mcp-protocol-version"),
         ])
-        .expose_headers([http::HeaderName::from_static("mcp-session-id")]);
+        .expose_headers([
+            http::HeaderName::from_static("mcp-session-id"),
+            http::HeaderName::from_static("mcp-protocol-version"),
+        ]);
 
     let mut router = axum::Router::new()
         .route_service("/mcp", service)

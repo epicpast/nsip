@@ -371,11 +371,20 @@ impl super::NsipServer {
         &self,
         Parameters(params): Parameters<BreedIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        let ranges = self
-            .client
-            .trait_ranges(params.breed_id)
-            .await
-            .map_err(|e| api_err("Failed to fetch trait ranges", e))?;
+        let ranges = match self.client.trait_ranges(params.breed_id).await {
+            Ok(r) => r,
+            Err(crate::Error::Api { status: 400, .. }) => {
+                let msg = format!(
+                    "No trait range data available for breed {}. \
+                     The breed may not have enough evaluated animals \
+                     for range calculations. Use breed_groups to find \
+                     valid breed IDs.",
+                    params.breed_id
+                );
+                return Ok(CallToolResult::success(vec![Content::text(msg)]));
+            },
+            Err(e) => return Err(api_err("Failed to fetch trait ranges", e)),
+        };
 
         json_result(&ranges)
     }
