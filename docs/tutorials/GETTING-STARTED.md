@@ -37,7 +37,7 @@ Your `Cargo.toml` should now include:
 
 ```toml
 [dependencies]
-nsip = "0.3"
+nsip = "0.4"
 tokio = { version = "1", features = ["full"] }
 ```
 
