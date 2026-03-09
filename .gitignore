@@ -116,3 +116,4 @@ man/
 # MCPB staging
 server/
 *.mcpb
+.fastembed_cache/

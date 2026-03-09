@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0-rc1] - 2026-03-09
+
+### Added
+
+- **mcp**: Upgrade to MCP protocol 2025-06-18 with tool sets, OAuth, and telemetry (#143)
+
+### Documentation
+
+- Update CHANGELOG.md for v0.3.3
+- Adopt Diátaxis framework for user documentation
+- Add 16 Diátaxis documentation files
+- Rewrite existing docs with NSIP research accuracy
+- Reference structured-MADR (SMADR) instead of MADR
+- Fix broken SearchCriteria reference link (#77)
+- Add mcp module reference to LIBRARY-API.md
+- Add TraitDefinition and ebv_glossary to LIBRARY-API reference
+- Add comprehensive agentic workflows documentation
+- Apply review feedback to AGENTIC-WORKFLOWS.md and README.md
+
+### Fixed
+
+- **ci**: Enable persist-credentials in update-docs workflow
+- **ci**: Use correct adrscope action input names
+- **ci**: Add structured MADR frontmatter to ADR files
+- **ci**: Use full structured-MADR frontmatter in ADRs
+- **ci**: Use workflow_run trigger for homebrew packaging
+- **ci**: Apply review feedback to package-homebrew.yml
+- **ci**: Unblock daily-qa network access and add issue input (#115)
+
+### Miscellaneous
+
+- **deps**: Bump clap from 4.5.58 to 4.5.60 (#101)
+- **deps**: Bump rmcp from 0.15.0 to 0.16.0 (#102)
+- **deps**: Bump the github-actions group with 4 updates (#103)
+- **deps**: Bump actions/setup-node from 4.2.0 to 6.2.0 (#104)
+- **deps**: Bump zircote/adrscope (#107)
+- **deps**: Bump peter-evans/dockerhub-description from 4.0.0 to 5.0.0 (#105)
+- **deps**: Update dtolnay/rust-toolchain requirement to efa25f7f19611383d5b0ccf2d1c8914531636bf9 (#106)
+- **deps**: Bump tempfile from 3.25.0 to 3.26.0 (#123)
+- **deps**: Bump rmcp from 0.16.0 to 0.17.0 (#124)
+- **deps**: Bump the github-actions group with 3 updates (#125)
+- **deps**: Bump actions/attest-build-provenance from 3.2.0 to 4.1.0 (#128)
+- **deps**: Bump zircote/adrscope (#127)
+- **deps**: Bump actions/download-artifact from 6.0.0 to 8.0.0 (#126)
+- **deps**: Bump aquasecurity/trivy-action (#129)
+
+### Performance
+
+- **.claude**: Sync agents and spec-orchestrator from rust-template
+
 ## [0.3.3] - 2026-02-16
 
 ### Documentation
