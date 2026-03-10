@@ -42,7 +42,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-nsip = "0.3"
+nsip = "0.4"
 ```
 
 Or use cargo add:
@@ -314,8 +314,8 @@ This template includes production-ready workflows:
 1. Update version in `Cargo.toml`
 2. Create and push a version tag:
    ```bash
-   git tag -a v0.3.0 -m "Release v0.3.0"
-   git push origin v0.3.0
+   git tag -a v0.4.0 -m "Release v0.4.0"
+   git push origin v0.4.0
    ```
 3. Workflows automatically:
    - Generate changelog
@@ -340,8 +340,8 @@ Pull and run the container:
 docker pull ghcr.io/zircote/nsip:latest
 
 # Run specific version
-docker pull ghcr.io/zircote/nsip:v0.1.0
-docker run --rm ghcr.io/zircote/nsip:v0.1.0 --version
+docker pull ghcr.io/zircote/nsip:v0.4.0
+docker run --rm ghcr.io/zircote/nsip:v0.4.0 --version
 ```
 
 ## MSRV Policy
