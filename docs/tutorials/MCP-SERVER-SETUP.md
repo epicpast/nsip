@@ -148,7 +148,7 @@ In your AI client, try asking a question that uses the NSIP tools:
 What breed groups are available in the NSIP database?
 ```
 
-The AI assistant should use the `list_breed_groups` tool and return a list of breed groups with their breeds.
+The AI assistant should use the `breed_groups` tool and return a list of breed groups with their breeds.
 
 Try a few more queries:
 
@@ -174,19 +174,19 @@ The NSIP MCP server provides 13 tools:
 
 | Tool | Description |
 |------|-------------|
-| `search_animals` | Search animals with filters (breed, gender, status, date range) |
-| `animal_details` | Get detailed information for a specific animal |
-| `animal_profile` | Get a complete profile (details + lineage + progeny) |
-| `animal_lineage` | Get multi-generational pedigree data |
-| `animal_progeny` | List an animal's offspring |
-| `compare_animals` | Side-by-side trait comparison of multiple animals |
-| `list_breed_groups` | List all breed groups and their breeds |
-| `list_statuses` | List valid animal status values |
-| `trait_ranges` | Get min/max trait values for a breed |
-| `date_last_updated` | Check when the database was last updated |
-| `breed_group_details` | Get details for a specific breed group |
-| `trait_definitions` | Get EBV trait definitions and units |
-| `flock_search` | Search for flocks by criteria |
+| `search` | Search for animals with filters (breed, gender, status, date range, flock) |
+| `details` | Get detailed EBV data, breed, contact info, and status for an animal |
+| `lineage` | Get pedigree / ancestry tree including parents and grandparents |
+| `progeny` | Get paginated list of offspring for an animal |
+| `profile` | Get complete profile (details + lineage + progeny) in one call |
+| `compare` | Compare 2–5 animals side-by-side on their EBV traits |
+| `rank` | Rank animals within a breed by weighted EBV trait scores |
+| `inbreeding_check` | Calculate Wright's coefficient of inbreeding for a sire-dam pairing |
+| `mating_recommendations` | Find optimal mates ranked by trait complementarity and low COI |
+| `flock_summary` | Summarize a flock's animals: count, gender breakdown, and average EBVs |
+| `database_status` | Get last-updated date and available animal statuses |
+| `breed_groups` | List all breed groups and individual breeds |
+| `trait_ranges` | Get min/max EBV trait value ranges for a specific breed |
 
 The server also provides 7 guided prompts that help structure common queries. Ask your AI assistant to list the available prompts for more details.
 
