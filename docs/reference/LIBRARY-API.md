@@ -577,7 +577,7 @@ let server = NsipServer::new();
 
 #### `NsipServer::new() -> Self`
 
-Create a new MCP server instance with default NSIP API client.
+Create a new MCP server instance with all 13 tools enabled.
 
 ```rust
 use nsip::mcp::NsipServer;
@@ -585,18 +585,56 @@ use nsip::mcp::NsipServer;
 let server = NsipServer::new();
 ```
 
-#### `serve_stdio() -> Result<()>`
+#### `NsipServer::with_tool_sets(sets: EnabledToolSets) -> Self`
+
+Create an MCP server with a restricted set of tools. Use this when embedding the server
+programmatically and you want finer control over which tool categories are exposed.
+
+```rust
+use nsip::mcp::{NsipServer, tool_sets::EnabledToolSets};
+
+// Expose only search and breed tools
+let sets = EnabledToolSets::from_csv("search,breed");
+let server = NsipServer::with_tool_sets(sets);
+```
+
+#### `serve_stdio(sets: EnabledToolSets) -> Result<()>`
 
 Start the MCP server on stdio transport (used by Claude Desktop, Claude Code, Cursor, etc.).
 
+Pass `EnabledToolSets::all()` to expose all 13 tools, or build a filtered set with
+[`EnabledToolSets::from_csv`] to restrict which tool categories are active.
+
 ```rust
-use nsip::mcp::serve_stdio;
+use nsip::mcp::{serve_stdio, tool_sets::EnabledToolSets};
 
 #[tokio::main]
 async fn main() -> nsip::Result<()> {
-    serve_stdio().await
+    serve_stdio(EnabledToolSets::all()).await
 }
 ```
+
+#### `serve_http(host: &str, port: u16, sets: EnabledToolSets, oauth_state: Option<OAuthState>) -> Result<()>`
+
+Start the MCP server on HTTP transport with optional OAuth 2.1 authentication.
+
+- **`host`** — bind address (e.g., `"127.0.0.1"` or `"0.0.0.0"`)
+- **`port`** — TCP port to listen on
+- **`sets`** — which tool categories to expose (see [`EnabledToolSets`])
+- **`oauth_state`** — when `Some`, enables GitHub-backed OAuth 2.1 + PAT bearer auth; `None` disables auth
+
+```rust
+use nsip::mcp::{serve_http, tool_sets::EnabledToolSets};
+
+#[tokio::main]
+async fn main() -> nsip::Result<()> {
+    // HTTP server with all tools, no auth
+    serve_http("127.0.0.1", 8080, EnabledToolSets::all(), None).await
+}
+```
+
+**Errors:** Returns `Error::Connection` if the TCP listener cannot bind or the server encounters
+a runtime error.
 
 ---
 
