@@ -12,7 +12,7 @@ This is the **NSIP sheep genetic evaluation CLI and library**. The crate name is
 
 ```bash
 just                  # List all recipes
-just check            # Full CI check (fmt + clippy + test + doc + deny)
+just check            # Full CI check (fmt + clippy + test + doc + deny + coverage)
 just test             # Run all tests
 just lint             # Clippy with CI flags
 just fmt              # Format code
