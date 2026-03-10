@@ -171,8 +171,10 @@ nsip mcp
 The library includes MCP (Model Context Protocol) support for integration with AI assistants:
 
 ```rust,ignore
-// Start the MCP server on stdio
-nsip::mcp::serve_stdio().await?;
+use nsip::mcp::{serve_stdio, tool_sets::EnabledToolSets};
+
+// Start the MCP server on stdio (all 13 tools enabled)
+serve_stdio(EnabledToolSets::all()).await?;
 ```
 
 The MCP protocol exposes the following 13 tools when running `nsip mcp`:
