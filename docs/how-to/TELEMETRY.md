@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Enable and Use Telemetry
 
 > **Problem:** You want structured, machine-readable logs from the NSIP MCP server with W3C trace context so you can correlate log lines across a single request/response cycle.

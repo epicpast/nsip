@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # Dynamic MCP Server Instructions
 
 > MCP servers describe themselves to clients through an `instructions` field. The NSIP server generates these instructions dynamically so that clients only learn about capabilities they can actually use.

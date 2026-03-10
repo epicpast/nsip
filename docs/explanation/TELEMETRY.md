@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # Telemetry and Distributed Tracing
 
 > Why the NSIP MCP server includes an optional telemetry system, how distributed tracing works, and the design decisions behind the implementation.

@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Error Handling Reference
 
 Complete reference for error handling in the `nsip` crate.

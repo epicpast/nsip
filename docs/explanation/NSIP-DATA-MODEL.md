@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # NSIP Data Model
 
 > How the NSIP Search API organizes sheep genetic evaluation data, from breed groups down to individual trait values.

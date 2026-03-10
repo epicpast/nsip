@@ -1,3 +1,6 @@
+---
+diataxis_type: tutorial
+---
 # Getting Started with NSIP
 
 > **Learning Goal:** By the end of this tutorial, you will have a working Rust program that connects to the NSIP Search API, lists sheep breed groups, searches for animals, and retrieves detailed genetic data.

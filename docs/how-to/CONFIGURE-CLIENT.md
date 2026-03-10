@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Configure the NSIP Client
 
 > **Problem:** You need to customize the HTTP client for timeouts, retries, or a different API endpoint.

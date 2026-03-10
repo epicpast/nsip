@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Integrate NSIP into Scripts and Pipelines
 
 > **Problem:** You want to automate NSIP data retrieval in shell scripts, CI pipelines, or data processing workflows.

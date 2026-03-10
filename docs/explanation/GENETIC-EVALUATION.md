@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # Genetic Evaluation
 
 > How the NSIP system transforms raw performance data into Estimated Breeding Values using BLUP, and why the methodology matters for breeding decisions.
