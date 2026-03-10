@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Code Coverage Tracking
 
 ## Overview

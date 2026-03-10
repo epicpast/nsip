@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Test Matrix - Multi-Platform Testing
 
 ## Overview

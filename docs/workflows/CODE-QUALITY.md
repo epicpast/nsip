@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Code Quality Metrics
 
 ## Overview

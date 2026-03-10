@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Container Vulnerability Scanning with Trivy
 
 ## Overview

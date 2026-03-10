@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Package Manager Distribution
 
 ## Overview

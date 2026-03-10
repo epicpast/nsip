@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Alternative Cargo Registries
 
 ## Overview

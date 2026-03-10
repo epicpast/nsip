@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # Customization Guide
 
 This guide covers how to customize the `nsip` beyond the initial setup. For basic configuration (renaming the crate, updating metadata), see the main README.

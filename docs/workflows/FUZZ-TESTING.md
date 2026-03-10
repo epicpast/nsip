@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Fuzz Testing with cargo-fuzz
 
 ## Overview

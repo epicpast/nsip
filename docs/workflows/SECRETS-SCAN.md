@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Secrets Scanning with Gitleaks
 
 ## Overview

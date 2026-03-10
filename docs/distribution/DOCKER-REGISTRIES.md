@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Docker Multi-Registry Distribution
 
 ## Overview

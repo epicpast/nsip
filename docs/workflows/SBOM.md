@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Software Bill of Materials (SBOM)
 
 ## Overview

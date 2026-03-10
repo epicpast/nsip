@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Benchmark Regression Detection
 
 ## Overview

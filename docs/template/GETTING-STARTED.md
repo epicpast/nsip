@@ -1,3 +1,6 @@
+---
+diataxis_type: tutorial
+---
 # Getting Started
 
 > You just created a repository from **zircote/nsip**. This guide walks you through every step from creation to your first green CI run.

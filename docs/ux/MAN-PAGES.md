@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Man Pages Generation
 
 ## Overview

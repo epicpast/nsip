@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # Deployment Guide
 
 This document provides comprehensive deployment instructions for the nsip project.

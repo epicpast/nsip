@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Metrics & Observability Dashboard
 
 ## Overview
