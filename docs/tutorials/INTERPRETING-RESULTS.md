@@ -1,3 +1,6 @@
+---
+diataxis_type: tutorial
+---
 # Interpreting Results
 
 > **Learning Goal:** By the end of this tutorial, you will understand how to read the data returned by the NSIP API -- what EBV values mean, how to assess accuracy, how to read lineage data, and how to make sense of an animal's complete profile.

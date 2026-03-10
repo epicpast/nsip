@@ -1,3 +1,6 @@
+---
+diataxis_type: tutorial
+---
 # Setting Up the NSIP MCP Server
 
 > **Learning Goal:** By the end of this tutorial, you will have the NSIP MCP server running and connected to an AI assistant (Claude Desktop or Claude Code), ready to query sheep genetic data through natural language.

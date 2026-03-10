@@ -1,3 +1,6 @@
+---
+diataxis_type: tutorial
+---
 # Your First API Query
 
 > **Learning Goal:** By the end of this tutorial, you will know how to construct targeted searches using `SearchCriteria`, paginate through large result sets, sort by genetic traits, and combine multiple filters to find exactly the animals you need.

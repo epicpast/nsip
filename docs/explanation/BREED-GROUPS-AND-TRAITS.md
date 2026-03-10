@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # Breed Groups and Traits
 
 > How NSIP organizes sheep breeds into evaluation groups, and which EBV traits are relevant to each group.

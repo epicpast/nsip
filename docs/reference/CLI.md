@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # CLI Reference
 
 Complete reference for the `nsip` command-line interface.

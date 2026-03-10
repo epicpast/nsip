@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Compare Animals
 
 > **Problem:** You need to compare EBV traits across multiple animals to inform breeding or selection decisions.

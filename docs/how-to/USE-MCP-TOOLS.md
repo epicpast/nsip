@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Use the MCP Server Tools
 
 > **Problem:** You want to use the NSIP MCP server with an AI assistant (Claude Desktop, Claude Code, Cursor, etc.) to query sheep genetic data interactively.

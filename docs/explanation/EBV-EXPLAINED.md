@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # Understanding Estimated Breeding Values (EBVs)
 
 > EBVs are the foundation of genetic improvement in sheep. This guide explains what they are, how they work, and why they matter for breeding decisions.

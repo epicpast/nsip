@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Filter Search Results
 
 > **Problem:** You need to narrow down animals in the NSIP database by breed, gender, status, date range, flock, or trait values.

@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Batch Query Multiple Animals
 
 > **Problem:** You need to retrieve data for many animals at once, either from a list of LPN IDs or by paginating through search results.

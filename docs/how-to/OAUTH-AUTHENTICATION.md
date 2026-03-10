@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Authenticate with the NSIP MCP Server
 
 > **Problem:** You want to secure the NSIP MCP HTTP server so that only authorized users can access it, using OAuth 2.1 with GitHub as the identity provider or a GitHub Personal Access Token.

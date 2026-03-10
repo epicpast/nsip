@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Library API Reference
 
 Complete reference for the `nsip` Rust library crate.

@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Configuration Reference
 
 Complete reference for configuring the `nsip` CLI and library.

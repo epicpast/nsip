@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # From Data to Decisions
 
 > How NSIP API data connects to real-world sheep breeding decisions, from sire selection through mating plans to flock-level genetic improvement.

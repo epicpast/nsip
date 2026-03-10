@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # How to Export Data as JSON
 
 > **Problem:** You need to export NSIP animal data in JSON format for further processing, reporting, or integration with other tools.

@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # MCP Tools Reference
 
 Complete reference for the 13 tools exposed by the `nsip mcp` server.
@@ -8,7 +11,7 @@ For installation, configuration, resources, and prompts, see [MCP Server Referen
 
 ## Overview
 
-The MCP server exposes 13 tools over the Model Context Protocol (stdio transport, protocol version `2024-11-05`). All tools return JSON results as text content. Errors use standard MCP error codes.
+The MCP server exposes 13 tools over the Model Context Protocol (stdio transport, protocol version `2025-06-18`). All tools return JSON results as text content. Errors use standard MCP error codes.
 
 | Tool | Description |
 |------|-------------|
