@@ -116,6 +116,10 @@ Detailed reference material organized by topic.
 
 | Document | Description |
 |----------|-------------|
+| [CI Pipeline](workflows/CI.md) | Primary quality gate: format, lint, test, docs, MSRV, and coverage |
+| [Release](workflows/RELEASE.md) | Multi-platform binary builds, changelog generation, and release creation |
+| [Security Audit](workflows/SECURITY-AUDIT.md) | Daily `cargo audit` vulnerability scanning against the RustSec database |
+| [ADR Workflows](workflows/ADR-WORKFLOWS.md) | ADR format validation and HTML viewer generation |
 | [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents for CI/CD (CI Doctor, Daily QA, Issue Triage, Q optimizer, Update Docs, Daily Documentation Review, Daily Repository Status) |
 | [Coverage](workflows/COVERAGE.md) | Code coverage configuration and reporting |
 | [Test Matrix](workflows/TEST-MATRIX.md) | Multi-platform and multi-version test matrix |
