@@ -319,15 +319,6 @@ jobs:
         # yamllint disable-line rule:line-length
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - name: Setup Node.js
-        # yamllint disable-line rule:line-length
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
-        with:
-          node-version: "22"
-
-      - name: Install mcpb CLI
-        run: npm install -g @anthropic-ai/mcpb
-
       - name: Download platform binaries
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -353,35 +344,37 @@ jobs:
           "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/"
           manifest.json
 
-      - name: Validate manifest
-        run: mcpb validate .
-
-      - name: Pack bundle
-        run: mcpb pack . nsip.mcpb
-
-      - name: Inspect bundle
-        run: mcpb info nsip.mcpb
+      - name: Package MCPB bundle
+        id: mcpb
+        # yamllint disable-line rule:line-length
+        uses: zircote/mcp-bundle@044b506  # main
+        with:
+          upload-artifact: 'true'
+          create-release-asset: 'false'
 
       - name: Attest bundle provenance
         id: attest_mcpb
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
         with:
-          subject-path: nsip.mcpb
+          subject-path: ${{ steps.mcpb.outputs.bundle-path }}
 
       - name: Rename attestation bundle
         env:
           MCPB_BUNDLE: >-
             ${{ steps.attest_mcpb.outputs.bundle-path }}
+          MCPB_FILE: >-
+            ${{ steps.mcpb.outputs.bundle-path }}
         run: >-
           cp "$MCPB_BUNDLE"
-          nsip.mcpb.sigstore.json
+          "${MCPB_FILE}.sigstore.json"
 
       - name: Upload to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MCPB_FILE: ${{ steps.mcpb.outputs.bundle-path }}
         run: |
           gh release upload "${{ github.ref_name }}" \
-            nsip.mcpb \
-            nsip.mcpb.sigstore.json \
+            "$MCPB_FILE" \
+            "${MCPB_FILE}.sigstore.json" \
             --clobber
