@@ -118,11 +118,13 @@ Detailed reference material organized by topic.
 |----------|-------------|
 | [CI Pipeline](workflows/CI.md) | Primary quality gate: format, lint, test, docs, MSRV, and coverage |
 | [Release](workflows/RELEASE.md) | Multi-platform binary builds, changelog generation, and release creation |
+| [Publish](workflows/PUBLISH.md) | Publish the `nsip` crate to crates.io |
 | [Security Audit](workflows/SECURITY-AUDIT.md) | Daily `cargo audit` vulnerability scanning against the RustSec database |
 | [ADR Workflows](workflows/ADR-WORKFLOWS.md) | ADR format validation and HTML viewer generation |
 | [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents for CI/CD (CI Doctor, Daily QA, Issue Triage, Q optimizer, Update Docs, Daily Documentation Review, Daily Repository Status) |
 | [Coverage](workflows/COVERAGE.md) | Code coverage configuration and reporting |
 | [Test Matrix](workflows/TEST-MATRIX.md) | Multi-platform and multi-version test matrix |
+| [Benchmark](workflows/BENCHMARK.md) | Run benchmarks on every push/PR |
 | [Benchmark Regression](workflows/BENCHMARK-REGRESSION.md) | Performance regression detection |
 | [Mutation Testing](workflows/MUTATION-TESTING.md) | Mutation testing with cargo-mutants |
 | [Fuzz Testing](workflows/FUZZ-TESTING.md) | Fuzz testing with cargo-fuzz |
@@ -131,6 +133,22 @@ Detailed reference material organized by topic.
 | [SBOM](workflows/SBOM.md) | Software Bill of Materials generation |
 | [Secrets Scan](workflows/SECRETS-SCAN.md) | Secret scanning with Gitleaks |
 | [Container Scan](workflows/CONTAINER-SCAN.md) | Container image vulnerability scanning |
+| [Nightly Builds](workflows/NIGHTLY.md) | Rolling nightly pre-release from latest `main` |
+| [Changelog](workflows/CHANGELOG.md) | Auto-generate `CHANGELOG.md` on version tag |
+| [Stale](workflows/STALE.md) | Stale issue and PR management |
+| [Dependabot Auto-Merge](workflows/DEPENDABOT-AUTOMERGE.md) | Automatically merge patch and minor Dependabot updates |
+| [Contributors](workflows/CONTRIBUTORS.MD) | Generate `CONTRIBUTORS.md` from commit history |
+| [Copilot Setup Steps](workflows/COPILOT-SETUP-STEPS.md) | Bootstrap environment for GitHub Copilot coding agents |
+| [Template Init](workflows/TEMPLATE-INIT.md) | One-time initialisation for repositories created from the template |
+| [Docker](workflows/DOCKER.md) | Build and push Docker image to GHCR |
+| [Docker Hub](workflows/DOCKER-HUB.md) | Multi-registry Docker publishing (Docker Hub + GHCR) |
+| [Docs Deploy](workflows/DOCS-DEPLOY.md) | Deploy Rustdoc and mdBook to GitHub Pages |
+| [Package: Homebrew](workflows/PACKAGE-HOMEBREW.md) | Update Homebrew tap formulae on release |
+| [Package: Linux](workflows/PACKAGE-LINUX.md) | Build `.deb` and `.rpm` packages on release |
+| [Package: Snap](workflows/PACKAGE-SNAP.md) | Build and publish Snap package |
+| [Package: Windows](workflows/PACKAGE-WINDOWS.md) | Build Windows MSI installer on release |
+| [Signed Releases](workflows/SIGNED-RELEASES.md) | Sign release assets with Cosign and generate checksums |
+| [SLSA Provenance](workflows/SLSA-PROVENANCE.md) | SLSA Level 3 provenance attestations for release binaries |
 
 ### Security
 
