@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Shell Completions
 
 ## Overview

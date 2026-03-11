@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Mutation Testing with cargo-mutants
 
 ## Overview

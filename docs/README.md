@@ -1,3 +1,6 @@
+---
+diataxis_type: explanation
+---
 # Documentation Index
 
 > All documentation for the nsip project organized using the [Diataxis framework](https://diataxis.fr/).

@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Spell Checking with typos
 
 ## Overview

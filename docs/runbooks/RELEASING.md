@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # Releasing
 
 End-to-end runbook for creating, monitoring, and rolling back releases of nsip.

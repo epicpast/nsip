@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Agentic Workflows
 
 ## Overview

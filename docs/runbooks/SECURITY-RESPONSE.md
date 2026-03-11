@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # Security Incident Response
 
 Runbook for handling security vulnerabilities in nsip. Based on the project's [Security Policy](../../SECURITY.md).

@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Property-Based Testing Guide
 
 ## Overview

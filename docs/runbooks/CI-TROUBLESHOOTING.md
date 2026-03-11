@@ -1,3 +1,6 @@
+---
+diataxis_type: how-to
+---
 # CI Troubleshooting
 
 Common CI failure patterns and fixes for nsip. Use this runbook when a workflow fails on a pull request or push to `main`.
