@@ -133,7 +133,7 @@ jobs:
       - name: Package MCPB bundle
         id: mcpb
         # yamllint disable-line rule:line-length
-        uses: zircote/mcp-bundle@044b506  # main
+        uses: zircote/mcp-bundle@044b506cc6b82f197b807ecf64b6bb9f09828eb4  # main
         with:
           upload-artifact: 'true'
           create-release-asset: 'false'
