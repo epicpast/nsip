@@ -26,7 +26,7 @@ jobs:
 
       - name: Install cargo-sbom
         # v2.67.18
-        uses: taiki-e/install-action@a37010ded18ff788be4440302bd6830b1ae50d8b
+        uses: taiki-e/install-action@3a911424851a96b72dc168c8dd71fd98ed215d66
         with:
           tool: cargo-sbom
 
