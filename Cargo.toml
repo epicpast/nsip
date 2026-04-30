@@ -42,7 +42,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 # CLI
 clap = { version = "4.6", features = ["derive"] }
 clap_complete = "4.6"
-clap_mangen = "0.2"
+clap_mangen = "0.3"
 
 # MCP server
 rmcp = { version = "1.2", features = [
@@ -63,7 +63,7 @@ tower-http = { version = "0.6", features = ["cors"] }
 jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
-sha2 = "0.10"
+sha2 = "0.11"
 subtle = "2"
 base64 = "0.22"
 rand = "0.10"
@@ -80,7 +80,7 @@ tracing-opentelemetry = { version = "0.32", optional = true }
 
 [dev-dependencies]
 # Testing
-proptest = "1.10.0"
+proptest = "1.11.0"
 test-case = "3.3.1"
 
 # Async / HTTP mocking
@@ -88,7 +88,7 @@ tokio-test = "0.4"
 wiremock = "0.6"
 
 # CLI integration tests
-assert_cmd = "2.0"
+assert_cmd = "2.2"
 predicates = "3.1"
 tempfile = "3.27.0"
 
