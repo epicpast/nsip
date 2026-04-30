@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump tokio from 1.50.0 to 1.52.1 in the async-runtime group (#208)
 - **deps**: Bump rmcp from 1.2.0 to 1.5.0 (#211)
 
-### Ci
+### CI
 
 - **gh-aw**: Recompile all workflows with gh-aw v0.56.2
 - **gh-aw**: Add agentics maintenance workflow
