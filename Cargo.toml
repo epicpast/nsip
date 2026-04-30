@@ -143,6 +143,9 @@ redundant_pub_crate = "allow"
 # Allow multiple crate versions (can't control transitive deps)
 multiple_crate_versions = "allow"
 
+# Suggests Duration::from_mins (stable in 1.95) but our MSRV is 1.92
+duration_suboptimal_units = "allow"
+
 [features]
 default = []
 telemetry = [
