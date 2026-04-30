@@ -84,7 +84,7 @@ impl Default for NsipServer {
     }
 }
 
-#[tool_handler]
+#[tool_handler(router = self.tool_router)]
 impl ServerHandler for NsipServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(
