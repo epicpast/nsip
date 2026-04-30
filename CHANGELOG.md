@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-30
+
+### Documentation
+
+- Update CHANGELOG.md for v0.4.0
+- Fix NSIP_AUTH_ALLOWED_USERS gap and stale OTLP env var comment
+- Fix NSIP_AUTH_ISSUER default value and add optional OAuth vars to CONFIGURATION.md
+- Fix incorrect method names in LIBRARY-API.md analytics examples
+- Fix serve_stdio signature and add serve_http + with_tool_sets to LIBRARY-API.md
+- Fix stale version and MCP protocol references
+- Fix MCP-TOOLS protocol version and add Diátaxis frontmatter
+- Fix serve_stdio signature and MCP tool names in tutorials
+- Add Diátaxis frontmatter to remaining 32 documentation files
+- Fix just check description to include coverage step
+- Document agentics-maintenance workflow in AGENTIC-WORKFLOWS.md
+- Add workflow reference docs for CI, Release, Security Audit, and ADR workflows
+- Add workflow reference docs for 18 undocumented workflows
+
+### Fixed
+
+- **ci**: Fix dependabot automerge — use pull_request_target and add approval
+
+### Miscellaneous
+
+- **deps**: Bump tracing-subscriber from 0.3.22 to 0.3.23 (#179)
+- **deps**: Bump clap_complete from 4.5.66 to 4.6.0 (#180)
+- **deps**: Bump rmcp from 1.1.1 to 1.2.0 (#181)
+- **deps**: Bump the github-actions group across 1 directory with 6 updates (#190)
+- **deps**: Bump clap_mangen from 0.2.31 to 0.2.33 (#184)
+- **deps**: Bump clap from 4.5.60 to 4.6.0 (#182)
+- **deps**: Bump actions/download-artifact from 4.2.1 to 8.0.1 (#188)
+- **deps**: Bump tempfile from 3.26.0 to 3.27.0 (#185)
+- **deps**: Bump zircote/mcp-bundle (#187)
+- **security**: Bump rustls-webpki and rand to clear advisories (#214)
+- **deps**: Bump proptest (#207)
+- **deps**: Bump clap_complete from 4.6.0 to 4.6.3 (#212)
+- **deps**: Bump uuid from 1.22.0 to 1.23.1 (#210)
+- **deps**: Bump clap_mangen from 0.2.33 to 0.3.0 (#198)
+- **deps**: Bump opentelemetry-otlp from 0.31.0 to 0.31.1 (#191)
+- **deps**: Bump sha2 from 0.10.9 to 0.11.0 (#195)
+- **deps**: Bump assert_cmd from 2.1.2 to 2.2.1 (#209)
+- **deps**: Bump the github-actions group across 1 directory with 9 updates (#213)
+- **deps**: Bump zircote/mcp-bundle (#193)
+- **deps**: Bump tokio from 1.50.0 to 1.52.1 in the async-runtime group (#208)
+- **deps**: Bump rmcp from 1.2.0 to 1.5.0 (#211)
+
+### Ci
+
+- **gh-aw**: Recompile all workflows with gh-aw v0.56.2
+- **gh-aw**: Add agentics maintenance workflow
+- Replace inline mcpb packaging with zircote/mcp-bundle action
+- Use full commit SHA for mcp-bundle action pin
+- Use date+sha nightly bundle name (nsip-nightly-YYYYMMDD-SHA.mcpb)
+
 ## [0.4.0] - 2026-03-09
 
 ### Fixed
