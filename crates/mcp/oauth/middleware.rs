@@ -166,8 +166,7 @@ fn pat_claims(github_login: &str) -> NsipClaims {
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+        .map_or(0, |d| d.as_secs());
 
     NsipClaims {
         sub: github_login.to_owned(),
