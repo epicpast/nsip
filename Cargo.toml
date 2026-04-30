@@ -80,7 +80,7 @@ tracing-opentelemetry = { version = "0.32", optional = true }
 
 [dev-dependencies]
 # Testing
-proptest = "1.10.0"
+proptest = "1.11.0"
 test-case = "3.3.1"
 
 # Async / HTTP mocking
