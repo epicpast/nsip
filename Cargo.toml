@@ -45,7 +45,7 @@ clap_complete = "4.6"
 clap_mangen = "0.3"
 
 # MCP server
-rmcp = { version = "1.5", features = [
+rmcp = { version = "1.7", features = [
     "server",
     "transport-io",
     "transport-streamable-http-server",
@@ -73,10 +73,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # OpenTelemetry (optional, behind `telemetry` feature)
-opentelemetry = { version = "0.31", optional = true }
-opentelemetry_sdk = { version = "0.31", optional = true }
-opentelemetry-otlp = { version = "0.31", optional = true }
-tracing-opentelemetry = { version = "0.32", optional = true }
+opentelemetry = { version = "0.32", optional = true }
+opentelemetry_sdk = { version = "0.32", optional = true }
+opentelemetry-otlp = { version = "0.32", optional = true }
+tracing-opentelemetry = { version = "0.33", optional = true }
 
 [dev-dependencies]
 # Testing
