@@ -9,10 +9,9 @@
 use std::fmt;
 use std::io;
 
-use opentelemetry::trace::TracerProvider as _;
+use opentelemetry::trace::{TraceContextExt as _, TracerProvider as _};
 use opentelemetry_sdk::trace::SdkTracerProvider;
 use tracing::{Event, Subscriber};
-use tracing_opentelemetry::OtelData;
 use tracing_subscriber::fmt::format::{FormatEvent, FormatFields, Writer};
 use tracing_subscriber::fmt::time::FormatTime;
 use tracing_subscriber::fmt::{FmtContext, FormattedFields};
@@ -139,10 +138,13 @@ where
     }
 }
 
-/// Walk the span scope from root to leaf and extract the first `OTel`
-/// `trace_id` / `span_id` into `map`.
+/// Extract the leaf span's `OTel` `trace_id` / `span_id` into `map`.
 ///
-/// Returns `true` if at least one of `trace_id` or `span_id` was inserted.
+/// Uses [`tracing_opentelemetry::get_otel_context`], the public SpanRef-friendly
+/// API introduced in tracing-opentelemetry 0.32.1 that replaces direct access
+/// to the now-private `OtelData` extension.
+///
+/// Returns `true` if a valid span context was found and inserted.
 fn extract_otel_context<S>(
     leaf: &tracing_subscriber::registry::SpanRef<'_, S>,
     map: &mut serde_json::Map<String, serde_json::Value>,
@@ -150,31 +152,27 @@ fn extract_otel_context<S>(
 where
     S: for<'lookup> LookupSpan<'lookup>,
 {
-    for span_ref in leaf.scope().from_root() {
-        let otel_data = {
-            let extensions = span_ref.extensions();
-            extensions
-                .get::<OtelData>()
-                .map(|d| (d.trace_id(), d.span_id()))
+    let mut inserted = false;
+    tracing::dispatcher::get_default(|dispatch| {
+        let Some(otel_ctx) = tracing_opentelemetry::get_otel_context(&leaf.id(), dispatch) else {
+            return;
         };
-        let Some((trace_id, span_id)) = otel_data else {
-            continue;
-        };
-        if let Some(tid) = trace_id {
-            map.insert(
-                "trace_id".to_owned(),
-                serde_json::Value::String(tid.to_string()),
-            );
+        let span = otel_ctx.span();
+        let span_context = span.span_context();
+        if !span_context.is_valid() {
+            return;
         }
-        if let Some(sid) = span_id {
-            map.insert(
-                "span_id".to_owned(),
-                serde_json::Value::String(sid.to_string()),
-            );
-        }
-        return true;
-    }
-    false
+        map.insert(
+            "trace_id".to_owned(),
+            serde_json::Value::String(span_context.trace_id().to_string()),
+        );
+        map.insert(
+            "span_id".to_owned(),
+            serde_json::Value::String(span_context.span_id().to_string()),
+        );
+        inserted = true;
+    });
+    inserted
 }
 
 /// Serialize a span reference to a JSON object with `name` and pre-formatted
