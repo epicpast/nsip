@@ -21,7 +21,7 @@ jobs:
 
       - name: Check spelling with typos
         # master (latest)
-        uses: crate-ci/typos@aca895bf05aec0cb7dffa6f94495e923224d9f17
+        uses: crate-ci/typos@7b04f660f4ee4f048d18fd341887cf28dfbedfe2
         continue-on-error: true
         with:
           files: .
