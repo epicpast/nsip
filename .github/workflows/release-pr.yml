@@ -1,0 +1,64 @@
+---
+name: Release PR
+
+# Opens (or updates) a release promotion pull request from `develop` into `main`.
+# This is the first step of the release process: merge the PR, then tag the `main`
+# merge commit `vX.Y.Z` and push the tag to trigger the release automation.
+"on":
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.6.0), used in the PR title/body"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  release-pr:
+    name: Open release PR (develop -> main)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Create or update release PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "${VERSION}" ]; then
+            TITLE="release: promote develop to main (v${VERSION})"
+          else
+            TITLE="release: promote develop to main"
+          fi
+          BODY=$(printf '%s\n' \
+            "Promotes \`develop\` into \`main\` for release." \
+            "" \
+            "Next steps after merging this PR:" \
+            "1. Tag the \`main\` merge commit (\`git tag v${VERSION:-X.Y.Z} && git push origin v${VERSION:-X.Y.Z}\`)." \
+            "2. The tag triggers release, publish, docker, sbom, and provenance workflows." \
+            "" \
+            "Tag immediately after merging so the changelog/PR diffs stay clean.")
+
+          # Reuse an existing open develop -> main PR if present; otherwise create one.
+          PR_NUMBER="$(gh pr list --base main --head develop --state open --json number --jq '.[0].number' || true)"
+
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "No existing release PR; creating one."
+            gh pr create \
+              --title "${TITLE}" \
+              --body "${BODY}" \
+              --base main \
+              --head develop
+          else
+            echo "Release PR #${PR_NUMBER} already exists; updating title and body."
+            gh pr edit "${PR_NUMBER}" \
+              --title "${TITLE}" \
+              --body "${BODY}"
+          fi

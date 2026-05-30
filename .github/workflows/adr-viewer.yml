@@ -3,7 +3,7 @@ name: ADR Viewer
 
 "on":
   push:
-    branches: [main, master]
+    branches: [develop, main]
     paths:
       - 'docs/adr/**'
   workflow_dispatch:

@@ -40,7 +40,7 @@ Configure in GitHub repository settings (**Settings > Secrets and variables > Ac
 
 Run through this checklist before every release.
 
-- [ ] All CI checks pass on `main` (check [Actions](https://github.com/zircote/nsip/actions/workflows/ci.yml))
+- [ ] All CI checks pass on `develop` (check [Actions](https://github.com/zircote/nsip/actions/workflows/ci.yml))
 - [ ] Update version in `Cargo.toml`:
   ```toml
   [package]
@@ -73,21 +73,33 @@ Run through this checklist before every release.
 
 ---
 
-## Step-by-Step: Create and Push a Release Tag
+## Step-by-Step: Promote, Tag, and Push a Release
 
-### 1. Create an Annotated Tag
+### 1. Promote `develop` to `main`
+
+Open a release PR from `develop` into `main` (or run the **Release PR** workflow
+via **Actions > Release PR**, which opens/updates it for you), get it reviewed, and
+merge it. Then check out the updated `main`:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+### 2. Create an Annotated Tag
 
 ```bash
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 ```
 
-### 2. Push the Tag
+### 3. Push the Tag
 
 ```bash
 git push origin vX.Y.Z
 ```
 
-This single push triggers all release automation.
+This single push triggers all release automation. Tag immediately after merging the
+release PR so changelog diffs stay clean.
 
 ### 3. Triggered Workflows
 
@@ -96,7 +108,7 @@ Pushing a `v*.*.*` tag triggers these workflows in parallel:
 | Workflow | File | What it does |
 |---|---|---|
 | **Release** | `release.yml` | Builds binaries for 5 platform targets, generates changelog via git-cliff, creates a GitHub Release with assets |
-| **Changelog** | `changelog.yml` | Regenerates `CHANGELOG.md` and commits it to `main` |
+| **Changelog** | `changelog.yml` | Regenerates `CHANGELOG.md` and opens a PR into `develop` |
 | **Docker** | `docker.yml` | Builds multi-platform images (linux/amd64, linux/arm64), pushes to `ghcr.io/zircote/nsip` with version + `latest` tags |
 | **Publish** | `publish.yml` | Runs pre-publish checks and publishes to crates.io (if enabled and tag-triggered) |
 | **Signed Releases** | `signed-releases.yml` | Signs all release assets with Sigstore Cosign, generates SHA256/SHA512 checksums |
@@ -166,7 +178,7 @@ Run through this after all workflows complete.
   cargo install nsip@X.Y.Z
   # Or check: https://crates.io/crates/nsip
   ```
-- [ ] **CHANGELOG.md** on `main` updated by the changelog workflow
+- [ ] **CHANGELOG.md** PR into `develop` opened by the changelog workflow
 - [ ] Download and test a binary on at least one platform:
   ```bash
   wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-linux-amd64
@@ -259,6 +271,12 @@ git push origin main
 # Tag and push
 git tag -a vX.Y.(Z+1) -m "Release vX.Y.(Z+1)"
 git push origin vX.Y.(Z+1)
+
+# Back-merge the hotfix into develop so the fix isn't lost on the next release
+git checkout develop
+git pull origin develop
+git merge --no-ff main
+git push origin develop
 ```
 
 ### 5. If the Bad Version Was on crates.io

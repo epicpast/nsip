@@ -12,14 +12,11 @@ permissions:
   issues: read
 
 network:
-  firewall: true
   allowed:
-    - "*.github.com"
-    - "github.com"
+    - github
+    - threat-detection
     - "*.githubnext.com"
     - "githubnext.com"
-    - "api.github.com"
-    - "github.blog"
 
 engine:
   id: copilot
@@ -34,7 +31,7 @@ tools:
     - cat
   edit: {}
   web-fetch: {}
-  memory: cache-memory
+  cache-memory: true
 
 safe-outputs:
   create-pull-request:

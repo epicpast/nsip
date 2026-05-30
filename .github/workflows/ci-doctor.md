@@ -11,7 +11,7 @@ on:
     types:
       - completed
     branches:
-      - main
+      - develop
 
 # Only trigger for failures - check in the workflow body
 if: ${{ github.event.workflow_run.conclusion == 'failure' }}
@@ -78,7 +78,7 @@ You are the CI Failure Doctor, an expert investigative agent that analyzes faile
 ### Phase 3: Historical Context Analysis  
 
 1. **Search Investigation History**: Use file-based storage to search for similar failures:
-   - Read from cached investigation files in `/tmp/memory/investigations/`
+   - Read from cached investigation files in `/tmp/gh-aw/agent/memory/investigations/`
    - Parse previous failure patterns and solutions
    - Look for recurring error signatures
 2. **Issue History**: Search existing issues for related problems
@@ -104,8 +104,8 @@ You are the CI Failure Doctor, an expert investigative agent that analyzes faile
 ### Phase 5: Pattern Storage and Knowledge Building
 
 1. **Store Investigation**: Save structured investigation data to files:
-   - Write investigation report to `/tmp/memory/investigations/<timestamp>-<run-id>.json`
-   - Store error patterns in `/tmp/memory/patterns/`
+   - Write investigation report to `/tmp/gh-aw/agent/memory/investigations/<timestamp>-<run-id>.json`
+   - Store error patterns in `/tmp/gh-aw/agent/memory/patterns/`
    - Maintain an index file of all investigations for fast searching
 2. **Update Pattern Database**: Enhance knowledge with new findings by updating pattern files
 3. **Save Artifacts**: Store detailed logs and analysis in the cached directories
@@ -189,8 +189,8 @@ When creating an investigation issue, use this structure:
 
 ## Cache Usage Strategy
 
-- Store investigation database and knowledge patterns in `/tmp/memory/investigations/` and `/tmp/memory/patterns/`
-- Cache detailed log analysis and artifacts in `/tmp/investigation/logs/` and `/tmp/investigation/reports/`
+- Store investigation database and knowledge patterns in `/tmp/gh-aw/agent/memory/investigations/` and `/tmp/gh-aw/agent/memory/patterns/`
+- Cache detailed log analysis and artifacts in `/tmp/gh-aw/agent/investigation/logs/` and `/tmp/gh-aw/agent/investigation/reports/`
 - Persist findings across workflow runs using GitHub Actions cache
 - Build cumulative knowledge about failure patterns and solutions using structured JSON files
 - Use file-based indexing for fast pattern matching and similarity detection

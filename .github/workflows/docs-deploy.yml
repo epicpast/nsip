@@ -81,7 +81,7 @@ jobs:
                   <h2>Guides</h2>
                   <ul>
                       <li><a href="book/index.html">User Guide</a> (if mdBook configured)</li>
-                      <li><a href="https://github.com/${{ github.repository }}/tree/main/docs">Documentation Directory</a></li>
+                      <li><a href="https://github.com/${{ github.repository }}/tree/develop/docs">Documentation Directory</a></li>
                   </ul>
               </div>
               

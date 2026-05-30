@@ -91,6 +91,13 @@ The CI pipeline (`.github/workflows/ci.yml`) runs: fmt, clippy, test (Linux/macO
 
 Release workflow triggers on version tags (`v*`): builds multi-platform binaries (Linux x86_64/ARM64, macOS x86_64/ARM64, Windows x86_64), generates changelog via git-cliff, publishes to crates.io, builds Docker images (distroless base) to ghcr.io.
 
+## Branching & Release Workflow
+
+- **`develop`** is the default branch and the home of all active development. Branch features from `develop` and open PRs **into `develop`**. CI gates every PR here.
+- **`main`** is the stable/release branch. Never commit or open feature PRs directly against `main`.
+- **Releasing**: open a release PR from `develop` into `main` (the `release-pr.yml` workflow can open/update it via `workflow_dispatch`), merge it, then tag the `main` merge commit `vX.Y.Z` and push the tag. The tag — not a branch push — triggers `release.yml`, `publish.yml`, `docker.yml`, `sbom.yml`, and `slsa-provenance.yml`. Tag immediately after merging so changelog diffs stay clean.
+- **Hotfixes**: branch from `main`, PR into `main`, tag the release, then merge `main` back into `develop`.
+
 ## Code Style Rules
 
 - Prefer `&str` over `String` and `&[T]` over `Vec<T>` in function parameters

@@ -2,7 +2,7 @@ name: Benchmark Regression Detection
 
 on:
   pull_request:
-    branches: [main, master]
+    branches: [develop, main]
   workflow_dispatch:
 
 concurrency:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: target/criterion
-          key: benchmark-baseline-${{ github.base_ref || 'main' }}
+          key: benchmark-baseline-${{ github.base_ref || 'develop' }}
           restore-keys: |
             benchmark-baseline-
 
@@ -123,15 +123,15 @@ jobs:
               });
             }
 
-      - name: Save baseline for main branch
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      - name: Save baseline for default branches
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
         run: |
           if [ -d "target/criterion" ] && [ ! -f "target/criterion/NOBENCH" ]; then
             cp -r target/criterion/current target/criterion/baseline
           fi
 
       - name: Store updated baseline
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: target/criterion
