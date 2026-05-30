@@ -1,64 +1,63 @@
-version: 2
 updates:
-  # Rust dependencies (Cargo)
-  - package-ecosystem: "cargo"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "America/Chicago"
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "rust"
-    reviewers:
-      - "zircote"
-    groups:
-      dev-dependencies:
-        patterns:
-          - "proptest*"
-          - "test-*"
-          - "criterion*"
-        update-types:
-          - "minor"
-          - "patch"
-      async-runtime:
-        patterns:
-          - "tokio*"
-          - "async-*"
-        update-types:
-          - "minor"
-          - "patch"
-      serde-ecosystem:
-        patterns:
-          - "serde*"
-        update-types:
-          - "minor"
-          - "patch"
-
-  # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "America/Chicago"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "github-actions"
-    reviewers:
-      - "zircote"
-    groups:
-      github-actions:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
+- commit-message:
+    prefix: chore(deps)
+  directory: /
+  groups:
+    async-runtime:
+      patterns:
+      - tokio*
+      - async-*
+      update-types:
+      - minor
+      - patch
+    dev-dependencies:
+      patterns:
+      - proptest*
+      - test-*
+      - criterion*
+      update-types:
+      - minor
+      - patch
+    serde-ecosystem:
+      patterns:
+      - serde*
+      update-types:
+      - minor
+      - patch
+  labels:
+  - dependencies
+  - rust
+  open-pull-requests-limit: 10
+  package-ecosystem: cargo
+  reviewers:
+  - zircote
+  schedule:
+    day: monday
+    interval: weekly
+    time: "09:00"
+    timezone: America/Chicago
+- commit-message:
+    prefix: chore(deps)
+  directory: /
+  groups:
+    github-actions:
+      patterns:
+      - "*"
+      update-types:
+      - minor
+      - patch
+  ignore:
+  - dependency-name: "github/gh-aw-actions/**" # Managed by gh aw compile. Version-locked to the gh-aw compiler; do not bump.
+  labels:
+  - dependencies
+  - github-actions
+  open-pull-requests-limit: 5
+  package-ecosystem: github-actions
+  reviewers:
+  - zircote
+  schedule:
+    day: monday
+    interval: weekly
+    time: "09:00"
+    timezone: America/Chicago
+version: 2

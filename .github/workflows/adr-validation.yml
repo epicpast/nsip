@@ -6,7 +6,7 @@ name: ADR Validation
     paths:
       - 'docs/adr/**'
   push:
-    branches: [main, master]
+    branches: [develop, main]
     paths:
       - 'docs/adr/**'
   workflow_dispatch:

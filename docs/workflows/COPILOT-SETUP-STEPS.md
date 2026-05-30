@@ -53,6 +53,6 @@ hosted-runner environment where devcontainers are not available.
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `cargo build` fails | Compilation error in `main` branch | Fix the build before triggering Copilot tasks |
+| `cargo build` fails | Compilation error in the `develop` branch | Fix the build before triggering Copilot tasks |
 | `nsip` not found after setup | PATH not propagated | Verify `echo "..." >> "$GITHUB_PATH"` step ran successfully |
 | Slow setup | Empty Cargo cache | Subsequent runs will be faster once cache is seeded |

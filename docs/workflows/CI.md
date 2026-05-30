@@ -10,7 +10,7 @@ ensures code is correctly formatted, lint-clean, tested on all supported
 platforms, documented, dependency-safe, and MSRV-compatible before any merge.
 
 **Workflow:** `.github/workflows/ci.yml`  
-**Trigger:** Push to `main`/`master`, pull requests to `main`/`master`, manual  
+**Trigger:** Push to `develop`/`main`, pull requests to `develop`/`main`, manual  
 **Required secrets:** `CODECOV_TOKEN` (optional — coverage upload fails gracefully without it)  
 **Coverage target:** ≥ 90% line coverage
 

@@ -40,6 +40,13 @@ cargo deny check                                         # Supply chain audit
 
 </details>
 
+## Branching & Release Workflow
+
+- **`develop`** is the default branch and where all development happens — branch from it and open PRs **into `develop`**. CI gates every PR here.
+- **`main`** is the stable/release branch; never commit or open feature PRs directly against `main`.
+- **Releasing**: open a release PR `develop → main` (or run the `release-pr.yml` workflow), merge it, then tag the `main` merge commit `vX.Y.Z` and push the tag — the tag triggers all release automation.
+- **Hotfixes**: branch from `main`, PR into `main`, tag, then merge `main` back into `develop`.
+
 ## NSIP MCP Server
 
 The binary includes an MCP server (`nsip mcp`) for sheep genetic evaluation. Configure in `.vscode/mcp.json`. See `docs/MCP.md` for the full API reference and `docs/llm-guides/` for ready-to-use LLM instruction templates.
