@@ -56,17 +56,25 @@ impl GitHubClient {
     ///
     /// * `client_id` - GitHub OAuth application client ID.
     /// * `client_secret` - GitHub OAuth application client secret.
-    #[must_use]
-    pub fn new(client_id: String, client_secret: String) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OAuthError::ServerError`] if the underlying HTTP client cannot
+    /// be constructed (e.g. the TLS backend fails to initialize). Propagating
+    /// rather than falling back keeps the required `User-Agent` (GitHub rejects
+    /// requests without one) and avoids a hidden panic in the default client.
+    pub fn new(client_id: String, client_secret: String) -> Result<Self, OAuthError> {
         let http = reqwest::Client::builder()
             .user_agent("nsip-mcp")
             .build()
-            .unwrap_or_default();
-        Self {
+            .map_err(|e| {
+                OAuthError::ServerError(format!("failed to build GitHub HTTP client: {e}"))
+            })?;
+        Ok(Self {
             http,
             client_id,
             client_secret,
-        }
+        })
     }
 }
 
@@ -162,7 +170,8 @@ mod tests {
 
     #[test]
     fn github_client_construction() {
-        let client = GitHubClient::new("client-id".into(), "client-secret".into());
+        let client =
+            GitHubClient::new("client-id".into(), "client-secret".into()).expect("build client");
         assert_eq!(client.client_id, "client-id");
         assert_eq!(client.client_secret, "client-secret");
     }
@@ -236,7 +245,7 @@ mod tests {
 
     #[test]
     fn github_client_fields_accessible() {
-        let client = GitHubClient::new("id-123".into(), "secret-456".into());
+        let client = GitHubClient::new("id-123".into(), "secret-456".into()).expect("build client");
         assert_eq!(client.client_id, "id-123");
         assert_eq!(client.client_secret, "secret-456");
     }
@@ -341,7 +350,7 @@ mod tests {
 
     #[test]
     fn github_client_http_client_is_valid() {
-        let client = GitHubClient::new("cid".into(), "csec".into());
+        let client = GitHubClient::new("cid".into(), "csec".into()).expect("build client");
         assert_eq!(client.client_id, "cid");
     }
 }

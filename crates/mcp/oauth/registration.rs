@@ -110,7 +110,7 @@ mod tests {
             allowed_users: None,
         };
         let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
-        OAuthState::new(config, store)
+        OAuthState::new(config, store).expect("build oauth state")
     }
 
     fn register_app(state: OAuthState) -> Router {

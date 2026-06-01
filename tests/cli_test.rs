@@ -346,11 +346,71 @@ fn unknown_subcommand() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn no_subcommand_shows_help() {
+fn no_subcommand_emits_error_envelope() {
+    // A bare invocation is a usage error. Under the dual-consumer contract it is
+    // rendered through the error pipeline (non-TTY → RFC 9457 problem+json on
+    // stderr) rather than clap's raw usage text, with a non-zero exit.
     nsip_cmd()
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Usage"));
+        .stderr(predicate::str::contains("validation error"))
+        .stderr(predicate::str::contains(
+            "docs/reference/errors/cli/validation.md",
+        ));
+}
+
+// ---------------------------------------------------------------------------
+// RFC 9457 error envelope (dual-consumer rendering)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn error_envelope_json_is_well_formed() {
+    let assert = nsip_cmd()
+        .args(["--format", "json", "bogus-subcommand"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8 stderr");
+    let pd: serde_json::Value =
+        serde_json::from_str(stderr.trim()).expect("stderr must be valid problem+json");
+
+    assert_eq!(
+        pd["type"],
+        "https://github.com/zircote/nsip/blob/main/docs/reference/errors/cli/validation.md"
+    );
+    assert_eq!(pd["status"], 400);
+    assert_eq!(pd["exit_code"], 1);
+    assert!(
+        pd["instance"]
+            .as_str()
+            .is_some_and(|s| s.starts_with("urn:nsip:")),
+        "instance must be a urn:nsip: URN, got {:?}",
+        pd["instance"]
+    );
+    assert!(pd["title"].as_str().is_some_and(|s| !s.is_empty()));
+    assert!(pd["detail"].as_str().is_some());
+    assert!(pd["docs_url"].as_str().is_some());
+}
+
+#[test]
+fn pretty_format_is_human_not_json() {
+    nsip_cmd()
+        .args(["--format", "pretty", "bogus-subcommand"])
+        .assert()
+        .failure()
+        .code(1)
+        .stderr(predicate::str::contains("validation error"))
+        .stderr(predicate::str::contains("{\"type\"").not());
+}
+
+#[test]
+fn json_flag_alias_selects_json_errors() {
+    let assert = nsip_cmd().args(["-J", "bogus"]).assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).expect("utf-8 stderr");
+    assert!(
+        serde_json::from_str::<serde_json::Value>(stderr.trim()).is_ok(),
+        "-J should select JSON error output, got: {stderr}"
+    );
 }
 
 // ---------------------------------------------------------------------------

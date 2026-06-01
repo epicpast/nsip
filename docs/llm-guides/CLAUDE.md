@@ -30,7 +30,7 @@ Place in `.mcp.json` at your project root (Claude Code) or `claude_desktop_confi
 | `profile` | Combined details+lineage+progeny | `animal_id` |
 | `breed_groups` | List all breeds | _(none)_ |
 | `trait_ranges` | Min/max EBVs for a breed | `breed_id` |
-| `compare` | Side-by-side EBV comparison | `animal_ids` (2-5), `traits` |
+| `compare` | Side-by-side EBV comparison | `lpn_ids` (2-5), `traits` |
 | `rank` | Weighted multi-trait ranking | `breed_id`, `weights`, `gender`, `top_n` |
 | `inbreeding_check` | COI for a potential mating | `sire_id`, `dam_id` |
 | `mating_recommendations` | Find optimal mates | `animal_id`, `breed_id`, `target_traits` |
@@ -64,7 +64,7 @@ Use these MCP prompts for structured breeding workflows:
 |---|---|---|
 | `evaluate-ram` | Assess a ram's breeding value | `lpn_id` |
 | `evaluate-ewe` | Assess a ewe's breeding value | `lpn_id` |
-| `compare-breeding-stock` | Side-by-side animal comparison | `animal_ids` (comma-separated) |
+| `compare-breeding-stock` | Side-by-side animal comparison | `lpn_ids` (comma-separated) |
 | `plan-mating` | Mating assessment with COI check | `sire_id`, `dam_id` |
 | `flock-improvement` | Trait gap analysis | `breed_id`, `flock_id` (optional) |
 | `select-replacement` | Find top replacement candidates | `breed_id`, `gender`, `target_trait` |

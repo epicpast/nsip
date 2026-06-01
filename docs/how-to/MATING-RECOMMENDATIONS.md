@@ -42,7 +42,7 @@ Call the `compare` tool with an array of LPN IDs:
 {
   "tool": "compare",
   "arguments": {
-    "animal_ids": ["430735-0032", "430735-0041"],
+    "lpn_ids": ["430735-0032", "430735-0041"],
     "traits": "BWT,WWT,YWT"
   }
 }

@@ -462,8 +462,17 @@ impl AnimalDetails {
         } else if data.get("lpnId").is_some() {
             // Search result row: camelCase fields with inline trait values
             Ok(Self::from_search_result(data))
-        } else {
+        } else if data.get("LpnId").is_some() {
+            // Legacy flat PascalCase format.
             Ok(Self::from_legacy_format(data))
+        } else {
+            // No recognized identity field: a 200 body that is not an animal
+            // record. Fail loudly instead of returning a record with an empty
+            // `lpn_id` and zeroed traits masquerading as valid.
+            Err(crate::Error::parse(
+                "animal details response missing identity field \
+                 (expected `data`, `lpnId`, or `LpnId`)",
+            ))
         }
     }
 
@@ -692,7 +701,9 @@ impl Progeny {
     ///
     /// # Errors
     ///
-    /// Returns `crate::Error::Parse` if the response cannot be interpreted.
+    /// Currently infallible — missing or malformed fields degrade to defaults
+    /// and an empty result set is valid. Returns [`crate::Result`] for API
+    /// consistency with the other model constructors and forward compatibility.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn from_api_response(
         data: &serde_json::Value,
@@ -899,7 +910,8 @@ impl Lineage {
     ///
     /// # Errors
     ///
-    /// Returns `crate::Error::Parse` if the response cannot be interpreted.
+    /// Currently infallible — a tree with no parents is valid. Returns
+    /// [`crate::Result`] for API consistency with the other model constructors.
     pub fn from_api_response(data: &serde_json::Value) -> crate::Result<Self> {
         let node = if data
             .get("data")
@@ -958,7 +970,9 @@ impl SearchResults {
     ///
     /// # Errors
     ///
-    /// Returns `crate::Error::Parse` if the response cannot be interpreted.
+    /// Currently infallible — missing or malformed fields degrade to defaults
+    /// and an empty result set is valid. Returns [`crate::Result`] for API
+    /// consistency with the other model constructors and forward compatibility.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn from_api_response(
         data: &serde_json::Value,
@@ -1193,6 +1207,23 @@ mod tests {
 
         // Should have 5 traits total
         assert_eq!(details.traits.len(), 5);
+    }
+
+    #[test]
+    fn animal_details_rejects_body_without_identity() {
+        // A 200 body with no `data`, `lpnId`, or `LpnId` is not an animal
+        // record; it must fail rather than masquerade as a valid empty record.
+        let garbage = serde_json::json!({ "unexpected": "payload" });
+        let err = AnimalDetails::from_api_response(&garbage).unwrap_err();
+        assert!(matches!(err, crate::Error::Parse { .. }), "got {err:?}");
+    }
+
+    #[test]
+    fn animal_details_accepts_legacy_pascalcase() {
+        // A valid legacy record (PascalCase `LpnId`) still parses.
+        let legacy = serde_json::json!({ "LpnId": "LEGACY1" });
+        let details = AnimalDetails::from_api_response(&legacy).unwrap();
+        assert_eq!(details.lpn_id, "LEGACY1");
     }
 
     #[test]

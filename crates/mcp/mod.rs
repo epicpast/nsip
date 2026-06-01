@@ -231,12 +231,12 @@ pub async fn serve_stdio(sets: tool_sets::EnabledToolSets) -> crate::Result<()> 
     let service = NsipServer::with_tool_sets(sets)
         .serve(stdio())
         .await
-        .map_err(|e| crate::Error::Connection(format!("MCP server failed to start: {e}")))?;
+        .map_err(|e| crate::Error::connection(format!("MCP server failed to start: {e}")))?;
 
     service
         .waiting()
         .await
-        .map_err(|e| crate::Error::Connection(format!("MCP server error: {e}")))?;
+        .map_err(|e| crate::Error::connection(format!("MCP server error: {e}")))?;
 
     Ok(())
 }

@@ -13,6 +13,7 @@ use crate::{
         AnimalDetails, AnimalProfile, Breed, BreedGroup, DateLastUpdated, Lineage, Progeny,
         RawBreedGroupResponse, SearchCriteria, SearchResults,
     },
+    problem::RetryAfter,
 };
 
 /// Default base URL for the NSIP Search API (HTTP-only).
@@ -29,6 +30,29 @@ const RETRY_STATUS_CODES: &[u16] = &[500, 502, 503, 504];
 
 /// Backoff factor — retry delay is `factor * 2^attempt` seconds.
 const BACKOFF_FACTOR: f64 = 0.5;
+
+/// Upper bound (seconds) on an honored `Retry-After` delay, so a hostile or
+/// misconfigured upstream cannot stall the client indefinitely.
+const MAX_RETRY_DELAY_SECS: u64 = 60;
+
+/// Parse the upstream `Retry-After` header (RFC 7231 §7.1.3) into a
+/// [`RetryAfter`]. Handles the delta-seconds form directly; the HTTP-date form
+/// is converted to an RFC 3339 timestamp (GMT normalized to `+0000` for the
+/// RFC 2822 parser). Returns `None` when the header is absent or unparseable.
+fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<RetryAfter> {
+    let raw = headers
+        .get(reqwest::header::RETRY_AFTER)?
+        .to_str()
+        .ok()?
+        .trim();
+    if let Ok(secs) = raw.parse::<u32>() {
+        return Some(RetryAfter::Seconds(secs));
+    }
+    let normalized = raw.replace("GMT", "+0000");
+    chrono::DateTime::parse_from_rfc2822(&normalized)
+        .ok()
+        .map(|dt| RetryAfter::Timestamp(dt.to_rfc3339()))
+}
 
 /// Client for the NSIP Search API at `nsipsearch.nsip.org/api`.
 ///
@@ -113,12 +137,12 @@ impl NsipClientBuilder {
                     reqwest::header::ACCEPT,
                     "application/json, text/plain, */*"
                         .parse()
-                        .map_err(|e| Error::Connection(format!("invalid header: {e}")))?,
+                        .map_err(|e| Error::connection(format!("invalid header: {e}")))?,
                 );
                 h
             })
             .build()
-            .map_err(|e| Error::Connection(format!("failed to build HTTP client: {e}")))?;
+            .map_err(|e| Error::connection(format!("failed to build HTTP client: {e}")))?;
 
         Ok(NsipClient {
             http,
@@ -149,6 +173,12 @@ impl NsipClient {
     /// ```
     #[must_use]
     pub fn new() -> Self {
+        // This constructor is infallible by contract (used by `Default` and
+        // pervasively), so a `Result` is not surfaced here. The only realistic
+        // `build()` failure is TLS-backend init — which `reqwest::Client::new()`
+        // would also hit — so the fallback is genuinely best-effort. Callers
+        // that must observe a construction failure use [`NsipClient::builder`],
+        // whose `build()` returns a `Result`.
         Self::builder().build().unwrap_or_else(|_| Self {
             http: reqwest::Client::new(),
             base_url: DEFAULT_BASE_URL.to_string(),
@@ -172,12 +202,16 @@ impl NsipClient {
     /// ```
     #[must_use]
     pub fn with_base_url(base_url: impl Into<String>) -> Self {
+        // Infallible by contract; see [`NsipClient::new`] for why the fallback
+        // is best-effort. The fallback preserves the caller's `base_url` (it is
+        // not silently replaced with the production default).
+        let base = base_url.into();
         Self::builder()
-            .base_url(base_url)
+            .base_url(base.clone())
             .build()
             .unwrap_or_else(|_| Self {
                 http: reqwest::Client::new(),
-                base_url: DEFAULT_BASE_URL.to_string(),
+                base_url: base,
                 timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
                 max_retries: DEFAULT_MAX_RETRIES,
             })
@@ -244,8 +278,7 @@ impl NsipClient {
 
         for attempt in 0..=self.max_retries {
             if attempt > 0 {
-                let delay_secs = BACKOFF_FACTOR * f64::from(1u32 << (attempt - 1));
-                tokio::time::sleep(Duration::from_secs_f64(delay_secs)).await;
+                tokio::time::sleep(Self::retry_delay(attempt, last_err.as_ref())).await;
             }
 
             let err = match self.do_request(&method, url, params, body).await {
@@ -260,7 +293,19 @@ impl NsipClient {
             return Err(err);
         }
 
-        Err(last_err.unwrap_or_else(|| Error::Connection("max retries exceeded".to_string())))
+        Err(last_err.unwrap_or_else(|| Error::connection("max retries exceeded")))
+    }
+
+    /// Compute the delay before the next retry attempt. Honors an upstream
+    /// `Retry-After` (delta-seconds) hint from the previous error when present,
+    /// capped at [`MAX_RETRY_DELAY_SECS`]; otherwise falls back to exponential
+    /// backoff (`BACKOFF_FACTOR * 2^(attempt-1)`).
+    fn retry_delay(attempt: u32, last_err: Option<&Error>) -> Duration {
+        if let Some(RetryAfter::Seconds(secs)) = last_err.and_then(Error::retry_after) {
+            return Duration::from_secs(u64::from(secs).min(MAX_RETRY_DELAY_SECS));
+        }
+        let delay_secs = BACKOFF_FACTOR * f64::from(1u32 << (attempt - 1));
+        Duration::from_secs_f64(delay_secs)
     }
 
     /// Single HTTP request (no retry).
@@ -279,46 +324,62 @@ impl NsipClient {
 
         let response = builder.send().await.map_err(|e| {
             if e.is_timeout() {
-                Error::Timeout(format!(
-                    "request timed out after {}s: {e}",
-                    self.timeout.as_secs()
-                ))
+                Error::Timeout {
+                    message: format!("request timed out after {}s: {e}", self.timeout.as_secs()),
+                    retry_after: None,
+                    source: Some(Box::new(e)),
+                }
             } else if e.is_connect() {
-                Error::Connection(format!("failed to connect to API: {e}"))
+                Error::Connection {
+                    message: format!("failed to connect to API: {e}"),
+                    retry_after: None,
+                    source: Some(Box::new(e)),
+                }
             } else {
-                Error::Connection(format!("request failed: {e}"))
+                Error::Connection {
+                    message: format!("request failed: {e}"),
+                    retry_after: None,
+                    source: Some(Box::new(e)),
+                }
             }
         })?;
 
         let status = response.status();
 
         if status == StatusCode::NOT_FOUND {
-            return Err(Error::NotFound(format!("resource not found at {url}")));
+            return Err(Error::not_found(format!("resource not found at {url}")));
         }
 
         if !status.is_success() {
+            let code = status.as_u16();
+            // Capture the upstream Retry-After before consuming the body so
+            // transient (429 / 5xx) errors carry an actionable delay.
+            let retry_after = parse_retry_after(response.headers());
             let text = response.text().await.unwrap_or_default();
             return Err(Error::Api {
-                status: status.as_u16(),
+                status: code,
                 message: if text.is_empty() {
                     format!("HTTP {status}")
                 } else {
                     text
                 },
+                retry_after,
+                source: None,
             });
         }
 
-        response
-            .json()
-            .await
-            .map_err(|e| Error::Parse(format!("failed to parse response: {e}")))
+        response.json().await.map_err(|e| Error::Parse {
+            message: format!("failed to parse response: {e}"),
+            source: Some(Box::new(e)),
+        })
     }
 
-    /// Determine whether an error warrants a retry.
+    /// Determine whether an error warrants a retry. Transient transport errors
+    /// and rate-limit (429) / retryable 5xx responses qualify.
     fn is_retryable(err: &Error) -> bool {
         match err {
-            Error::Api { status, .. } => RETRY_STATUS_CODES.contains(status),
-            Error::Timeout(_) | Error::Connection(_) => true,
+            Error::Api { status, .. } => *status == 429 || RETRY_STATUS_CODES.contains(status),
+            Error::Timeout { .. } | Error::Connection { .. } => true,
             _ => false,
         }
     }
@@ -406,10 +467,10 @@ impl NsipClient {
                 }
                 // Fallback: try as direct array
                 serde_json::from_value(data)
-                    .map_err(|e| Error::Parse(format!("failed to parse breed groups: {e}")))?
+                    .map_err(|e| Error::parse(format!("failed to parse breed groups: {e}")))?
             } else {
                 serde_json::from_value(data)
-                    .map_err(|e| Error::Parse(format!("failed to parse breed groups: {e}")))?
+                    .map_err(|e| Error::parse(format!("failed to parse breed groups: {e}")))?
             };
 
         // Direct array of raw objects — normalize field names
@@ -754,26 +815,14 @@ mod tests {
 
     #[test]
     fn retryable_errors() {
-        assert!(NsipClient::is_retryable(&Error::Api {
-            status: 500,
-            message: String::new(),
-        }));
-        assert!(NsipClient::is_retryable(&Error::Api {
-            status: 502,
-            message: String::new(),
-        }));
-        assert!(NsipClient::is_retryable(&Error::Timeout("t".to_string())));
-        assert!(NsipClient::is_retryable(&Error::Connection(
-            "c".to_string()
-        )));
-        assert!(!NsipClient::is_retryable(&Error::NotFound("n".to_string())));
-        assert!(!NsipClient::is_retryable(&Error::Validation(
-            "v".to_string()
-        )));
-        assert!(!NsipClient::is_retryable(&Error::Api {
-            status: 400,
-            message: String::new(),
-        }));
+        assert!(NsipClient::is_retryable(&Error::api(500, "")));
+        assert!(NsipClient::is_retryable(&Error::api(502, "")));
+        assert!(NsipClient::is_retryable(&Error::api(429, "")));
+        assert!(NsipClient::is_retryable(&Error::timeout("t")));
+        assert!(NsipClient::is_retryable(&Error::connection("c")));
+        assert!(!NsipClient::is_retryable(&Error::not_found("n")));
+        assert!(!NsipClient::is_retryable(&Error::validation("v")));
+        assert!(!NsipClient::is_retryable(&Error::api(400, "")));
     }
 
     #[test]
@@ -1256,6 +1305,56 @@ mod tests {
         }
 
         #[tokio::test]
+        async fn rate_limited_carries_retry_after_seconds() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/search/getDateLastUpdated"))
+                .respond_with(
+                    ResponseTemplate::new(429)
+                        .insert_header("Retry-After", "30")
+                        .set_body_string("rate limited"),
+                )
+                .mount(&server)
+                .await;
+
+            let client = mock_client(&server.uri());
+            let err = client.date_last_updated().await.unwrap_err();
+            assert!(
+                matches!(
+                    &err,
+                    Error::Api {
+                        status: 429,
+                        retry_after: Some(RetryAfter::Seconds(30)),
+                        ..
+                    }
+                ),
+                "expected 429 Api error with retry_after=30, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn parse_retry_after_handles_both_forms() {
+            use reqwest::header::{HeaderMap, HeaderValue};
+
+            let mut secs = HeaderMap::new();
+            secs.insert("Retry-After", HeaderValue::from_static("45"));
+            assert_eq!(parse_retry_after(&secs), Some(RetryAfter::Seconds(45)));
+
+            let mut date = HeaderMap::new();
+            date.insert(
+                "Retry-After",
+                HeaderValue::from_static("Wed, 21 Oct 2026 07:28:00 GMT"),
+            );
+            let parsed = parse_retry_after(&date);
+            assert!(
+                matches!(&parsed, Some(RetryAfter::Timestamp(ts)) if ts.starts_with("2026-10-21T07:28:00")),
+                "expected Timestamp form, got {parsed:?}"
+            );
+
+            assert_eq!(parse_retry_after(&HeaderMap::new()), None);
+        }
+
+        #[tokio::test]
         async fn invalid_json_returns_parse_error() {
             let server = MockServer::start().await;
             Mock::given(method("GET"))
@@ -1267,7 +1366,7 @@ mod tests {
             let client = mock_client(&server.uri());
             let err = client.date_last_updated().await.unwrap_err();
             assert!(
-                matches!(err, Error::Parse(_)),
+                matches!(err, Error::Parse { .. }),
                 "expected Parse error, got {err:?}"
             );
         }

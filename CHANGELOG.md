@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Dual-consumer error envelope (RFC 9457).** Errors are now emitted as
+  `application/problem+json` for agents/non-TTY consumers (or `--format json` /
+  `-J`) and as a `miette` graphical diagnostic for humans on a TTY. The envelope
+  carries `type`, `title`, `status`, `detail`, `instance`, `exit_code`,
+  `suggested_fix`, `retry_after`, and `docs_url`. See
+  [`docs/reference/ERROR-ENVELOPE.md`](docs/reference/ERROR-ENVELOPE.md) and the
+  [error catalog](docs/reference/errors/). ([ADR-0004](docs/adr/0004-dual-consumer-error-envelope.md), [ADR-0005](docs/adr/0005-error-type-uri-policy.md))
+- **`--format <pretty|json>`** global flag; `-J/--json` is now an alias for
+  `--format json` and also selects error output.
+- MCP tool errors now carry the same problem+json envelope in the JSON-RPC
+  error `data` field.
+- HTTP client now handles `429` and parses the `Retry-After` header
+  (delta-seconds and HTTP-date forms), populating `retry_after` and honoring the
+  delay on retry.
+- `Error` variants now preserve the originating cause via `#[source]`.
+
+### Changed
+
+- **BREAKING:** process exit codes now vary by error class —
+  `1` (caller / 4xx / not-found), `3` (upstream parse), `75` `EX_TEMPFAIL`
+  (timeout / connection / 429 / 5xx) — instead of a blanket `1`.
+- **BREAKING:** piped / non-TTY invocations emit JSON errors by default; a bare
+  `nsip` invocation emits the error envelope rather than clap's raw usage text.
+- `AnimalDetails::from_api_response` now fails (`Error::Parse`) on a 200 body
+  with no recognized identity field instead of returning an empty record.
+- OAuth `OAuthConfig` `Debug` redacts `github_client_secret` and `auth_secret`;
+  transient OAuth `503` responses now advertise a `Retry-After` header.
+
+### Removed
+
+- Dropped the unused `opentelemetry-otlp` dependency.
+
 ## [0.5.1] - 2026-06-01
 
 ### Miscellaneous
