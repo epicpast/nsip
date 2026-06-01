@@ -81,7 +81,7 @@ jobs:
                   <h2>Guides</h2>
                   <ul>
                       <li><a href="book/index.html">User Guide</a> (if mdBook configured)</li>
-                      <li><a href="https://github.com/${{ github.repository }}/tree/main/docs">Documentation Directory</a></li>
+                      <li><a href="https://github.com/${{ github.repository }}/tree/develop/docs">Documentation Directory</a></li>
                   </ul>
               </div>
               
@@ -101,7 +101,7 @@ jobs:
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: target/doc
 
@@ -117,4 +117,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

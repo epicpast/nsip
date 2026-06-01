@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-06-01
+
+### Miscellaneous
+
+- **deps**: Bump clap from 4.6.0 to 4.6.1 (#218)
+- **deps**: Bump tokio from 1.52.1 to 1.52.2 in the async-runtime group (#216)
+- **deps**: Bump rmcp from 1.5.0 to 1.6.0 (#217)
+- **deps**: Bump axum from 0.8.8 to 0.8.9 (#219)
+- **deps**: Bump the github-actions group with 2 updates (#220)
+- **deps**: Bump tokio from 1.52.2 to 1.52.3 in the async-runtime group (#225)
+- **deps**: Bump opentelemetry-otlp from 0.31.1 to 0.32.0 (#227)
+- **deps**: Bump assert_cmd from 2.2.1 to 2.2.2 (#230)
+- **deps**: Bump tower-http from 0.6.8 to 0.6.10 (#231)
+- **deps**: Bump clap_complete from 4.6.3 to 4.6.5 (#226)
+- **deps**: Bump jsonwebtoken from 10.3.0 to 10.4.0 (#232)
+- **deps**: Bump the github-actions group with 4 updates (#233)
+- **deps**: Bump tower-http from 0.6.10 to 0.6.11 (#234)
+- **deps**: Bump rmcp from 1.6.0 to 1.7.0 (#235)
+- **deps**: Bump the github-actions group with 3 updates (#237)
+- **deps**: Bump opentelemetry stack to consistent 0.32 / 0.33 (#239)
+- **deps**: Bump softprops/action-gh-release from 2.6.1 to 3.0.0 (#222)
+- **deps**: Bump actions/configure-pages from 5.0.0 to 6.0.0 (#224)
+- **deps**: Bump actions/github-script from 8.0.0 to 9.0.0 (#221)
+- **deps**: Bump codecov/codecov-action from 5.5.3 to 6.0.1 (#238)
+- **deps**: Bump serde_json in the serde-ecosystem group (#240)
+- **deps**: Bump the github-actions group with 6 updates (#241)
+- **deps**: Bump actions/upload-pages-artifact from 4.0.0 to 5.0.0 (#242)
+- **deps**: Bump dtolnay/rust-toolchain (#243)
+- **deps**: Bump actions/deploy-pages from 4.0.5 to 5.0.0 (#244)
+- **deps**: Bump dependabot/fetch-metadata from 2.5.0 to 3.1.0 (#245)
+- **deps**: Bump uuid from 1.23.1 to 1.23.2 (#247)
+- **deps**: Bump opentelemetry_sdk from 0.32.0 to 0.32.1 (#248)
+- **deps**: Bump the github-actions group with 3 updates (#249)
+- **deps**: Bump zircote/adrscope (#250)
+- Bump version to 0.5.1
+
+### Ci
+
+- Adopt develop-based branching model (#246)
+- Pin release builds to windows-2022 (#251)
+
 ## [0.5.0] - 2026-04-30
 
 ### Documentation
@@ -50,8 +91,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump zircote/mcp-bundle (#193)
 - **deps**: Bump tokio from 1.50.0 to 1.52.1 in the async-runtime group (#208)
 - **deps**: Bump rmcp from 1.2.0 to 1.5.0 (#211)
+- **release**: Prepare v0.5.0 (#215)
 
-### CI
+### Ci
 
 - **gh-aw**: Recompile all workflows with gh-aw v0.56.2
 - **gh-aw**: Add agentics maintenance workflow

@@ -81,7 +81,7 @@ jobs:
             gh pr create \
               --title "${TITLE}" \
               --body "${BODY}" \
-              --base main \
+              --base develop \
               --head "${BRANCH}"
           else
             echo "Pull request #${PR_NUMBER} already exists for ${BRANCH}; updating title and body."

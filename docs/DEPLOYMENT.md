@@ -74,7 +74,7 @@ Pushing the tag automatically triggers:
 
 2. **Changelog Workflow** (`changelog.yml`)
    - Updates CHANGELOG.md
-   - Commits changes to main branch
+   - Opens a PR into the develop branch
 
 3. **Docker Workflow** (`docker.yml`)
    - Builds multi-platform images

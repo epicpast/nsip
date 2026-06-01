@@ -8,7 +8,7 @@ description: |
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
 
 permissions: read-all

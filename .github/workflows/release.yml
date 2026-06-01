@@ -227,8 +227,8 @@ jobs:
             target: aarch64-apple-darwin
             artifact_name: nsip
             asset_name: nsip-macos-arm64
-          # Windows x86_64
-          - os: windows-latest
+          # Windows x86_64 (pinned: deterministic release artifacts)
+          - os: windows-2022
             target: x86_64-pc-windows-msvc
             artifact_name: nsip.exe
             asset_name: nsip-windows-amd64.exe

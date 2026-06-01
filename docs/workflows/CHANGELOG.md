@@ -7,7 +7,7 @@ diataxis_type: reference
 
 Automatically generates or updates `CHANGELOG.md` using `git-cliff` whenever a
 version tag is pushed, then opens (or updates) a pull request to merge the
-change into `main`. Can also be triggered manually for out-of-band changelog
+change into `develop`. Can also be triggered manually for out-of-band changelog
 updates.
 
 **Workflow:** `.github/workflows/changelog.yml`  

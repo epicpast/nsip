@@ -155,7 +155,7 @@ jobs:
           name: Nightly Build
           prerelease: true
           body: |
-            Automated nightly build from latest main branch.
+            Automated nightly build from latest develop branch.
 
             **Warning:** Nightly builds may be unstable.
 
