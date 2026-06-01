@@ -35,6 +35,12 @@ const BACKOFF_FACTOR: f64 = 0.5;
 /// misconfigured upstream cannot stall the client indefinitely.
 const MAX_RETRY_DELAY_SECS: u64 = 60;
 
+/// Upper bound on the backoff shift exponent. Clamps `1 << exp` so a large
+/// configured `max_retries` cannot overflow the shift (UB-adjacent panic in
+/// debug, silent wrap in release). `2^16` already dwarfs [`MAX_RETRY_DELAY_SECS`],
+/// so the clamp never affects a delay the cap would not already bound.
+const MAX_BACKOFF_SHIFT: u32 = 16;
+
 /// Parse the upstream `Retry-After` header (RFC 7231 §7.1.3) into a
 /// [`RetryAfter`]. Handles the delta-seconds form directly; the HTTP-date form
 /// is converted to an RFC 3339 timestamp (GMT normalized to `+0000` for the
@@ -297,15 +303,20 @@ impl NsipClient {
     }
 
     /// Compute the delay before the next retry attempt. Honors an upstream
-    /// `Retry-After` (delta-seconds) hint from the previous error when present,
-    /// capped at [`MAX_RETRY_DELAY_SECS`]; otherwise falls back to exponential
-    /// backoff (`BACKOFF_FACTOR * 2^(attempt-1)`).
+    /// `Retry-After` (delta-seconds) hint from the previous error when present;
+    /// otherwise falls back to exponential backoff (`BACKOFF_FACTOR *
+    /// 2^(attempt-1)`). Both paths are capped at [`MAX_RETRY_DELAY_SECS`] so a
+    /// large configured `max_retries` cannot stall the caller for hours.
     fn retry_delay(attempt: u32, last_err: Option<&Error>) -> Duration {
+        let cap = Duration::from_secs(MAX_RETRY_DELAY_SECS);
         if let Some(RetryAfter::Seconds(secs)) = last_err.and_then(Error::retry_after) {
-            return Duration::from_secs(u64::from(secs).min(MAX_RETRY_DELAY_SECS));
+            return Duration::from_secs(u64::from(secs)).min(cap);
         }
-        let delay_secs = BACKOFF_FACTOR * f64::from(1u32 << (attempt - 1));
-        Duration::from_secs_f64(delay_secs)
+        // `attempt >= 1` here (the caller only sleeps when `attempt > 0`);
+        // `saturating_sub` keeps the exponent sound even if that ever changes,
+        // and `.min` clamps the shift in range. The delay itself is capped below.
+        let exp = attempt.saturating_sub(1).min(MAX_BACKOFF_SHIFT);
+        Duration::from_secs_f64(BACKOFF_FACTOR * f64::from(1u32 << exp)).min(cap)
     }
 
     /// Single HTTP request (no retry).
@@ -823,6 +834,36 @@ mod tests {
         assert!(!NsipClient::is_retryable(&Error::not_found("n")));
         assert!(!NsipClient::is_retryable(&Error::validation("v")));
         assert!(!NsipClient::is_retryable(&Error::api(400, "")));
+    }
+
+    #[test]
+    fn retry_delay_is_capped_and_overflow_free() {
+        let cap = Duration::from_secs(MAX_RETRY_DELAY_SECS);
+
+        // Early attempts grow exponentially but stay sub-cap.
+        assert_eq!(
+            NsipClient::retry_delay(1, None),
+            Duration::from_secs_f64(0.5)
+        );
+        assert_eq!(
+            NsipClient::retry_delay(2, None),
+            Duration::from_secs_f64(1.0)
+        );
+
+        // A large `max_retries` must neither overflow the shift (panic in debug,
+        // wrap in release) nor exceed the cap — the regression this guards.
+        assert!(NsipClient::retry_delay(20, None) <= cap);
+        assert!(NsipClient::retry_delay(33, None) <= cap);
+        assert!(NsipClient::retry_delay(u32::MAX, None) <= cap);
+
+        // An honored delta-seconds Retry-After is clamped to the same cap.
+        let throttled = Error::Api {
+            status: 429,
+            message: "slow down".to_owned(),
+            retry_after: Some(RetryAfter::Seconds(3600)),
+            source: None,
+        };
+        assert_eq!(NsipClient::retry_delay(1, Some(&throttled)), cap);
     }
 
     #[test]

@@ -54,18 +54,21 @@ fn slugify(label: &str) -> String {
 
 /// Build an MCP error from a [`crate::Error`], attaching the RFC 9457
 /// problem+json envelope as the `data` payload and selecting the JSON-RPC error
-/// code by class: caller errors (validation / not-found) map to
-/// `invalid_params`, everything else to `internal_error`. The `context` labels
-/// the operation (also slugified into the envelope `instance`).
+/// code by class. The class is derived from the single `exit_code` table
+/// ([`crate::Error::exit_code`]): caller errors (exit `1` — validation,
+/// not-found, and non-429 4xx upstream rejections) map to `invalid_params`;
+/// transient and environment errors (429/5xx, timeout, connection, upstream
+/// parse) map to `internal_error`. Sourcing the class from `exit_code` keeps it
+/// consistent with the CLI envelope and exhaustive across future variants. The
+/// `context` labels the operation (also slugified into the envelope `instance`).
 pub(crate) fn problem_error(context: &str, err: &crate::Error) -> McpError {
     let pd = err.to_problem_details(&slugify(context));
     let data = serde_json::to_value(pd).ok();
     let message = format!("{context}: {err}");
-    match err {
-        crate::Error::Validation { .. } | crate::Error::NotFound(_) => {
-            McpError::invalid_params(message, data)
-        },
-        _ => McpError::internal_error(message, data),
+    if err.exit_code() == 1 {
+        McpError::invalid_params(message, data)
+    } else {
+        McpError::internal_error(message, data)
     }
 }
 
@@ -312,11 +315,24 @@ mod tests {
                 .is_some_and(|s| s.starts_with("urn:nsip:compare:"))
         );
 
-        // Transient upstream -> internal_error (-32603), enveloped.
+        // Transient upstream (429/5xx) -> internal_error (-32603), enveloped.
         let t = problem_error("search", &crate::Error::api(503, "down"));
         let tj = serde_json::to_value(&t).expect("serialize");
         assert_eq!(tj["code"], -32603);
         assert_eq!(tj["data"]["status"], 503);
+
+        // A non-429 4xx upstream rejection is a CALLER error (exit 1), so it
+        // maps to invalid_params (-32602), not internal_error — the agent must
+        // see it correct its request, not retry a server fault.
+        let bad = problem_error("details", &crate::Error::api(400, "bad request"));
+        let bj = serde_json::to_value(&bad).expect("serialize");
+        assert_eq!(bj["code"], -32602);
+        assert_eq!(bj["data"]["status"], 400);
+
+        // not-found is also a caller error -> invalid_params.
+        let nf = problem_error("details", &crate::Error::not_found("LPN 999"));
+        let nj = serde_json::to_value(&nf).expect("serialize");
+        assert_eq!(nj["code"], -32602);
     }
 
     #[test]

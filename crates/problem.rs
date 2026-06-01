@@ -85,6 +85,27 @@ fn validation_fix(kind: ValidationKind, message: &str) -> String {
 /// documentation changelog. See `docs/adr` for the rationale.
 const TYPE_URI_BASE: &str = "https://github.com/zircote/nsip/blob/main/docs/reference/errors";
 
+/// Maximum byte length of the envelope `detail`. The `Api` variant's message is
+/// the raw upstream response body (unbounded — see `client.rs`), so it is
+/// truncated here to keep the whole envelope within the ~1 KB budget the module
+/// documents. The other members (type, title, instance, fixed-string fixes) are
+/// short and bounded by construction.
+const MAX_DETAIL_LEN: usize = 480;
+
+/// Truncate `detail` to at most [`MAX_DETAIL_LEN`] bytes on a `char` boundary,
+/// appending an ellipsis when truncation occurs. Never splits a multi-byte
+/// `char` (which would yield invalid UTF-8).
+fn truncate_detail(detail: &str) -> String {
+    if detail.len() <= MAX_DETAIL_LEN {
+        return detail.to_owned();
+    }
+    let mut end = MAX_DETAIL_LEN;
+    while !detail.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}…", &detail[..end])
+}
+
 /// RFC 9457 Problem Details object (`application/problem+json`).
 ///
 /// The five RFC 9457 standard members (`type`, `title`, `status`, `detail`,
@@ -292,7 +313,7 @@ impl Error {
             type_uri,
             title: self.title().to_owned(),
             status: self.status_code(),
-            detail: self.to_string(),
+            detail: truncate_detail(&self.to_string()),
             instance,
             exit_code: self.exit_code(),
             suggested_fix: self.suggested_fix(),
@@ -485,5 +506,73 @@ mod tests {
         let ts =
             serde_json::to_string(&RetryAfter::Timestamp("2026-06-01T00:00:00Z".into())).unwrap();
         assert_eq!(ts, "\"2026-06-01T00:00:00Z\"");
+    }
+
+    /// A verbose upstream body (the `Api` message is the raw response body, which
+    /// is unbounded) is truncated so the envelope stays within the 1 KB budget.
+    /// `json_is_compact` only ever feeds tiny fixtures, so it does not exercise
+    /// truncation — this does.
+    #[test]
+    fn detail_truncated_keeps_envelope_under_cap() {
+        let err = Error::Api {
+            status: 500,
+            message: "x".repeat(5000),
+            retry_after: None,
+            source: None,
+        };
+        let pd = err.to_problem_details("date-updated");
+        assert!(
+            pd.detail.len() <= MAX_DETAIL_LEN + 4,
+            "detail not truncated: {} bytes",
+            pd.detail.len()
+        );
+        assert!(
+            pd.detail.ends_with('…'),
+            "truncated detail should end with an ellipsis: {}",
+            pd.detail
+        );
+        let json = serde_json::to_string(&pd).expect("serialize");
+        assert!(
+            json.len() <= 1024,
+            "envelope {} bytes exceeds 1 KB cap",
+            json.len()
+        );
+    }
+
+    /// The `type` URI is declared twice — `lib.rs` `#[diagnostic(url(...))]` (the
+    /// human/miette path) and `problem.rs` `type_uri()` (the agent envelope). For
+    /// every non-`Validation` variant they must resolve to the SAME doc page;
+    /// pin them together so the two sources cannot drift silently.
+    #[test]
+    fn miette_url_matches_envelope_type_uri() {
+        use miette::Diagnostic as _;
+        for err in [
+            Error::api(500, "x"),
+            Error::not_found("x"),
+            Error::timeout("x"),
+            Error::connection("x"),
+            Error::parse("x"),
+        ] {
+            let url = err.url().map(|u| u.to_string());
+            assert_eq!(
+                url.as_deref(),
+                Some(err.type_uri().as_str()),
+                "miette url and envelope type diverged for {err:?}"
+            );
+        }
+
+        // `Validation` is intentionally NOT pinned to equality: a variant-level
+        // miette `url` attribute cannot see `kind`, so the human path carries one
+        // coarse `cli/validation.md` while the envelope carries the precise
+        // per-operation slug. Pin that intended divergence so it stays a
+        // documented decision rather than an accident.
+        let empty = Error::empty_lpn_id();
+        assert_eq!(
+            empty.url().map(|u| u.to_string()).as_deref(),
+            Some(
+                "https://github.com/zircote/nsip/blob/main/docs/reference/errors/cli/validation.md"
+            )
+        );
+        assert!(empty.type_uri().ends_with("/cli/empty-lpn-id.md"));
     }
 }

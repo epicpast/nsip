@@ -1,9 +1,13 @@
 #![doc = include_str!("../README.md")]
-// miette-derive 7.6's `Diagnostic` impl for `Error` assigns to per-field locals
-// it does not always read, tripping `unused_assignments` under the MSRV
-// toolchain (1.92) with `-D warnings`. The generated impl lands in this root
-// module, so the allow is scoped here (submodules keep the lint). Targets
-// generated code, not ours.
+// miette-derive 7.6's generated `Diagnostic` impl for `Error` assigns to
+// per-field locals it does not always read, tripping `unused_assignments` under
+// the MSRV toolchain (1.92) with `-D warnings`. An item-level `#[allow]` on the
+// enum does not reach the derive's generated impl on 1.92, so this is a
+// crate-root inner attribute and is therefore CRATE-WIDE — it is not scoped to
+// the generated code despite targeting it. Accepted trade-off: relocating
+// `Error` into its own module to narrow the scope is disproportionate for a
+// generated-code workaround, and `unused_assignments` rarely fires on
+// hand-written code (the other dead-store lints remain active crate-wide).
 #![allow(unused_assignments)]
 
 use miette::Diagnostic;
