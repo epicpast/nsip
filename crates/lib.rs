@@ -1,4 +1,10 @@
 #![doc = include_str!("../README.md")]
+// miette-derive 7.6's `Diagnostic` impl for `Error` assigns to per-field locals
+// it does not always read, tripping `unused_assignments` under the MSRV
+// toolchain (1.92) with `-D warnings`. The generated impl lands in this root
+// module, so the allow is scoped here (submodules keep the lint). Targets
+// generated code, not ours.
+#![allow(unused_assignments)]
 
 use miette::Diagnostic;
 use thiserror::Error;
