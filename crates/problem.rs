@@ -32,6 +32,7 @@ const fn validation_slug(kind: ValidationKind) -> &'static str {
         ValidationKind::CompareArity => "cli/compare-arity",
         ValidationKind::MissingArgument => "mcp/missing-argument",
         ValidationKind::UnknownResource => "mcp/unknown-resource",
+        ValidationKind::InvalidCursor => "mcp/invalid-cursor",
         ValidationKind::UnknownTransport => "cli/unknown-transport",
         ValidationKind::Other => "cli/validation",
     }
@@ -47,6 +48,7 @@ const fn validation_title(kind: ValidationKind) -> &'static str {
         ValidationKind::CompareArity => "Comparison requires 2 to 5 animals",
         ValidationKind::MissingArgument => "Required argument is missing",
         ValidationKind::UnknownResource => "Unknown resource URI",
+        ValidationKind::InvalidCursor => "Invalid pagination cursor",
         ValidationKind::UnknownTransport => "Unknown MCP transport",
         ValidationKind::Other => "Invalid input parameters",
     }
@@ -69,6 +71,9 @@ fn validation_fix(kind: ValidationKind, message: &str) -> String {
         ValidationKind::MissingArgument => format!("provide the required argument: {message}"),
         ValidationKind::UnknownResource => {
             "use a documented nsip:// resource URI (see nsip://glossary)".to_owned()
+        },
+        ValidationKind::InvalidCursor => {
+            "restart pagination without a cursor (begin from the first page)".to_owned()
         },
         ValidationKind::UnknownTransport => "use --transport stdio or --transport http".to_owned(),
         ValidationKind::Other => format!("correct the input and retry: {message}"),
@@ -450,6 +455,7 @@ mod tests {
             ValidationKind::CompareArity,
             ValidationKind::MissingArgument,
             ValidationKind::UnknownResource,
+            ValidationKind::InvalidCursor,
             ValidationKind::UnknownTransport,
             ValidationKind::Other,
         ];

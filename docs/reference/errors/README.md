@@ -24,6 +24,7 @@ keeps `resource_not_found`).
 | [`cli/unknown-transport`](cli/unknown-transport.md) | `UnknownTransport` | `machine_applicable` |
 | [`mcp/missing-argument`](mcp/missing-argument.md) | `MissingArgument` | `machine_applicable` |
 | [`mcp/unknown-resource`](mcp/unknown-resource.md) | `UnknownResource` | `maybe_incorrect` |
+| [`mcp/invalid-cursor`](mcp/invalid-cursor.md) | `InvalidCursor` | `machine_applicable` |
 
 ### Transport / upstream (`Api`, `NotFound`, `Timeout`, `Connection`, `Parse`)
 

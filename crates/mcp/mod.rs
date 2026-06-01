@@ -82,13 +82,19 @@ fn paginate<T: Clone>(
     page_size: usize,
 ) -> Result<(Vec<T>, Option<String>), McpError> {
     let offset = match cursor {
-        Some(c) => c
-            .parse::<usize>()
-            .map_err(|_| McpError::invalid_params("Invalid pagination cursor", None))?,
+        Some(c) => c.parse::<usize>().map_err(|_| {
+            problem_error(
+                "paginate",
+                &crate::Error::invalid_cursor("invalid pagination cursor"),
+            )
+        })?,
         None => 0,
     };
     if offset > items.len() {
-        return Err(McpError::invalid_params("Cursor out of range", None));
+        return Err(problem_error(
+            "paginate",
+            &crate::Error::invalid_cursor("cursor out of range"),
+        ));
     }
     let end = (offset + page_size).min(items.len());
     let page = items[offset..end].to_vec();

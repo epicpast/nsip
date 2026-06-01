@@ -22,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   error `data` field.
 - **Per-operation error taxonomy.** `Error::Validation` now carries a
   [`ValidationKind`] (empty-lpn-id, invalid-breed-id, page-range, empty-search,
-  compare-arity, missing-argument, unknown-resource, unknown-transport, other),
+  compare-arity, missing-argument, unknown-resource, invalid-cursor,
+  unknown-transport, other),
   each with its own `type` URI, catalog page, and tailored `suggested_fix`.
   Every MCP tool/prompt/resource validation path is now enveloped (previously
   bare `invalid_params`/`resource_not_found`), the JSON-RPC code is selected by

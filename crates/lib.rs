@@ -44,6 +44,8 @@ pub enum ValidationKind {
     MissingArgument,
     /// An MCP resource URI did not match any known resource or template.
     UnknownResource,
+    /// An MCP pagination cursor could not be decoded or was out of range.
+    InvalidCursor,
     /// An MCP transport name other than `stdio` / `http` was requested.
     UnknownTransport,
     /// Any other input validation failure (the generic fallback).
@@ -222,6 +224,12 @@ impl Error {
     #[must_use]
     pub fn unknown_resource(message: impl Into<String>) -> Self {
         Self::validation_kind(ValidationKind::UnknownResource, message)
+    }
+
+    /// [`ValidationKind::InvalidCursor`] — an MCP pagination cursor was bad.
+    #[must_use]
+    pub fn invalid_cursor(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::InvalidCursor, message)
     }
 
     /// [`ValidationKind::UnknownTransport`] — an unsupported MCP transport.
