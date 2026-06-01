@@ -22,19 +22,50 @@ use uuid::Uuid;
 
 use crate::{Error, ValidationKind};
 
-/// `<domain>/<slug>` path for a [`ValidationKind`]; the per-operation problem type.
+/// Resolve a slug from a compile-time override (set by `build.rs` from
+/// `[package.metadata.nsip.error-slugs]`) or fall back to the in-source default.
+const fn slug_or(over: Option<&'static str>, default: &'static str) -> &'static str {
+    match over {
+        Some(s) => s,
+        None => default,
+    }
+}
+
+/// `<domain>/<slug>` path for a [`ValidationKind`]; the per-operation problem
+/// type. Each slug is overridable via `[package.metadata.nsip.error-slugs]`.
 const fn validation_slug(kind: ValidationKind) -> &'static str {
     match kind {
-        ValidationKind::EmptyLpnId => "cli/empty-lpn-id",
-        ValidationKind::InvalidBreedId => "cli/invalid-breed-id",
-        ValidationKind::PageRange => "cli/page-range",
-        ValidationKind::EmptySearch => "cli/empty-search",
-        ValidationKind::CompareArity => "cli/compare-arity",
-        ValidationKind::MissingArgument => "mcp/missing-argument",
-        ValidationKind::UnknownResource => "mcp/unknown-resource",
-        ValidationKind::InvalidCursor => "mcp/invalid-cursor",
-        ValidationKind::UnknownTransport => "cli/unknown-transport",
-        ValidationKind::Other => "cli/validation",
+        ValidationKind::EmptyLpnId => {
+            slug_or(option_env!("NSIP_SLUG_EMPTY_LPN_ID"), "cli/empty-lpn-id")
+        },
+        ValidationKind::InvalidBreedId => slug_or(
+            option_env!("NSIP_SLUG_INVALID_BREED_ID"),
+            "cli/invalid-breed-id",
+        ),
+        ValidationKind::PageRange => slug_or(option_env!("NSIP_SLUG_PAGE_RANGE"), "cli/page-range"),
+        ValidationKind::EmptySearch => {
+            slug_or(option_env!("NSIP_SLUG_EMPTY_SEARCH"), "cli/empty-search")
+        },
+        ValidationKind::CompareArity => {
+            slug_or(option_env!("NSIP_SLUG_COMPARE_ARITY"), "cli/compare-arity")
+        },
+        ValidationKind::MissingArgument => slug_or(
+            option_env!("NSIP_SLUG_MISSING_ARGUMENT"),
+            "mcp/missing-argument",
+        ),
+        ValidationKind::UnknownResource => slug_or(
+            option_env!("NSIP_SLUG_UNKNOWN_RESOURCE"),
+            "mcp/unknown-resource",
+        ),
+        ValidationKind::InvalidCursor => slug_or(
+            option_env!("NSIP_SLUG_INVALID_CURSOR"),
+            "mcp/invalid-cursor",
+        ),
+        ValidationKind::UnknownTransport => slug_or(
+            option_env!("NSIP_SLUG_UNKNOWN_TRANSPORT"),
+            "cli/unknown-transport",
+        ),
+        ValidationKind::Other => slug_or(option_env!("NSIP_SLUG_VALIDATION"), "cli/validation"),
     }
 }
 
@@ -80,10 +111,12 @@ fn validation_fix(kind: ValidationKind, message: &str) -> String {
     }
 }
 
-/// Stable base for `type`/`docs_url` URIs. Per the committed policy the URI is
-/// stable forever (no path version); semantic changes are tracked in the
-/// documentation changelog. See `docs/adr` for the rationale.
-const TYPE_URI_BASE: &str = "https://github.com/zircote/nsip/blob/main/docs/reference/errors";
+/// Base for `type`/`docs_url` URIs, configurable via
+/// `[package.metadata.nsip].error-type-uri-base` (resolved in `build.rs`);
+/// defaults to the repository's stable docs path. Per the committed policy the
+/// URI carries no path version; semantic changes are tracked in the
+/// documentation changelog. See `docs/adr` and `docs/reference/ERROR-ENVELOPE.md`.
+const TYPE_URI_BASE: &str = env!("NSIP_ERROR_TYPE_URI_BASE");
 
 /// Maximum byte length of the envelope `detail`. The `Api` variant's message is
 /// the raw upstream response body (unbounded — see `client.rs`), so it is
@@ -186,11 +219,16 @@ impl Error {
     pub const fn slug_path(&self) -> &'static str {
         match self {
             Self::Validation { kind, .. } => validation_slug(*kind),
-            Self::Api { .. } => "api/error",
-            Self::NotFound(_) => "api/not-found",
-            Self::Timeout { .. } => "api/timeout",
-            Self::Connection { .. } => "api/connection",
-            Self::Parse { .. } => "api/upstream-parse",
+            Self::Api { .. } => slug_or(option_env!("NSIP_SLUG_API_ERROR"), "api/error"),
+            Self::NotFound(_) => slug_or(option_env!("NSIP_SLUG_API_NOT_FOUND"), "api/not-found"),
+            Self::Timeout { .. } => slug_or(option_env!("NSIP_SLUG_API_TIMEOUT"), "api/timeout"),
+            Self::Connection { .. } => {
+                slug_or(option_env!("NSIP_SLUG_API_CONNECTION"), "api/connection")
+            },
+            Self::Parse { .. } => slug_or(
+                option_env!("NSIP_SLUG_API_UPSTREAM_PARSE"),
+                "api/upstream-parse",
+            ),
         }
     }
 
@@ -506,6 +544,29 @@ mod tests {
         let ts =
             serde_json::to_string(&RetryAfter::Timestamp("2026-06-01T00:00:00Z".into())).unwrap();
         assert_eq!(ts, "\"2026-06-01T00:00:00Z\"");
+    }
+
+    /// The type-URI base is wired from `build.rs`
+    /// (`[package.metadata.nsip].error-type-uri-base`) via `env!`. The repo sets
+    /// it to the canonical default, so the resolved value must match — proving the
+    /// build-script → env → const path works and produced a non-empty base.
+    #[test]
+    fn type_uri_base_resolves_from_build_metadata() {
+        assert_eq!(
+            TYPE_URI_BASE,
+            "https://github.com/zircote/nsip/blob/main/docs/reference/errors"
+        );
+    }
+
+    /// `slug_or` prefers a build-time override and falls back to the default —
+    /// the resolution logic behind per-error slug configuration.
+    #[test]
+    fn slug_or_prefers_override_then_default() {
+        assert_eq!(
+            slug_or(Some("errors/custom"), "api/timeout"),
+            "errors/custom"
+        );
+        assert_eq!(slug_or(None, "api/timeout"), "api/timeout");
     }
 
     /// A verbose upstream body (the `Api` message is the raw response body, which

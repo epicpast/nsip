@@ -36,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (delta-seconds and HTTP-date forms), populating `retry_after` and honoring the
   delay on retry.
 - `Error` variants now preserve the originating cause via `#[source]`.
+- **Configurable error `type` URIs.** The envelope `type`/`docs_url` base — and,
+  optionally, each error's slug — are configurable from `Cargo.toml` via
+  `[package.metadata.nsip]` (`error-type-uri-base` and `[…​.error-slugs]`), read
+  at build time by `build.rs`, so a fork can point the error catalog at its own
+  documentation without editing source. See
+  [`docs/reference/ERROR-ENVELOPE.md`](docs/reference/ERROR-ENVELOPE.md#configuring-the-type-uri-forks-and-downstream).
 
 ### Changed
 

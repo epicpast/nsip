@@ -86,7 +86,7 @@ pub enum Error {
     #[error("validation error: {message}")]
     #[diagnostic(
         code("nsip::cli::validation"),
-        url("https://github.com/zircote/nsip/blob/main/docs/reference/errors/cli/validation.md"),
+        url("{}/cli/validation.md", env!("NSIP_ERROR_TYPE_URI_BASE")),
         help("correct the input parameters and retry")
     )]
     Validation {
@@ -100,7 +100,7 @@ pub enum Error {
     #[error("API error (HTTP {status}): {message}")]
     #[diagnostic(
         code("nsip::api::error"),
-        url("https://github.com/zircote/nsip/blob/main/docs/reference/errors/api/error.md")
+        url("{}/api/error.md", env!("NSIP_ERROR_TYPE_URI_BASE"))
     )]
     Api {
         /// HTTP status code returned by the upstream API.
@@ -119,7 +119,7 @@ pub enum Error {
     #[error("not found: {0}")]
     #[diagnostic(
         code("nsip::api::not-found"),
-        url("https://github.com/zircote/nsip/blob/main/docs/reference/errors/api/not-found.md"),
+        url("{}/api/not-found.md", env!("NSIP_ERROR_TYPE_URI_BASE")),
         help("verify the identifier exists in the NSIP database")
     )]
     NotFound(String),
@@ -128,7 +128,7 @@ pub enum Error {
     #[error("request timed out: {message}")]
     #[diagnostic(
         code("nsip::api::timeout"),
-        url("https://github.com/zircote/nsip/blob/main/docs/reference/errors/api/timeout.md"),
+        url("{}/api/timeout.md", env!("NSIP_ERROR_TYPE_URI_BASE")),
         help("retry the request; increase the client timeout if this persists")
     )]
     Timeout {
@@ -145,7 +145,7 @@ pub enum Error {
     #[error("connection error: {message}")]
     #[diagnostic(
         code("nsip::api::connection"),
-        url("https://github.com/zircote/nsip/blob/main/docs/reference/errors/api/connection.md"),
+        url("{}/api/connection.md", env!("NSIP_ERROR_TYPE_URI_BASE")),
         help("check network connectivity to nsipsearch.nsip.org and retry")
     )]
     Connection {
@@ -162,9 +162,7 @@ pub enum Error {
     #[error("parse error: {message}")]
     #[diagnostic(
         code("nsip::api::upstream-parse"),
-        url(
-            "https://github.com/zircote/nsip/blob/main/docs/reference/errors/api/upstream-parse.md"
-        )
+        url("{}/api/upstream-parse.md", env!("NSIP_ERROR_TYPE_URI_BASE"))
     )]
     Parse {
         /// Human-readable description of the parse failure.
