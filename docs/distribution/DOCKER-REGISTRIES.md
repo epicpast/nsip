@@ -5,11 +5,16 @@ diataxis_type: reference
 
 ## Overview
 
-Automated Docker image publication to multiple container registries.
+Docker image publication to container registries.
 
-**Workflow:** `.github/workflows/docker-hub.yml`
-**Registries:** Docker Hub, GitHub Container Registry (ghcr.io)
+**Active workflow:** `.github/workflows/docker.yml` — publishes to GitHub
+Container Registry (ghcr.io).
 **Platforms:** linux/amd64, linux/arm64
+
+> The multi-registry Docker Hub workflow (`docker-hub.yml`) is **not currently
+> included** in this repository. The registry-specific recipes below (Docker
+> Hub, AWS ECR, Google Artifact Registry, Azure ACR, Quay.io) are reference
+> guidance for extending `docker.yml` if you need to publish beyond ghcr.io.
 
 ## Supported Registries
 

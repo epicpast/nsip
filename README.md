@@ -284,9 +284,8 @@ This template includes production-ready workflows:
 
 - **CI** (`.github/workflows/ci.yml`) - Format, lint, test, docs, supply chain security, MSRV check, coverage
 - **Security Audit** (`.github/workflows/security-audit.yml`) - Daily cargo-audit scans
-- **`CodeQL` Analysis** (`.github/workflows/codeql-analysis.yml`) - SAST scanning on push/PR and weekly schedule
-- **Benchmark** (`.github/workflows/benchmark.yml`) - Performance tracking with criterion
-- **ADR Validation** (`.github/workflows/adr-validation.yml`) - Architectural decision records validation
+- **Secrets Scan** (`.github/workflows/secrets-scan.yml`) - Gitleaks secret scanning on push/PR
+- **Container Scan** (`.github/workflows/container-scan.yml`) - Trivy image vulnerability scanning
 
 ### Release and Deployment
 

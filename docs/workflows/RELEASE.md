@@ -28,12 +28,9 @@ tag v*.*.*
     │       └─ build-binaries    Builds multi-platform binaries
     │               │
     │               └─ (triggers) docker.yml
-    │                            package-homebrew.yml
-    │                            package-snap.yml
-    │                            package-linux.yml
-    │                            package-windows.yml
     │                            signed-releases.yml
     │                            slsa-provenance.yml
+    │                            sbom.yml
 ```
 
 ## Jobs
@@ -122,13 +119,14 @@ several downstream workflows:
 | Workflow | Purpose |
 |----------|---------|
 | `docker.yml` | Builds and pushes Docker image to GHCR |
-| `package-homebrew.yml` | Updates the Homebrew tap formula |
-| `package-snap.yml` | Publishes to Snapcraft |
-| `package-linux.yml` | Builds `.deb` and `.rpm` packages |
-| `package-windows.yml` | Builds Windows MSI installer |
 | `signed-releases.yml` | Signs release binaries with Sigstore/Cosign |
 | `slsa-provenance.yml` | Generates SLSA provenance attestations |
+| `sbom.yml` | Attaches the SPDX SBOM to the release |
 | `changelog.yml` | Opens a PR to update `CHANGELOG.md` |
+
+> Package-manager workflows (Homebrew, Snap, Linux `.deb`/`.rpm`, Windows MSI)
+> are not currently included; re-add them and wire them to the `release` event
+> to attach those artifacts.
 
 ## Changelog Generation
 

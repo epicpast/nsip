@@ -19,9 +19,10 @@ diataxis_type: tutorial
 
 ---
 
-## 2. Automatic Initialization
+## 2. Initialize the Project
 
-Once your repository is created and the first push lands on `main`, the **Template Init** workflow (`template-init.yml`) runs automatically. It performs the following replacements across the entire repository:
+After creating your repository from the template, replace the template
+placeholders across the repository with your project's values:
 
 | Template placeholder | Replaced with | Example |
 |---|---|---|
@@ -30,12 +31,10 @@ Once your repository is created and the first push lands on `main`, the **Templa
 | `nsip` | your repository name | `my-awesome-crate` |
 | `nsip` | your crate name (underscored) | `my_awesome_crate` |
 
-**What to expect:**
-
-- [ ] The workflow takes roughly **1 minute** to complete.
-- [ ] It creates a commit titled `chore: initialize from nsip for <owner>/<repo>`.
-- [ ] After the commit, `Cargo.toml`, `README.md`, documentation links, and all other references point to your project.
-- [ ] The workflow becomes a **no-op** on subsequent pushes (it checks whether `Cargo.toml` still contains `nsip`).
+> The automated **Template Init** workflow is not included in this repository.
+> Perform the replacements manually (e.g. with `sed`/`rg`), or restore a
+> template-init workflow if you want this automated. After replacing, confirm
+> `Cargo.toml`, `README.md`, and documentation links point to your project.
 
 > **What copies and what doesn't?** Files copy; settings don't. See [GitHub Template Features](GITHUB-TEMPLATE-FEATURES.md) for the full breakdown of what transfers when you use a template repository.
 
@@ -43,7 +42,7 @@ Once your repository is created and the first push lands on `main`, the **Templa
 
 ## 3. Clone and Build
 
-After the init workflow completes, pull down your freshly initialized repo:
+After initialization, pull down your freshly initialized repo:
 
 ```bash
 git clone https://github.com/<your-org>/<your-repo>.git
