@@ -40,18 +40,24 @@ jobs:
           BODY="Automated back-merge of the ${TAG_NAME} release commit from main into develop so the branches stay in sync. No code changes."
 
           # Reuse an existing open main -> develop PR if present; otherwise create one.
-          PR_NUMBER="$(gh pr list --base develop --head main --state open --json number --jq '.[0].number' || true)"
+          PR_NUMBER="$(gh pr list --base develop --head main --state open --json number --jq '.[0].number // empty' || true)"
 
           if [ -z "${PR_NUMBER}" ]; then
             echo "Creating back-merge PR."
-            PR_NUMBER="$(gh pr create \
+            gh pr create \
               --title "${TITLE}" \
               --body "${BODY}" \
               --base develop \
               --head main \
-              | grep -oE '[0-9]+$')"
+              >/dev/null
+            PR_NUMBER="$(gh pr list --base develop --head main --state open --json number --jq '.[0].number // empty')"
           else
             echo "Back-merge PR #${PR_NUMBER} already exists."
+          fi
+
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "Failed to determine back-merge PR number."
+            exit 1
           fi
 
           # Enable auto-merge so it lands once required checks pass.
