@@ -101,32 +101,31 @@ Each binary is:
 ## Triggering a Release
 
 ```bash
-# 1. Ensure CHANGELOG.md and version are up to date in Cargo.toml
-# 2. Commit all changes
-git add -A && git commit -m "chore: release v1.2.3"
-
-# 3. Create and push the version tag
-git tag -s v1.2.3 -m "Release v1.2.3"
-git push origin main --tags
+# 1. On develop: ensure CHANGELOG.md and the Cargo.toml version are up to date
+# 2. Promote develop -> main via a release PR (or the Release PR workflow) and
+#    merge it
+# 3. Tag the main merge commit and push the single tag
+git checkout main && git pull origin main
+git tag -a v1.2.3 -m "Release v1.2.3"
+git push origin v1.2.3
 ```
 
-This triggers the release workflow automatically.
-
-See the [Releasing runbook](../runbooks/RELEASING.md) for the complete
-step-by-step release checklist.
+This triggers the release workflow automatically. See the
+[Releasing runbook](../runbooks/RELEASING.md) for the full promote-tag-push flow
+and step-by-step release checklist.
 
 ## Downstream Workflows
 
-After the `create-release` job completes, the `release` event triggers
-several downstream workflows:
+Pushing the tag (and the release it creates) fans out to several workflows,
+each on its own trigger:
 
-| Workflow | Purpose |
-|----------|---------|
-| `docker.yml` | Builds and pushes Docker image to GHCR |
-| `signed-releases.yml` | Signs release binaries with Sigstore/Cosign |
-| `slsa-provenance.yml` | Generates SLSA provenance attestations |
-| `sbom.yml` | Attaches the SPDX SBOM to the release |
-| `changelog.yml` | Opens a PR to update `CHANGELOG.md` |
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `docker.yml` | tag push `v*.*.*` | Builds and pushes Docker image to GHCR |
+| `changelog.yml` | tag push `v*.*.*` | Opens a PR to update `CHANGELOG.md` |
+| `sbom.yml` | `release` published | Attaches the SPDX SBOM to the release |
+| `slsa-provenance.yml` | `release` published | Generates SLSA provenance attestations |
+| `signed-releases.yml` | `workflow_run` after Release | Signs release binaries with Sigstore/Cosign |
 
 > Package-manager workflows (Homebrew, Snap, Linux `.deb`/`.rpm`, Windows MSI)
 > are not currently included; re-add them and wire them to the `release` event
