@@ -112,6 +112,7 @@ Pushing a `v*.*.*` tag triggers these workflows in parallel:
 | **Docker** | `docker.yml` | Builds multi-platform images (linux/amd64, linux/arm64), pushes to `ghcr.io/zircote/nsip` with version + `latest` tags |
 | **Publish** | `publish.yml` | Runs pre-publish checks and publishes to crates.io (if enabled and tag-triggered) |
 | **Signed Releases** | `signed-releases.yml` | Signs all release assets with Sigstore Cosign, generates SHA256/SHA512 checksums |
+| **Back-merge** | `back-merge.yml` | Automatically opens and auto-merges a `main -> develop` PR so the branches stay in sync after the release (no manual step) |
 
 ---
 
