@@ -106,15 +106,13 @@ Each binary is:
 #    merge it
 # 3. Tag the main merge commit and push the single tag
 git checkout main && git pull origin main
-git tag -s v1.2.3 -m "Release v1.2.3"
+git tag -a v1.2.3 -m "Release v1.2.3"
 git push origin v1.2.3
 ```
 
 This triggers the release workflow automatically. See the
-[Releasing runbook](../runbooks/RELEASING.md) for the full promote-tag-push flow.
-
-See the [Releasing runbook](../runbooks/RELEASING.md) for the complete
-step-by-step release checklist.
+[Releasing runbook](../runbooks/RELEASING.md) for the full promote-tag-push flow
+and step-by-step release checklist.
 
 ## Downstream Workflows
 
