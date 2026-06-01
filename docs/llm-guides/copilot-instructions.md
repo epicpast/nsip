@@ -24,7 +24,7 @@ Full reference: `docs/MCP.md`
 - `profile` -- Details+lineage+progeny combined (params: `animal_id`)
 - `breed_groups` -- List all breeds (no params)
 - `trait_ranges` -- Min/max EBVs for a breed (params: `breed_id`)
-- `compare` -- Side-by-side comparison (params: `animal_ids` 2-5, `traits`)
+- `compare` -- Side-by-side comparison (params: `lpn_ids` 2-5, `traits`)
 - `rank` -- Weighted multi-trait ranking (params: `breed_id`, `weights`, `gender`, `top_n`)
 - `inbreeding_check` -- COI calculation (params: `sire_id`, `dam_id`)
 - `mating_recommendations` -- Optimal mates (params: `animal_id`, `breed_id`, `target_traits`)

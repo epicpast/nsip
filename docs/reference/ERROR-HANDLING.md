@@ -5,6 +5,11 @@ diataxis_type: reference
 
 Complete reference for error handling in the `nsip` crate.
 
+> **Dual-consumer output:** for how errors are *rendered* to humans and LLM
+> agents (the RFC 9457 `application/problem+json` envelope, `--format` / TTY
+> selection, exit codes, and the per-type catalog), see
+> [ERROR-ENVELOPE.md](ERROR-ENVELOPE.md) and the [error catalog](errors/).
+
 ---
 
 ## Error Type

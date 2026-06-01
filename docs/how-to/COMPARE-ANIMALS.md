@@ -184,7 +184,7 @@ If you are using the NSIP MCP server through an AI assistant:
 {
   "tool": "compare",
   "arguments": {
-    "animal_ids": ["430735-0032", "430735-0041", "430735-0058"],
+    "lpn_ids": ["430735-0032", "430735-0041", "430735-0058"],
     "traits": "BWT,WWT,YWT,PEMD"
   }
 }

@@ -1,12 +1,17 @@
 //! OAuth 2.1 configuration loaded from environment variables.
 
 use std::env;
+use std::fmt;
 
 /// OAuth 2.1 configuration for GitHub identity provider.
 ///
 /// All required fields are populated from environment variables.
 /// Optional fields have sensible defaults.
-#[derive(Debug, Clone)]
+///
+/// `Debug` is hand-written to redact `github_client_secret` and `auth_secret`
+/// so the credentials never reach a log line via `{:?}` on this struct or any
+/// struct that wraps it.
+#[derive(Clone)]
 pub struct OAuthConfig {
     /// GitHub OAuth application client ID.
     pub github_client_id: String,
@@ -23,6 +28,20 @@ pub struct OAuthConfig {
     /// Optional allowlist of GitHub usernames. When `Some`, only listed users
     /// are permitted to authenticate.
     pub allowed_users: Option<Vec<String>>,
+}
+
+impl fmt::Debug for OAuthConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("OAuthConfig")
+            .field("github_client_id", &self.github_client_id)
+            .field("github_client_secret", &"***")
+            .field("auth_secret", &"***")
+            .field("issuer", &self.issuer)
+            .field("base_url", &self.base_url)
+            .field("token_ttl_secs", &self.token_ttl_secs)
+            .field("allowed_users", &self.allowed_users)
+            .finish()
+    }
 }
 
 /// Default token TTL in seconds (1 hour).
@@ -89,6 +108,31 @@ mod tests {
     use std::collections::HashMap;
 
     use super::*;
+
+    #[test]
+    fn debug_redacts_secrets() {
+        let config = OAuthConfig {
+            github_client_id: "public-id".into(),
+            github_client_secret: "SUPER-SECRET-CLIENT".into(),
+            auth_secret: "SUPER-SECRET-HMAC".into(),
+            issuer: "https://example.com".into(),
+            base_url: "https://example.com".into(),
+            token_ttl_secs: 3600,
+            allowed_users: None,
+        };
+        let rendered = format!("{config:?}");
+        assert!(
+            !rendered.contains("SUPER-SECRET-CLIENT"),
+            "github_client_secret leaked into Debug: {rendered}"
+        );
+        assert!(
+            !rendered.contains("SUPER-SECRET-HMAC"),
+            "auth_secret leaked into Debug: {rendered}"
+        );
+        // Non-secret fields and the redaction marker remain visible.
+        assert!(rendered.contains("public-id"));
+        assert!(rendered.contains("***"));
+    }
 
     /// Build a lookup function from a set of key-value pairs.
     fn make_lookup(vars: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> {

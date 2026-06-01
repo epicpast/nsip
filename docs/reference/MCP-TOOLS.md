@@ -227,7 +227,7 @@ Compare 2-5 animals side-by-side on their EBV traits. Optionally filter to speci
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `animal_ids` | array of strings | yes | LPN IDs to compare (2-5 items) |
+| `lpn_ids` | array of strings | yes | LPN IDs to compare (2-5 items) |
 | `traits` | string | no | Comma-separated trait filter (e.g., `"BWT,WWT,YWT"`) |
 
 **Returns:** Array of `AnimalDetails` objects for the requested animals.
@@ -238,7 +238,7 @@ Compare 2-5 animals side-by-side on their EBV traits. Optionally filter to speci
 {
   "tool": "compare",
   "arguments": {
-    "animal_ids": ["430735-0032", "430735-0041", "430735-0058"],
+    "lpn_ids": ["430735-0032", "430735-0041", "430735-0058"],
     "traits": "BWT,WWT,YWT,EMD"
   }
 }

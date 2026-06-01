@@ -332,7 +332,7 @@ fn test_oauth_state() -> OAuthState {
     };
     let store = std::sync::Arc::new(InMemoryOAuthStore::new())
         as std::sync::Arc<dyn crate::mcp::oauth::store::OAuthStoreBackend>;
-    OAuthState::new(config, store)
+    OAuthState::new(config, store).expect("build oauth state")
 }
 
 fn token_app(state: OAuthState) -> Router {

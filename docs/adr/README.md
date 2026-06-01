@@ -65,3 +65,5 @@ repository or any Markdown viewer. They are validated and rendered locally with
 - [ADR-0001](0001-use-architectural-decision-records.md) - Use Architectural Decision Records
 - [ADR-0002](0002-documentation-directory-structure.md) - Documentation Directory Structure
 - [ADR-0003](0003-adopt-diataxis-documentation-framework.md) - Adopt Diátaxis Documentation Framework
+- [ADR-0004](0004-dual-consumer-error-envelope.md) - Dual-Consumer Error Envelope (RFC 9457)
+- [ADR-0005](0005-error-type-uri-policy.md) - Error type URI Policy

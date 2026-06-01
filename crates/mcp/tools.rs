@@ -190,13 +190,21 @@ pub struct BreedIdParams {
 
 /// Serialize a value to a JSON `CallToolResult`.
 fn json_result(value: &impl serde::Serialize) -> Result<CallToolResult, McpError> {
-    let json =
-        serde_json::to_string_pretty(value).map_err(|e| api_err("Serialization failed", e))?;
+    let json = serde_json::to_string_pretty(value)
+        .map_err(|e| internal_err("Serialization failed", &e))?;
     Ok(CallToolResult::success(vec![Content::text(json)]))
 }
 
-/// Build an `McpError::internal_error` from an API context label and error value.
-fn api_err(context: &str, e: impl std::fmt::Display) -> McpError {
+/// Map a crate-level [`crate::Error`] into an MCP error with the RFC 9457
+/// problem+json envelope in `data` and a class-appropriate JSON-RPC code.
+/// See [`crate::mcp::problem_error`].
+fn api_err(context: &str, err: &crate::Error) -> McpError {
+    super::problem_error(context, err)
+}
+
+/// Build an `McpError::internal_error` for failures that are not a
+/// [`crate::Error`] (e.g. JSON serialization), which carry no envelope.
+fn internal_err(context: &str, e: impl std::fmt::Display) -> McpError {
     McpError::internal_error(format!("{context}: {e}"), None)
 }
 
@@ -277,7 +285,7 @@ impl super::NsipServer {
                 Some(&criteria),
             )
             .await
-            .map_err(|e| api_err("Search failed", e))?;
+            .map_err(|e| api_err("Search failed", &e))?;
 
         json_result(&results)
     }
@@ -294,7 +302,7 @@ impl super::NsipServer {
             .client
             .animal_details(&params.lpn_id)
             .await
-            .map_err(|e| api_err("Failed to fetch details", e))?;
+            .map_err(|e| api_err("Failed to fetch details", &e))?;
 
         json_result(&animal)
     }
@@ -311,7 +319,7 @@ impl super::NsipServer {
             .client
             .lineage(&params.lpn_id)
             .await
-            .map_err(|e| api_err("Failed to fetch lineage", e))?;
+            .map_err(|e| api_err("Failed to fetch lineage", &e))?;
 
         json_result(&lineage)
     }
@@ -329,7 +337,7 @@ impl super::NsipServer {
             .client
             .progeny(&params.lpn_id, page, page_size)
             .await
-            .map_err(|e| api_err("Failed to fetch progeny", e))?;
+            .map_err(|e| api_err("Failed to fetch progeny", &e))?;
 
         json_result(&progeny)
     }
@@ -346,7 +354,7 @@ impl super::NsipServer {
             .client
             .search_by_lpn(&params.lpn_id)
             .await
-            .map_err(|e| api_err("Failed to fetch profile", e))?;
+            .map_err(|e| api_err("Failed to fetch profile", &e))?;
 
         json_result(&profile)
     }
@@ -358,7 +366,7 @@ impl super::NsipServer {
             .client
             .breed_groups()
             .await
-            .map_err(|e| api_err("Failed to fetch breed groups", e))?;
+            .map_err(|e| api_err("Failed to fetch breed groups", &e))?;
 
         json_result(&groups)
     }
@@ -383,7 +391,7 @@ impl super::NsipServer {
                 );
                 return Ok(CallToolResult::success(vec![Content::text(msg)]));
             },
-            Err(e) => return Err(api_err("Failed to fetch trait ranges", e)),
+            Err(e) => return Err(api_err("Failed to fetch trait ranges", &e)),
         };
 
         json_result(&ranges)
@@ -398,9 +406,9 @@ impl super::NsipServer {
         Parameters(params): Parameters<CompareParams>,
     ) -> Result<CallToolResult, McpError> {
         if params.lpn_ids.len() < 2 || params.lpn_ids.len() > 5 {
-            return Err(McpError::invalid_params(
-                "lpn_ids must contain 2-5 LPN IDs",
-                None,
+            return Err(api_err(
+                "compare",
+                &crate::Error::compare_arity("lpn_ids must contain 2-5 LPN IDs"),
             ));
         }
 
@@ -410,7 +418,7 @@ impl super::NsipServer {
                 .client
                 .animal_details(id)
                 .await
-                .map_err(|e| api_err(&format!("Failed to fetch {id}"), e))?;
+                .map_err(|e| api_err(&format!("Failed to fetch {id}"), &e))?;
             animals.push(details);
         }
 
@@ -442,7 +450,7 @@ impl super::NsipServer {
             .client
             .search_animals(0, 100, Some(params.breed_id), None, None, Some(&criteria))
             .await
-            .map_err(|e| api_err("Search failed", e))?;
+            .map_err(|e| api_err("Search failed", &e))?;
 
         let animals = parse_search_result_animals(&results.results);
         let mut ranked = analytics::rank_animals(&animals, &params.weights);
@@ -466,8 +474,8 @@ impl super::NsipServer {
             self.client.lineage(&params.dam_id),
         );
 
-        let sire_lineage = sire_lineage.map_err(|e| api_err("Failed to fetch sire lineage", e))?;
-        let dam_lineage = dam_lineage.map_err(|e| api_err("Failed to fetch dam lineage", e))?;
+        let sire_lineage = sire_lineage.map_err(|e| api_err("Failed to fetch sire lineage", &e))?;
+        let dam_lineage = dam_lineage.map_err(|e| api_err("Failed to fetch dam lineage", &e))?;
 
         let result = analytics::calculate_coi(&sire_lineage, &dam_lineage);
         json_result(&result)
@@ -485,7 +493,7 @@ impl super::NsipServer {
             .client
             .animal_details(&params.lpn_id)
             .await
-            .map_err(|e| api_err("Failed to fetch animal", e))?;
+            .map_err(|e| api_err("Failed to fetch animal", &e))?;
 
         let mate_gender = match animal_details.gender.as_deref() {
             Some("Male") => "Female",
@@ -504,7 +512,7 @@ impl super::NsipServer {
             .client
             .search_animals(0, 50, Some(params.breed_id), None, None, Some(&criteria))
             .await
-            .map_err(|e| api_err("Search failed", e))?;
+            .map_err(|e| api_err("Search failed", &e))?;
 
         let candidate_animals = parse_search_result_animals(&candidates.results);
         let ranked = analytics::rank_animals(&candidate_animals, &weights);
@@ -516,7 +524,7 @@ impl super::NsipServer {
             .client
             .lineage(&params.lpn_id)
             .await
-            .map_err(|e| api_err("Failed to fetch lineage", e))?;
+            .map_err(|e| api_err("Failed to fetch lineage", &e))?;
 
         let mut recommendations = Vec::new();
         for candidate in top_candidates {
@@ -568,7 +576,7 @@ impl super::NsipServer {
             .client
             .search_animals(0, 100, params.breed_id, None, None, Some(&criteria))
             .await
-            .map_err(|e| api_err("Search failed", e))?;
+            .map_err(|e| api_err("Search failed", &e))?;
 
         let animals = parse_search_result_animals(&results.results);
         let summary = build_flock_summary(&params.flock_id, &animals, results.total_count);
@@ -582,8 +590,8 @@ impl super::NsipServer {
         let (updated, statuses) =
             tokio::join!(self.client.date_last_updated(), self.client.statuses(),);
 
-        let updated = updated.map_err(|e| api_err("Failed to fetch date", e))?;
-        let statuses = statuses.map_err(|e| api_err("Failed to fetch statuses", e))?;
+        let updated = updated.map_err(|e| api_err("Failed to fetch date", &e))?;
+        let statuses = statuses.map_err(|e| api_err("Failed to fetch statuses", &e))?;
 
         let result = serde_json::json!({
             "last_updated": updated.data,
@@ -1006,6 +1014,33 @@ mod tests {
         let result = json_result(&data).unwrap();
         assert!(!result.is_error.unwrap_or(false));
         assert_eq!(result.content.len(), 1);
+    }
+
+    #[test]
+    fn api_err_attaches_problem_envelope() {
+        let err = crate::Error::api(503, "upstream down");
+        let mcp = api_err("Search failed", &err);
+        let data = mcp
+            .data
+            .expect("MCP error must carry the problem+json envelope");
+        assert_eq!(
+            data["type"],
+            "https://github.com/zircote/nsip/blob/main/docs/reference/errors/api/error.md"
+        );
+        assert_eq!(data["status"], 503);
+        assert_eq!(data["exit_code"], 75);
+        assert!(
+            data["instance"]
+                .as_str()
+                .is_some_and(|s| s.starts_with("urn:nsip:"))
+        );
+    }
+
+    #[test]
+    fn internal_err_has_no_envelope() {
+        // Non-`crate::Error` failures (e.g. serialization) carry no envelope.
+        let mcp = internal_err("Serialization failed", "boom");
+        assert!(mcp.data.is_none());
     }
 
     // ------------------------------------------------------------------

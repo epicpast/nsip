@@ -12,9 +12,17 @@ use rmcp::model::{
 
 use crate::NsipClient;
 
-/// Map a crate-level error into an MCP internal error with context.
-fn prompt_err(context: &str, e: impl std::fmt::Display) -> rmcp::ErrorData {
-    rmcp::ErrorData::internal_error(format!("{context}: {e}"), None)
+/// Map a crate-level [`crate::Error`] into an MCP error with the RFC 9457
+/// problem+json envelope in `data` and a class-appropriate JSON-RPC code.
+/// See [`crate::mcp::problem_error`].
+fn prompt_err(context: &str, err: &crate::Error) -> rmcp::ErrorData {
+    super::problem_error(context, err)
+}
+
+/// Map a JSON serialization failure into an MCP internal error rather than
+/// silently emitting an empty string into the prompt body.
+fn serialize_err(e: &serde_json::Error) -> rmcp::ErrorData {
+    rmcp::ErrorData::internal_error(format!("Failed to serialize prompt data: {e}"), None)
 }
 
 // ---------------------------------------------------------------------------
@@ -76,7 +84,7 @@ fn prompt_compare_breeding_stock() -> Prompt {
             "Compare multiple animals side-by-side with trait analysis and breeding recommendations",
         ),
         Some(vec![
-            PromptArgument::new("animal_ids")
+            PromptArgument::new("lpn_ids")
                 .with_title("Animal IDs")
                 .with_description("Comma-separated LPN IDs of animals to compare (2-5)")
                 .with_required(true),
@@ -182,9 +190,9 @@ pub async fn get_prompt<S: BuildHasher + Sync>(
         "flock-improvement" => flock_improvement(client, arguments, context).await,
         "select-replacement" => select_replacement(client, arguments, context).await,
         "interpret-ebvs" => interpret_ebvs(client, arguments).await,
-        _ => Err(rmcp::ErrorData::invalid_params(
-            format!("Unknown prompt: {name}"),
-            None,
+        _ => Err(prompt_err(
+            "get-prompt",
+            &crate::Error::validation(format!("Unknown prompt: {name}")),
         )),
     }
 }
@@ -209,9 +217,9 @@ async fn evaluate_animal<S: BuildHasher + Sync>(
     let details = client
         .animal_details(lpn_id)
         .await
-        .map_err(|e| prompt_err("Failed to fetch animal", e))?;
+        .map_err(|e| prompt_err("Failed to fetch animal", &e))?;
 
-    let details_json = serde_json::to_string_pretty(&details).unwrap_or_default();
+    let details_json = serde_json::to_string_pretty(&details).map_err(|e| serialize_err(&e))?;
 
     let (type_name, emphasis) = match animal_type {
         AnimalType::Ram => (
@@ -254,13 +262,13 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
     args: &std::collections::HashMap<String, String, S>,
     context: PromptContext<'_>,
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
-    let ids_str = require_arg(args, "animal_ids")?;
+    let ids_str = require_arg(args, "lpn_ids")?;
     let ids: Vec<&str> = ids_str.split(',').map(str::trim).collect();
 
     if ids.len() < 2 || ids.len() > 5 {
-        return Err(rmcp::ErrorData::invalid_params(
-            "animal_ids must contain 2-5 comma-separated LPN IDs",
-            None,
+        return Err(prompt_err(
+            "compare-breeding-stock",
+            &crate::Error::compare_arity("lpn_ids must contain 2-5 comma-separated LPN IDs"),
         ));
     }
 
@@ -276,11 +284,11 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
         let details = client
             .animal_details(id)
             .await
-            .map_err(|e| prompt_err(&format!("Failed to fetch {id}"), e))?;
+            .map_err(|e| prompt_err(&format!("Failed to fetch {id}"), &e))?;
         animals_data.push(details);
     }
 
-    let data_json = serde_json::to_string_pretty(&animals_data).unwrap_or_default();
+    let data_json = serde_json::to_string_pretty(&animals_data).map_err(|e| serialize_err(&e))?;
 
     let trait_focus = prefs.and_then(|p| p.traits).map_or_else(String::new, |t| {
         format!("\n\nFocus especially on these traits: {t}")
@@ -320,10 +328,10 @@ async fn plan_mating<S: BuildHasher + Sync>(
         client.lineage(dam_id),
     );
 
-    let sire_details = sire_details.map_err(|e| prompt_err("Failed to fetch sire", e))?;
-    let dam_details = dam_details.map_err(|e| prompt_err("Failed to fetch dam", e))?;
-    let sire_lineage = sire_lineage.map_err(|e| prompt_err("Sire lineage failed", e))?;
-    let dam_lineage = dam_lineage.map_err(|e| prompt_err("Dam lineage failed", e))?;
+    let sire_details = sire_details.map_err(|e| prompt_err("Failed to fetch sire", &e))?;
+    let dam_details = dam_details.map_err(|e| prompt_err("Failed to fetch dam", &e))?;
+    let sire_lineage = sire_lineage.map_err(|e| prompt_err("Sire lineage failed", &e))?;
+    let dam_lineage = dam_lineage.map_err(|e| prompt_err("Dam lineage failed", &e))?;
 
     let coi = super::analytics::calculate_coi(&sire_lineage, &dam_lineage);
     let complementarity = super::analytics::trait_complementarity(&sire_details, &dam_details);
@@ -350,7 +358,7 @@ async fn plan_mating<S: BuildHasher + Sync>(
         })),
     });
 
-    let data_json = serde_json::to_string_pretty(&mating_data).unwrap_or_default();
+    let data_json = serde_json::to_string_pretty(&mating_data).map_err(|e| serialize_err(&e))?;
 
     let system_msg = format!(
         "You are a sheep breeding advisor evaluating a planned mating. \
@@ -379,7 +387,10 @@ async fn flock_improvement<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let breed_id_str = require_arg(args, "breed_id")?;
     let breed_id: i64 = breed_id_str.parse().map_err(|_| {
-        rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id_str}"), None)
+        prompt_err(
+            "breed-id",
+            &crate::Error::invalid_breed_id(format!("Invalid breed_id: {breed_id_str}")),
+        )
     })?;
 
     let flock_id = args.get("flock_id");
@@ -396,8 +407,8 @@ async fn flock_improvement<S: BuildHasher + Sync>(
         client.trait_ranges(breed_id),
     );
 
-    let results = results.map_err(|e| prompt_err("Search failed", e))?;
-    let ranges = ranges.map_err(|e| prompt_err("Trait ranges failed", e))?;
+    let results = results.map_err(|e| prompt_err("Search failed", &e))?;
+    let ranges = ranges.map_err(|e| prompt_err("Trait ranges failed", &e))?;
 
     let flock_ctx = super::elicitation::try_elicit_opt::<super::elicitation::FlockContext>(
         context,
@@ -416,7 +427,7 @@ async fn flock_improvement<S: BuildHasher + Sync>(
         })),
     });
 
-    let data_json = serde_json::to_string_pretty(&flock_data).unwrap_or_default();
+    let data_json = serde_json::to_string_pretty(&flock_data).map_err(|e| serialize_err(&e))?;
     let scope = flock_id.map_or_else(|| "breed".to_string(), |f| format!("flock {f}"));
 
     let system_msg = format!(
@@ -446,7 +457,10 @@ async fn select_replacement<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let breed_id_str = require_arg(args, "breed_id")?;
     let breed_id: i64 = breed_id_str.parse().map_err(|_| {
-        rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id_str}"), None)
+        prompt_err(
+            "breed-id",
+            &crate::Error::invalid_breed_id(format!("Invalid breed_id: {breed_id_str}")),
+        )
     })?;
     let gender = require_arg(args, "gender")?;
     let target_trait = require_arg(args, "target_trait")?;
@@ -472,7 +486,7 @@ async fn select_replacement<S: BuildHasher + Sync>(
             Some(&criteria),
         )
         .await
-        .map_err(|e| prompt_err("Search failed", e))?;
+        .map_err(|e| prompt_err("Search failed", &e))?;
 
     let candidate_data = serde_json::json!({
         "breed_id": breed_id,
@@ -486,7 +500,7 @@ async fn select_replacement<S: BuildHasher + Sync>(
         })),
     });
 
-    let data_json = serde_json::to_string_pretty(&candidate_data).unwrap_or_default();
+    let data_json = serde_json::to_string_pretty(&candidate_data).map_err(|e| serialize_err(&e))?;
 
     let system_msg = format!(
         "You are a sheep breeding advisor helping select replacement {gender}s. \
@@ -516,9 +530,9 @@ async fn interpret_ebvs<S: BuildHasher + Sync>(
     let details = client
         .animal_details(lpn_id)
         .await
-        .map_err(|e| prompt_err("Failed to fetch animal", e))?;
+        .map_err(|e| prompt_err("Failed to fetch animal", &e))?;
 
-    let details_json = serde_json::to_string_pretty(&details).unwrap_or_default();
+    let details_json = serde_json::to_string_pretty(&details).map_err(|e| serialize_err(&e))?;
 
     let glossary = super::analytics::ebv_glossary();
     let mut glossary_text = String::new();
@@ -557,9 +571,9 @@ fn require_arg<'a, S: BuildHasher>(
     args: &'a std::collections::HashMap<String, String, S>,
     name: &str,
 ) -> Result<&'a str, rmcp::ErrorData> {
-    args.get(name).map(String::as_str).ok_or_else(|| {
-        rmcp::ErrorData::invalid_params(format!("Missing required argument: {name}"), None)
-    })
+    args.get(name)
+        .map(String::as_str)
+        .ok_or_else(|| prompt_err("argument", &crate::Error::missing_argument(name.to_owned())))
 }
 
 #[cfg(test)]
@@ -663,12 +677,12 @@ mod tests {
     }
 
     #[test]
-    fn compare_breeding_stock_has_animal_ids_argument() {
+    fn compare_breeding_stock_has_lpn_ids_argument() {
         let prompt = prompt_compare_breeding_stock();
         assert_eq!(prompt.name, "compare-breeding-stock");
         let args = prompt.arguments.unwrap();
         assert_eq!(args.len(), 1);
-        assert_eq!(args[0].name, "animal_ids");
+        assert_eq!(args[0].name, "lpn_ids");
         assert_eq!(args[0].required, Some(true));
         let desc = args[0].description.as_deref().unwrap();
         assert!(desc.contains("2-5"), "Should mention 2-5 animals");
@@ -826,7 +840,7 @@ mod tests {
     async fn get_prompt_compare_too_few_ids_returns_error() {
         let client = NsipClient::new();
         let mut args = std::collections::HashMap::new();
-        args.insert("animal_ids".to_string(), "SINGLE_ID".to_string());
+        args.insert("lpn_ids".to_string(), "SINGLE_ID".to_string());
         let result = get_prompt(&client, "compare-breeding-stock", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -840,7 +854,7 @@ mod tests {
     async fn get_prompt_compare_too_many_ids_returns_error() {
         let client = NsipClient::new();
         let mut args = std::collections::HashMap::new();
-        args.insert("animal_ids".to_string(), "A,B,C,D,E,F".to_string());
+        args.insert("lpn_ids".to_string(), "A,B,C,D,E,F".to_string());
         let result = get_prompt(&client, "compare-breeding-stock", &args, None).await;
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -1141,7 +1155,7 @@ mod tests {
 
             let client = mock_client(&server.uri());
             let mut args = std::collections::HashMap::new();
-            args.insert("animal_ids".to_string(), "CMP1, CMP2".to_string());
+            args.insert("lpn_ids".to_string(), "CMP1, CMP2".to_string());
 
             let result = get_prompt(&client, "compare-breeding-stock", &args, None)
                 .await

@@ -1,6 +1,6 @@
 [package]
 name = "nsip"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2024"
 rust-version = "1.92"
 description = "NSIP Search API client for nsipsearch.nsip.org/api"
@@ -13,6 +13,32 @@ readme = "README.md"
 keywords = ["nsip", "livestock", "api", "search"]
 categories = ["api-bindings"]
 
+# RFC 9457 error envelope configuration (read by build.rs).
+#
+# `error-type-uri-base` is the stable base for every error's `type` / `docs_url`
+# URI. Override it (e.g. in a fork) to point the error catalog at your own docs;
+# omit it to use the default below.
+#
+# `[package.metadata.nsip.error-slugs]` optionally remaps individual error pages.
+# Each key maps to the envelope `type` slug for one error; unspecified errors
+# keep their default slug. Valid keys (default slug):
+#   api-error (api/error)                empty-lpn-id (cli/empty-lpn-id)
+#   api-not-found (api/not-found)        invalid-breed-id (cli/invalid-breed-id)
+#   api-timeout (api/timeout)            page-range (cli/page-range)
+#   api-connection (api/connection)      empty-search (cli/empty-search)
+#   api-upstream-parse (api/upstream-parse)  compare-arity (cli/compare-arity)
+#   validation (cli/validation)          missing-argument (mcp/missing-argument)
+#   unknown-transport (cli/unknown-transport)  unknown-resource (mcp/unknown-resource)
+#                                        invalid-cursor (mcp/invalid-cursor)
+# Note: slug overrides affect the machine-readable envelope (`type`/`docs_url`);
+# the human (miette) terminal link uses the default slug. See
+# docs/reference/ERROR-ENVELOPE.md.
+[package.metadata.nsip]
+error-type-uri-base = "https://github.com/zircote/nsip/blob/main/docs/reference/errors"
+
+# [package.metadata.nsip.error-slugs]
+# api-timeout = "errors/timeout"
+
 [lib]
 name = "nsip"
 path = "crates/lib.rs"
@@ -24,6 +50,9 @@ path = "crates/main.rs"
 [dependencies]
 # Core dependencies
 thiserror = "2.0.18"
+
+# Diagnostic rendering (human-facing pretty error output; RFC 9457 JSON is hand-rolled)
+miette = { version = "7.6", features = ["fancy"] }
 
 # Async runtime
 tokio = { version = "1.52", features = ["full"] }
@@ -75,8 +104,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # OpenTelemetry (optional, behind `telemetry` feature)
 opentelemetry = { version = "0.32", optional = true }
 opentelemetry_sdk = { version = "0.32", optional = true }
-opentelemetry-otlp = { version = "0.32", optional = true }
 tracing-opentelemetry = { version = "0.33", optional = true }
+
+[build-dependencies]
+# Parse [package.metadata.nsip] from Cargo.toml in build.rs. Build-only — does
+# not affect the runtime dependency tree.
+toml = "1"
 
 [dev-dependencies]
 # Testing
@@ -151,6 +184,5 @@ default = []
 telemetry = [
     "dep:opentelemetry",
     "dep:opentelemetry_sdk",
-    "dep:opentelemetry-otlp",
     "dep:tracing-opentelemetry",
 ]

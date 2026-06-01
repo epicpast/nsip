@@ -189,7 +189,13 @@ Without the `telemetry` feature (the default), standard text-based tracing to st
 
 ## Tool Reference
 
-All tools return JSON results as text content. Errors use standard MCP error codes.
+All tools return JSON results as text content. Errors use standard MCP error
+codes and additionally carry an RFC 9457 `application/problem+json` envelope in
+the JSON-RPC error `data` field (`type`, `title`, `status`, `detail`,
+`instance`, `exit_code`, `suggested_fix`, `retry_after`, `docs_url`), so an
+agent consumer gets the same machine-readable contract as the CLI. See
+[`reference/ERROR-ENVELOPE.md`](reference/ERROR-ENVELOPE.md) and the
+[error catalog](reference/errors/).
 
 ### search
 
@@ -359,7 +365,7 @@ Compare 2-5 animals side-by-side on their EBV traits. Optionally filter to speci
 
 | Parameter    | Type            | Required | Description                                           |
 |--------------|-----------------|----------|-------------------------------------------------------|
-| `animal_ids` | array\<string\> | yes      | LPN IDs to compare (2-5 items)                        |
+| `lpn_ids` | array\<string\> | yes      | LPN IDs to compare (2-5 items)                        |
 | `traits`     | string          | no       | Comma-separated trait filter (e.g. `"BWT,WWT,YWT"`)   |
 
 **Example:**
@@ -368,7 +374,7 @@ Compare 2-5 animals side-by-side on their EBV traits. Optionally filter to speci
 {
   "tool": "compare",
   "arguments": {
-    "animal_ids": ["430735-0032", "430735-0041", "430735-0058"],
+    "lpn_ids": ["430735-0032", "430735-0041", "430735-0058"],
     "traits": "BWT,WWT,YWT,EMD"
   }
 }
@@ -645,7 +651,7 @@ Compare multiple animals side-by-side with trait-by-trait analysis. Fetches deta
 
 | Argument     | Required | Description                                         |
 |--------------|----------|-----------------------------------------------------|
-| `animal_ids` | yes      | Comma-separated LPN IDs of animals to compare (2-5) |
+| `lpn_ids` | yes      | Comma-separated LPN IDs of animals to compare (2-5) |
 
 ---
 

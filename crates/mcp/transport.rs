@@ -112,14 +112,14 @@ pub async fn serve_http(
     );
     let listener = tokio::net::TcpListener::bind(addr)
         .await
-        .map_err(|e| crate::Error::Connection(format!("Failed to bind {addr}: {e}")))?;
+        .map_err(|e| crate::Error::connection(format!("Failed to bind {addr}: {e}")))?;
 
     tracing::info!(addr = %addr, "MCP HTTP+SSE server listening");
 
     axum::serve(listener, router)
         .with_graceful_shutdown(async move { ct.cancelled_owned().await })
         .await
-        .map_err(|e| crate::Error::Connection(format!("MCP HTTP server error: {e}")))?;
+        .map_err(|e| crate::Error::connection(format!("MCP HTTP server error: {e}")))?;
 
     Ok(())
 }

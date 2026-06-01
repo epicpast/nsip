@@ -459,12 +459,32 @@ impl AnimalDetails {
 
         if is_nested {
             Ok(Self::from_nested_format(data))
-        } else if data.get("lpnId").is_some() {
+        } else if Self::has_string_identity(data, "lpnId") {
             // Search result row: camelCase fields with inline trait values
             Ok(Self::from_search_result(data))
-        } else {
+        } else if Self::has_string_identity(data, "LpnId") {
+            // Legacy flat PascalCase format.
             Ok(Self::from_legacy_format(data))
+        } else {
+            // No recognized identity field: a 200 body that is not an animal
+            // record (including one where the identity key is present but
+            // `null`, non-string, or empty). Fail loudly instead of returning a
+            // record with an empty `lpn_id` and zeroed traits masquerading as
+            // valid.
+            Err(crate::Error::parse(
+                "animal details response missing identity field \
+                 (expected `data`, `lpnId`, or `LpnId`)",
+            ))
         }
+    }
+
+    /// Whether `key` is present on `data` as a non-empty string. Used to detect
+    /// the response shape: an explicit `null`, a non-string, or an empty string
+    /// is not a usable identity and must not be treated as one.
+    fn has_string_identity(data: &serde_json::Value, key: &str) -> bool {
+        data.get(key)
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|s| !s.is_empty())
     }
 
     fn from_nested_format(data: &serde_json::Value) -> Self {
@@ -692,7 +712,9 @@ impl Progeny {
     ///
     /// # Errors
     ///
-    /// Returns `crate::Error::Parse` if the response cannot be interpreted.
+    /// Currently infallible — missing or malformed fields degrade to defaults
+    /// and an empty result set is valid. Returns [`crate::Result`] for API
+    /// consistency with the other model constructors and forward compatibility.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn from_api_response(
         data: &serde_json::Value,
@@ -899,7 +921,8 @@ impl Lineage {
     ///
     /// # Errors
     ///
-    /// Returns `crate::Error::Parse` if the response cannot be interpreted.
+    /// Currently infallible — a tree with no parents is valid. Returns
+    /// [`crate::Result`] for API consistency with the other model constructors.
     pub fn from_api_response(data: &serde_json::Value) -> crate::Result<Self> {
         let node = if data
             .get("data")
@@ -958,7 +981,9 @@ impl SearchResults {
     ///
     /// # Errors
     ///
-    /// Returns `crate::Error::Parse` if the response cannot be interpreted.
+    /// Currently infallible — missing or malformed fields degrade to defaults
+    /// and an empty result set is valid. Returns [`crate::Result`] for API
+    /// consistency with the other model constructors and forward compatibility.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn from_api_response(
         data: &serde_json::Value,
@@ -1193,6 +1218,50 @@ mod tests {
 
         // Should have 5 traits total
         assert_eq!(details.traits.len(), 5);
+    }
+
+    #[test]
+    fn animal_details_rejects_body_without_identity() {
+        // A 200 body with no `data`, `lpnId`, or `LpnId` is not an animal
+        // record; it must fail rather than masquerade as a valid empty record.
+        let garbage = serde_json::json!({ "unexpected": "payload" });
+        let err = AnimalDetails::from_api_response(&garbage).unwrap_err();
+        assert!(matches!(err, crate::Error::Parse { .. }), "got {err:?}");
+    }
+
+    #[test]
+    fn animal_details_rejects_present_but_unusable_identity() {
+        // The identity key may be present yet unusable: an explicit `null`, an
+        // empty string, or a non-string. `.is_some()` would treat the key as
+        // present and emit an empty-`lpn_id` record — the exact masquerade the
+        // identity guard exists to prevent. Each must fail with `Parse`.
+        for body in [
+            serde_json::json!({ "lpnId": null }),
+            serde_json::json!({ "lpnId": "" }),
+            serde_json::json!({ "lpnId": 12345 }),
+            serde_json::json!({ "LpnId": null }),
+        ] {
+            let err = AnimalDetails::from_api_response(&body).unwrap_err();
+            assert!(
+                matches!(err, crate::Error::Parse { .. }),
+                "body {body} should be rejected, got {err:?}"
+            );
+        }
+
+        // A genuine non-empty identity still parses.
+        let ok = serde_json::json!({ "lpnId": "REAL1" });
+        assert_eq!(
+            AnimalDetails::from_api_response(&ok).unwrap().lpn_id,
+            "REAL1"
+        );
+    }
+
+    #[test]
+    fn animal_details_accepts_legacy_pascalcase() {
+        // A valid legacy record (PascalCase `LpnId`) still parses.
+        let legacy = serde_json::json!({ "LpnId": "LEGACY1" });
+        let details = AnimalDetails::from_api_response(&legacy).unwrap();
+        assert_eq!(details.lpn_id, "LEGACY1");
     }
 
     #[test]

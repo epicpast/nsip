@@ -19,6 +19,7 @@ pub mod store;
 pub mod token;
 
 use config::OAuthConfig;
+use error::OAuthError;
 use github::{GitHubApi, GitHubClient};
 use jwt::JwtManager;
 use middleware::PatCache;
@@ -45,20 +46,24 @@ impl OAuthState {
     /// backend.
     ///
     /// Uses the live [`GitHubClient`] for GitHub API calls.
-    #[must_use]
-    pub fn new(config: OAuthConfig, store: Arc<dyn OAuthStoreBackend>) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OAuthError::ServerError`] if the GitHub HTTP client cannot be
+    /// constructed (see [`GitHubClient::new`]).
+    pub fn new(config: OAuthConfig, store: Arc<dyn OAuthStoreBackend>) -> Result<Self, OAuthError> {
         let jwt = JwtManager::new(&config.auth_secret, &config.issuer, config.token_ttl_secs);
         let github: Arc<dyn GitHubApi> = Arc::new(GitHubClient::new(
             config.github_client_id.clone(),
             config.github_client_secret.clone(),
-        ));
-        Self {
+        )?);
+        Ok(Self {
             config: Arc::new(config),
             store,
             jwt,
             github,
             pat_cache: middleware::new_pat_cache(),
-        }
+        })
     }
 }
 
@@ -114,7 +119,7 @@ mod tests {
     fn oauth_state_new_construction() {
         let config = make_config();
         let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
-        let state = OAuthState::new(config, store);
+        let state = OAuthState::new(config, store).expect("build oauth state");
         assert_eq!(state.config.github_client_id, "gh-client-id");
         assert_eq!(state.config.issuer, "https://example.com");
     }
@@ -123,7 +128,7 @@ mod tests {
     fn oauth_state_clone_shares_config() {
         let config = make_config();
         let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
-        let state = OAuthState::new(config, store);
+        let state = OAuthState::new(config, store).expect("build oauth state");
         let cloned = state.clone();
         assert_eq!(
             state.config.github_client_id,
@@ -135,7 +140,7 @@ mod tests {
     fn oauth_state_has_pat_cache() {
         let config = make_config();
         let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
-        let state = OAuthState::new(config, store);
+        let state = OAuthState::new(config, store).expect("build oauth state");
         assert!(state.pat_cache.read().unwrap().is_empty());
     }
 
@@ -143,7 +148,7 @@ mod tests {
     fn oauth_router_builds_without_panic() {
         let config = make_config();
         let store = Arc::new(InMemoryOAuthStore::new()) as Arc<dyn OAuthStoreBackend>;
-        let state = OAuthState::new(config, store);
+        let state = OAuthState::new(config, store).expect("build oauth state");
         let _router = super::oauth_router(state);
     }
 }

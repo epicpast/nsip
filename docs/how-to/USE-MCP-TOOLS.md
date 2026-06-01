@@ -174,7 +174,7 @@ Returns paginated offspring list.
 {
   "tool": "compare",
   "arguments": {
-    "animal_ids": ["430735-0032", "430735-0041"],
+    "lpn_ids": ["430735-0032", "430735-0041"],
     "traits": "BWT,WWT,YWT,PEMD"
   }
 }
@@ -249,7 +249,7 @@ MCP prompts are pre-built workflows that fetch data and construct structured bre
 |---------------------------|-----------------------------------------------------|---------------------------------|
 | `evaluate-ram`            | Assess a ram's breeding value                       | `lpn_id`                        |
 | `evaluate-ewe`            | Assess a ewe's breeding value                       | `lpn_id`                        |
-| `compare-breeding-stock`  | Side-by-side trait analysis of 2-5 animals          | `animal_ids` (comma-separated)  |
+| `compare-breeding-stock`  | Side-by-side trait analysis of 2-5 animals          | `lpn_ids` (comma-separated)  |
 | `plan-mating`             | Mating assessment with COI and trait complementarity | `sire_id`, `dam_id`             |
 | `flock-improvement`       | Identify trait gaps and improvement opportunities   | `breed_id`, optional `flock_id` |
 | `select-replacement`      | Find top replacement candidates                     | `breed_id`, `gender`, `target_trait` |
