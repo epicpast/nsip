@@ -11,7 +11,10 @@ This guide covers every customization point in the template, from automatic plac
 
 ## 1. Placeholder Replacement
 
-The `template-init.yml` workflow runs automatically on the first push to `main` after you create a repo from this template. It replaces all template placeholders with your project's values.
+After you create a repo from this template, replace all template placeholders
+with your project's values (the automated `template-init.yml` workflow is not
+included in this repository — replace manually with `sed`/`rg`, or restore a
+template-init workflow to automate it).
 
 ### Placeholders
 

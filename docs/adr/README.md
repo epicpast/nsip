@@ -52,12 +52,13 @@ If a decision is no longer relevant but hasn't been superseded:
 
 ## Viewing ADRs
 
-ADRs are automatically validated and compiled into an HTML viewer on every push to main:
+ADRs are plain Markdown files in `docs/adr/` and can be read directly in the
+repository or any Markdown viewer. They are validated and rendered locally with
+[adrscope](https://github.com/zircote/adrscope).
 
-- **Validation**: `.github/workflows/adr-validation.yml` validates ADR format
-- **HTML Viewer**: `.github/workflows/adr-viewer.yml` generates browsable HTML documentation
-
-The HTML viewer is uploaded as a build artifact and can be downloaded from the Actions tab.
+> The automated ADR validation/viewer workflows are not currently included in
+> this repository; run adrscope locally if you need format validation or an
+> HTML viewer.
 
 ## ADR Index
 

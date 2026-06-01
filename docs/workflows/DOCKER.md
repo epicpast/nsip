@@ -16,9 +16,6 @@ attestation to the image for supply-chain transparency.
 **Permissions:** `contents: read`, `packages: write`, `id-token: write`,
 `attestations: write`
 
-> For publishing to Docker Hub in addition to GHCR, see the
-> [Docker Hub workflow](DOCKER-HUB.md).
-
 ## Image Tags
 
 Docker metadata is extracted automatically with the following tag patterns:
