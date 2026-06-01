@@ -15,7 +15,7 @@ permissions:
 jobs:
   msi:
     name: Build Windows MSI Installer
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 40
     
     steps:
