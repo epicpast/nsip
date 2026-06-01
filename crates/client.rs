@@ -546,7 +546,9 @@ impl NsipClient {
     /// ```
     pub async fn trait_ranges(&self, breed_id: i64) -> Result<serde_json::Value> {
         if breed_id <= 0 {
-            return Err(Error::Validation(format!("invalid breed_id: {breed_id}")));
+            return Err(Error::invalid_breed_id(format!(
+                "invalid breed_id: {breed_id}"
+            )));
         }
 
         let id_str = breed_id.to_string();
@@ -595,7 +597,7 @@ impl NsipClient {
         criteria: Option<&SearchCriteria>,
     ) -> Result<SearchResults> {
         if page_size == 0 || page_size > 100 {
-            return Err(Error::Validation(format!(
+            return Err(Error::page_range(format!(
                 "page_size must be 1-100, got {page_size}"
             )));
         }
@@ -650,9 +652,7 @@ impl NsipClient {
     /// ```
     pub async fn animal_details(&self, search_string: &str) -> Result<AnimalDetails> {
         if search_string.trim().is_empty() {
-            return Err(Error::Validation(
-                "search_string cannot be empty".to_string(),
-            ));
+            return Err(Error::empty_search("search_string cannot be empty"));
         }
 
         let data = self
@@ -686,7 +686,7 @@ impl NsipClient {
     /// ```
     pub async fn lineage(&self, lpn_id: &str) -> Result<Lineage> {
         if lpn_id.trim().is_empty() {
-            return Err(Error::Validation("lpn_id cannot be empty".to_string()));
+            return Err(Error::empty_lpn_id());
         }
 
         let data = self.get("details/getLineage", &[("lpnId", lpn_id)]).await?;
@@ -717,10 +717,10 @@ impl NsipClient {
     /// ```
     pub async fn progeny(&self, lpn_id: &str, page: u32, page_size: u32) -> Result<Progeny> {
         if lpn_id.trim().is_empty() {
-            return Err(Error::Validation("lpn_id cannot be empty".to_string()));
+            return Err(Error::empty_lpn_id());
         }
         if page_size == 0 {
-            return Err(Error::Validation(format!(
+            return Err(Error::page_range(format!(
                 "page_size must be >= 1, got {page_size}"
             )));
         }
@@ -766,7 +766,7 @@ impl NsipClient {
     /// ```
     pub async fn search_by_lpn(&self, lpn_id: &str) -> Result<AnimalProfile> {
         if lpn_id.trim().is_empty() {
-            return Err(Error::Validation("lpn_id cannot be empty".to_string()));
+            return Err(Error::empty_lpn_id());
         }
 
         let (details_res, lineage_res, progeny_res) = tokio::join!(
@@ -836,16 +836,16 @@ mod tests {
             let client = NsipClient::new();
 
             let err = client.animal_details("").await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
 
             let err = client.animal_details("   ").await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
 
             let err = client.lineage("").await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
 
             let err = client.progeny("", 0, 10).await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
         });
     }
 
@@ -863,13 +863,13 @@ mod tests {
                 .search_animals(0, 0, None, None, None, None)
                 .await
                 .unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
 
             let err = client
                 .search_animals(0, 101, None, None, None, None)
                 .await
                 .unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
         });
     }
 
@@ -883,10 +883,10 @@ mod tests {
         rt.block_on(async {
             let client = NsipClient::new();
             let err = client.trait_ranges(0).await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
 
             let err = client.trait_ranges(-5).await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
         });
     }
 
@@ -1396,17 +1396,17 @@ mod tests {
         async fn progeny_validation_zero_page_size() {
             let client = NsipClient::new();
             let err = client.progeny("LPN1", 0, 0).await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
         }
 
         #[tokio::test]
         async fn search_by_lpn_validation_empty_id() {
             let client = NsipClient::new();
             let err = client.search_by_lpn("").await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
 
             let err = client.search_by_lpn("  ").await.unwrap_err();
-            assert!(matches!(err, Error::Validation(_)));
+            assert!(matches!(err, Error::Validation { .. }));
         }
 
         // -- Retry behavior ---------------------------------------------------

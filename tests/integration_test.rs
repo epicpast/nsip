@@ -59,7 +59,7 @@ fn test_search_criteria_default() {
 #[test]
 fn test_error_types() {
     // Test Validation error
-    let err = Error::Validation("bad input".to_string());
+    let err = Error::validation("bad input");
     let display = format!("{err}");
     assert!(display.contains("validation error"));
     assert!(display.contains("bad input"));

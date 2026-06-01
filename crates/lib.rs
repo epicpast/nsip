@@ -15,10 +15,40 @@ pub use models::{
     TraitRangeFilter,
 };
 pub use problem::{CodeAction, ProblemDetails, RetryAfter};
+// `ValidationKind` is defined below and re-exported here for a flat public path.
 
 /// Boxed, thread-safe source error used to preserve the cause chain through
 /// re-wraps (see [`std::error::Error::source`]).
 type BoxSource = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+/// Operation-specific classification for [`Error::Validation`].
+///
+/// Each kind selects a distinct RFC 9457 problem `type` URI and tailored
+/// recovery guidance (see [`crate::problem`] and the error catalog under
+/// `docs/reference/errors/`), so an agent can dispatch on the specific input
+/// failure rather than a single generic "validation error".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ValidationKind {
+    /// An LPN ID argument was empty or blank.
+    EmptyLpnId,
+    /// A breed ID was non-positive or could not be parsed.
+    InvalidBreedId,
+    /// A pagination parameter (`page` / `page_size`) was out of range.
+    PageRange,
+    /// A search request carried no usable filter.
+    EmptySearch,
+    /// A comparison was given fewer than 2 or more than 5 animals.
+    CompareArity,
+    /// A required MCP argument was absent.
+    MissingArgument,
+    /// An MCP resource URI did not match any known resource or template.
+    UnknownResource,
+    /// An MCP transport name other than `stdio` / `http` was requested.
+    UnknownTransport,
+    /// Any other input validation failure (the generic fallback).
+    Other,
+}
 
 /// Error type for NSIP operations.
 ///
@@ -39,14 +69,20 @@ type BoxSource = Box<dyn std::error::Error + Send + Sync + 'static>;
 #[derive(Error, Debug, Diagnostic)]
 #[non_exhaustive]
 pub enum Error {
-    /// Invalid input parameters (validation failure).
-    #[error("validation error: {0}")]
+    /// Invalid input parameters (validation failure). The `kind` selects the
+    /// specific problem `type` and guidance; see [`ValidationKind`].
+    #[error("validation error: {message}")]
     #[diagnostic(
         code("nsip::cli::validation"),
         url("https://github.com/zircote/nsip/blob/main/docs/reference/errors/cli/validation.md"),
         help("correct the input parameters and retry")
     )]
-    Validation(String),
+    Validation {
+        /// Operation-specific classification selecting the problem `type`.
+        kind: ValidationKind,
+        /// Human-readable description of the validation failure.
+        message: String,
+    },
 
     /// The API returned a non-success HTTP status.
     #[error("API error (HTTP {status}): {message}")]
@@ -128,10 +164,70 @@ pub enum Error {
 }
 
 impl Error {
-    /// Construct a [`Error::Validation`] from any string-like message.
+    /// Construct a generic [`Error::Validation`] ([`ValidationKind::Other`]).
     #[must_use]
     pub fn validation(message: impl Into<String>) -> Self {
-        Self::Validation(message.into())
+        Self::Validation {
+            kind: ValidationKind::Other,
+            message: message.into(),
+        }
+    }
+
+    /// Construct a [`Error::Validation`] with an explicit [`ValidationKind`].
+    #[must_use]
+    pub fn validation_kind(kind: ValidationKind, message: impl Into<String>) -> Self {
+        Self::Validation {
+            kind,
+            message: message.into(),
+        }
+    }
+
+    /// [`ValidationKind::EmptyLpnId`] — an LPN ID argument was empty.
+    #[must_use]
+    pub fn empty_lpn_id() -> Self {
+        Self::validation_kind(ValidationKind::EmptyLpnId, "lpn_id cannot be empty")
+    }
+
+    /// [`ValidationKind::InvalidBreedId`] — a breed ID was non-positive or unparseable.
+    #[must_use]
+    pub fn invalid_breed_id(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::InvalidBreedId, message)
+    }
+
+    /// [`ValidationKind::PageRange`] — a pagination parameter was out of range.
+    #[must_use]
+    pub fn page_range(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::PageRange, message)
+    }
+
+    /// [`ValidationKind::EmptySearch`] — a search request carried no filter.
+    #[must_use]
+    pub fn empty_search(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::EmptySearch, message)
+    }
+
+    /// [`ValidationKind::CompareArity`] — comparison given <2 or >5 animals.
+    #[must_use]
+    pub fn compare_arity(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::CompareArity, message)
+    }
+
+    /// [`ValidationKind::MissingArgument`] — a required MCP argument was absent.
+    #[must_use]
+    pub fn missing_argument(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::MissingArgument, message)
+    }
+
+    /// [`ValidationKind::UnknownResource`] — an MCP resource URI was unknown.
+    #[must_use]
+    pub fn unknown_resource(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::UnknownResource, message)
+    }
+
+    /// [`ValidationKind::UnknownTransport`] — an unsupported MCP transport.
+    #[must_use]
+    pub fn unknown_transport(message: impl Into<String>) -> Self {
+        Self::validation_kind(ValidationKind::UnknownTransport, message)
     }
 
     /// Construct a [`Error::NotFound`] from any string-like message.

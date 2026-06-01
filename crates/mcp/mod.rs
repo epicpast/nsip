@@ -35,6 +35,40 @@ use crate::NsipClient;
 /// Default page size for cursor-based pagination of list endpoints.
 const DEFAULT_PAGE_SIZE: usize = 25;
 
+/// Slugify a human operation label into an `instance`-URN command token, e.g.
+/// `"Search failed"` -> `"search-failed"`.
+fn slugify(label: &str) -> String {
+    let mut out = String::with_capacity(label.len());
+    let mut prev_dash = false;
+    for c in label.chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c.to_ascii_lowercase());
+            prev_dash = false;
+        } else if !out.is_empty() && !prev_dash {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    out.trim_end_matches('-').to_owned()
+}
+
+/// Build an MCP error from a [`crate::Error`], attaching the RFC 9457
+/// problem+json envelope as the `data` payload and selecting the JSON-RPC error
+/// code by class: caller errors (validation / not-found) map to
+/// `invalid_params`, everything else to `internal_error`. The `context` labels
+/// the operation (also slugified into the envelope `instance`).
+pub(crate) fn problem_error(context: &str, err: &crate::Error) -> McpError {
+    let pd = err.to_problem_details(&slugify(context));
+    let data = serde_json::to_value(pd).ok();
+    let message = format!("{context}: {err}");
+    match err {
+        crate::Error::Validation { .. } | crate::Error::NotFound(_) => {
+            McpError::invalid_params(message, data)
+        },
+        _ => McpError::internal_error(message, data),
+    }
+}
+
 /// Paginate a slice with opaque cursor-based pagination.
 ///
 /// Returns the current page and an optional cursor for the next page.
@@ -244,6 +278,40 @@ pub async fn serve_stdio(sets: tool_sets::EnabledToolSets) -> crate::Result<()> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn slugify_operation_labels() {
+        assert_eq!(slugify("Search failed"), "search-failed");
+        assert_eq!(
+            slugify("Failed to fetch details"),
+            "failed-to-fetch-details"
+        );
+        assert_eq!(slugify("compare"), "compare");
+        assert_eq!(slugify("  weird --- spacing!! "), "weird-spacing");
+    }
+
+    #[test]
+    fn problem_error_selects_code_and_envelope_by_class() {
+        // Validation -> invalid_params (-32602), enveloped, tool in instance.
+        let v = problem_error("compare", &crate::Error::compare_arity("need 2-5"));
+        let vj = serde_json::to_value(&v).expect("serialize");
+        assert_eq!(vj["code"], -32602);
+        assert_eq!(
+            vj["data"]["type"],
+            "https://github.com/zircote/nsip/blob/main/docs/reference/errors/cli/compare-arity.md"
+        );
+        assert!(
+            vj["data"]["instance"]
+                .as_str()
+                .is_some_and(|s| s.starts_with("urn:nsip:compare:"))
+        );
+
+        // Transient upstream -> internal_error (-32603), enveloped.
+        let t = problem_error("search", &crate::Error::api(503, "down"));
+        let tj = serde_json::to_value(&t).expect("serialize");
+        assert_eq!(tj["code"], -32603);
+        assert_eq!(tj["data"]["status"], 503);
+    }
 
     #[test]
     fn server_creation() {

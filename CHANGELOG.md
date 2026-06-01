@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--format json` and also selects error output.
 - MCP tool errors now carry the same problem+json envelope in the JSON-RPC
   error `data` field.
+- **Per-operation error taxonomy.** `Error::Validation` now carries a
+  [`ValidationKind`] (empty-lpn-id, invalid-breed-id, page-range, empty-search,
+  compare-arity, missing-argument, unknown-resource, unknown-transport, other),
+  each with its own `type` URI, catalog page, and tailored `suggested_fix`.
+  Every MCP tool/prompt/resource validation path is now enveloped (previously
+  bare `invalid_params`/`resource_not_found`), the JSON-RPC code is selected by
+  error class (caller → `invalid_params`, unknown-resource → `resource_not_found`,
+  upstream → `internal_error`), and the `instance` URN now identifies the
+  operation (e.g. `urn:nsip:compare:…`).
 - HTTP client now handles `429` and parses the `Retry-After` header
   (delta-seconds and HTTP-date forms), populating `retry_after` and honoring the
   delay on retry.
@@ -34,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `nsip` invocation emits the error envelope rather than clap's raw usage text.
 - `AnimalDetails::from_api_response` now fails (`Error::Parse`) on a 200 body
   with no recognized identity field instead of returning an empty record.
+- **BREAKING:** `Error::Validation(String)` is now a struct variant
+  `Error::Validation { kind: ValidationKind, message: String }`.
 - OAuth `OAuthConfig` `Debug` redacts `github_client_secret` and `auth_secret`;
   transient OAuth `503` responses now advertise a `Retry-After` header.
 

@@ -20,7 +20,60 @@ use std::borrow::Cow;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::Error;
+use crate::{Error, ValidationKind};
+
+/// `<domain>/<slug>` path for a [`ValidationKind`]; the per-operation problem type.
+const fn validation_slug(kind: ValidationKind) -> &'static str {
+    match kind {
+        ValidationKind::EmptyLpnId => "cli/empty-lpn-id",
+        ValidationKind::InvalidBreedId => "cli/invalid-breed-id",
+        ValidationKind::PageRange => "cli/page-range",
+        ValidationKind::EmptySearch => "cli/empty-search",
+        ValidationKind::CompareArity => "cli/compare-arity",
+        ValidationKind::MissingArgument => "mcp/missing-argument",
+        ValidationKind::UnknownResource => "mcp/unknown-resource",
+        ValidationKind::UnknownTransport => "cli/unknown-transport",
+        ValidationKind::Other => "cli/validation",
+    }
+}
+
+/// Stable, type-level title for a [`ValidationKind`].
+const fn validation_title(kind: ValidationKind) -> &'static str {
+    match kind {
+        ValidationKind::EmptyLpnId => "LPN ID must not be empty",
+        ValidationKind::InvalidBreedId => "Breed ID is invalid",
+        ValidationKind::PageRange => "Pagination parameter out of range",
+        ValidationKind::EmptySearch => "Search request has no filter",
+        ValidationKind::CompareArity => "Comparison requires 2 to 5 animals",
+        ValidationKind::MissingArgument => "Required argument is missing",
+        ValidationKind::UnknownResource => "Unknown resource URI",
+        ValidationKind::UnknownTransport => "Unknown MCP transport",
+        ValidationKind::Other => "Invalid input parameters",
+    }
+}
+
+/// Tailored, per-operation `suggested_fix` for a [`ValidationKind`]. Every kind
+/// has a deterministic fix; applicability markers are catalogued in
+/// `docs/reference/ERRORS.md` keyed by `type`.
+fn validation_fix(kind: ValidationKind, message: &str) -> String {
+    match kind {
+        ValidationKind::EmptyLpnId => "provide a non-empty LPN ID".to_owned(),
+        ValidationKind::InvalidBreedId => {
+            "provide a positive integer breed id (see the breed_groups tool)".to_owned()
+        },
+        ValidationKind::PageRange => "use page >= 1 and page_size between 1 and 100".to_owned(),
+        ValidationKind::EmptySearch => {
+            "provide a non-empty query (an LPN ID or name) or at least one search filter".to_owned()
+        },
+        ValidationKind::CompareArity => "pass between 2 and 5 LPN IDs".to_owned(),
+        ValidationKind::MissingArgument => format!("provide the required argument: {message}"),
+        ValidationKind::UnknownResource => {
+            "use a documented nsip:// resource URI (see nsip://glossary)".to_owned()
+        },
+        ValidationKind::UnknownTransport => "use --transport stdio or --transport http".to_owned(),
+        ValidationKind::Other => format!("correct the input and retry: {message}"),
+    }
+}
 
 /// Stable base for `type`/`docs_url` URIs. Per the committed policy the URI is
 /// stable forever (no path version); semantic changes are tracked in the
@@ -106,7 +159,7 @@ impl Error {
     #[must_use]
     pub const fn slug_path(&self) -> &'static str {
         match self {
-            Self::Validation(_) => "cli/validation",
+            Self::Validation { kind, .. } => validation_slug(*kind),
             Self::Api { .. } => "api/error",
             Self::NotFound(_) => "api/not-found",
             Self::Timeout { .. } => "api/timeout",
@@ -125,7 +178,7 @@ impl Error {
     #[must_use]
     pub const fn title(&self) -> &'static str {
         match self {
-            Self::Validation(_) => "Invalid input parameters",
+            Self::Validation { kind, .. } => validation_title(*kind),
             Self::Api { .. } => "Upstream API returned an error",
             Self::NotFound(_) => "Requested resource was not found",
             Self::Timeout { .. } => "Request to the NSIP API timed out",
@@ -156,7 +209,7 @@ impl Error {
     /// upstream HTTP status and classifies 429/5xx as transient.
     const fn exit_and_status(&self) -> (i32, u16) {
         match self {
-            Self::Validation(_) => (1, 400),
+            Self::Validation { .. } => (1, 400),
             Self::NotFound(_) => (1, 404),
             Self::Parse { .. } => (3, 502),
             Self::Timeout { .. } => (75, 504),
@@ -177,7 +230,7 @@ impl Error {
     #[must_use]
     pub fn suggested_fix(&self) -> Option<String> {
         let s = match self {
-            Self::Validation(msg) => format!("correct the input and retry: {msg}"),
+            Self::Validation { kind, message } => return Some(validation_fix(*kind, message)),
             Self::NotFound(_) => {
                 "verify the identifier exists in the NSIP database (try `nsip search`)".to_owned()
             },
@@ -208,7 +261,7 @@ impl Error {
             Self::Api { retry_after, .. }
             | Self::Timeout { retry_after, .. }
             | Self::Connection { retry_after, .. } => retry_after.clone(),
-            Self::Validation(_) | Self::NotFound(_) | Self::Parse { .. } => None,
+            Self::Validation { .. } | Self::NotFound(_) | Self::Parse { .. } => None,
         }
     }
 
@@ -382,6 +435,40 @@ mod tests {
 
         // A constructor-built error (no upstream) has no source — that's fine.
         assert!(std::error::Error::source(&Error::validation("x")).is_none());
+    }
+
+    /// Every `ValidationKind` yields a distinct, well-formed envelope: a
+    /// `cli/` or `mcp/` slug, a non-empty tailored title and fix, status 400,
+    /// exit code 1, and no retry hint.
+    #[test]
+    fn every_validation_kind_maps_cleanly() {
+        let kinds = [
+            ValidationKind::EmptyLpnId,
+            ValidationKind::InvalidBreedId,
+            ValidationKind::PageRange,
+            ValidationKind::EmptySearch,
+            ValidationKind::CompareArity,
+            ValidationKind::MissingArgument,
+            ValidationKind::UnknownResource,
+            ValidationKind::UnknownTransport,
+            ValidationKind::Other,
+        ];
+        let mut slugs = std::collections::HashSet::new();
+        for kind in kinds {
+            let err = Error::validation_kind(kind, "field");
+            let pd = err.to_problem_details("op");
+            let slug = err.slug_path();
+            assert!(
+                slug.starts_with("cli/") || slug.starts_with("mcp/"),
+                "{kind:?} slug: {slug}"
+            );
+            assert!(slugs.insert(slug), "duplicate slug for {kind:?}: {slug}");
+            assert_eq!(pd.status, 400);
+            assert_eq!(pd.exit_code, 1);
+            assert!(!pd.title.is_empty());
+            assert!(pd.suggested_fix.is_some(), "{kind:?} must have a fix");
+            assert!(pd.retry_after.is_none());
+        }
     }
 
     /// `retry_after` round-trips through both JSON forms (untagged enum).

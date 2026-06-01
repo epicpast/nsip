@@ -197,7 +197,7 @@ fn generate_man_pages(out_dir: Option<String>) -> Result<(), nsip::Error> {
 
     let path = std::path::Path::new(&dir);
     std::fs::create_dir_all(path)
-        .map_err(|e| nsip::Error::Validation(format!("cannot create directory {dir}: {e}")))?;
+        .map_err(|e| nsip::Error::validation(format!("cannot create directory {dir}: {e}")))?;
 
     render_man_page(&cmd, path, "nsip")?;
 
@@ -223,7 +223,7 @@ fn render_man_page(
         .map_err(|e| nsip::Error::parse(format!("man page render error: {e}")))?;
     let filename = format!("{name}.1");
     std::fs::write(dir.join(&filename), buf)
-        .map_err(|e| nsip::Error::Validation(format!("cannot write {filename}: {e}")))
+        .map_err(|e| nsip::Error::validation(format!("cannot write {filename}: {e}")))
 }
 
 /// Initialise the tracing subscriber.
@@ -489,10 +489,9 @@ async fn run(cli: Cli) -> Result<(), nsip::Error> {
             let oauth_state = if auth {
                 let config =
                     nsip::mcp::oauth::config::OAuthConfig::try_from_env().ok_or_else(|| {
-                        nsip::Error::Validation(
+                        nsip::Error::validation(
                             "--auth requires NSIP_GITHUB_CLIENT_ID, NSIP_GITHUB_CLIENT_SECRET, \
-                         NSIP_AUTH_SECRET, and NSIP_AUTH_BASE_URL environment variables"
-                                .into(),
+                         NSIP_AUTH_SECRET, and NSIP_AUTH_BASE_URL environment variables",
                         )
                     })?;
                 let store = std::sync::Arc::new(nsip::mcp::oauth::store::InMemoryOAuthStore::new())
@@ -513,7 +512,7 @@ async fn run(cli: Cli) -> Result<(), nsip::Error> {
                 },
                 "http" => nsip::mcp::serve_http(&host, port, sets, oauth_state).await?,
                 other => {
-                    return Err(nsip::Error::Validation(format!(
+                    return Err(nsip::Error::unknown_transport(format!(
                         "unknown transport: {other}, expected 'stdio' or 'http'"
                     )));
                 },

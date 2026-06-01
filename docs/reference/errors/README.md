@@ -7,9 +7,28 @@ envelope (see [ERROR-ENVELOPE.md](../ERROR-ENVELOPE.md)).
 
 ## Catalog
 
+### Operation / input validation (`Error::Validation`, by [`ValidationKind`])
+
+Each carries `status` 400, `exit_code` 1, class caller, and no `retry_after`.
+Over MCP these map to the `invalid_params` JSON-RPC code (`mcp/unknown-resource`
+keeps `resource_not_found`).
+
+| `type` slug | `ValidationKind` | `suggested_fix` applicability |
+|---|---|---|
+| [`cli/validation`](cli/validation.md) | `Other` (generic fallback) | `maybe_incorrect` |
+| [`cli/empty-lpn-id`](cli/empty-lpn-id.md) | `EmptyLpnId` | `machine_applicable` |
+| [`cli/invalid-breed-id`](cli/invalid-breed-id.md) | `InvalidBreedId` | `machine_applicable` |
+| [`cli/page-range`](cli/page-range.md) | `PageRange` | `machine_applicable` |
+| [`cli/empty-search`](cli/empty-search.md) | `EmptySearch` | `machine_applicable` |
+| [`cli/compare-arity`](cli/compare-arity.md) | `CompareArity` | `machine_applicable` |
+| [`cli/unknown-transport`](cli/unknown-transport.md) | `UnknownTransport` | `machine_applicable` |
+| [`mcp/missing-argument`](mcp/missing-argument.md) | `MissingArgument` | `machine_applicable` |
+| [`mcp/unknown-resource`](mcp/unknown-resource.md) | `UnknownResource` | `maybe_incorrect` |
+
+### Transport / upstream (`Api`, `NotFound`, `Timeout`, `Connection`, `Parse`)
+
 | `type` slug | Variant | `status` | `exit_code` | Class | `suggested_fix` applicability |
 |---|---|---|---|---|---|
-| [`cli/validation`](cli/validation.md) | `Validation` | 400 | 1 | caller | `machine_applicable` |
 | [`api/error`](api/error.md) | `Api` | upstream (4xx/5xx) | 1 (4xx) / 75 (429, 5xx) | caller or transient | `unspecified` (429/5xx) / none (4xx) |
 | [`api/not-found`](api/not-found.md) | `NotFound` | 404 | 1 | caller | `maybe_incorrect` |
 | [`api/timeout`](api/timeout.md) | `Timeout` | 504 | 75 | transient | `unspecified` |

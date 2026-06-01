@@ -12,11 +12,11 @@ use rmcp::model::{
 
 use crate::NsipClient;
 
-/// Map a crate-level [`crate::Error`] into an MCP error, attaching the RFC 9457
-/// problem+json envelope as the `data` payload for agent consumers.
+/// Map a crate-level [`crate::Error`] into an MCP error with the RFC 9457
+/// problem+json envelope in `data` and a class-appropriate JSON-RPC code.
+/// See [`crate::mcp::problem_error`].
 fn prompt_err(context: &str, err: &crate::Error) -> rmcp::ErrorData {
-    let data = serde_json::to_value(err.to_problem_details("mcp")).ok();
-    rmcp::ErrorData::internal_error(format!("{context}: {err}"), data)
+    super::problem_error(context, err)
 }
 
 /// Map a JSON serialization failure into an MCP internal error rather than
@@ -190,9 +190,9 @@ pub async fn get_prompt<S: BuildHasher + Sync>(
         "flock-improvement" => flock_improvement(client, arguments, context).await,
         "select-replacement" => select_replacement(client, arguments, context).await,
         "interpret-ebvs" => interpret_ebvs(client, arguments).await,
-        _ => Err(rmcp::ErrorData::invalid_params(
-            format!("Unknown prompt: {name}"),
-            None,
+        _ => Err(prompt_err(
+            "get-prompt",
+            &crate::Error::validation(format!("Unknown prompt: {name}")),
         )),
     }
 }
@@ -266,9 +266,9 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
     let ids: Vec<&str> = ids_str.split(',').map(str::trim).collect();
 
     if ids.len() < 2 || ids.len() > 5 {
-        return Err(rmcp::ErrorData::invalid_params(
-            "lpn_ids must contain 2-5 comma-separated LPN IDs",
-            None,
+        return Err(prompt_err(
+            "compare-breeding-stock",
+            &crate::Error::compare_arity("lpn_ids must contain 2-5 comma-separated LPN IDs"),
         ));
     }
 
@@ -387,7 +387,10 @@ async fn flock_improvement<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let breed_id_str = require_arg(args, "breed_id")?;
     let breed_id: i64 = breed_id_str.parse().map_err(|_| {
-        rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id_str}"), None)
+        prompt_err(
+            "breed-id",
+            &crate::Error::invalid_breed_id(format!("Invalid breed_id: {breed_id_str}")),
+        )
     })?;
 
     let flock_id = args.get("flock_id");
@@ -454,7 +457,10 @@ async fn select_replacement<S: BuildHasher + Sync>(
 ) -> Result<GetPromptResult, rmcp::ErrorData> {
     let breed_id_str = require_arg(args, "breed_id")?;
     let breed_id: i64 = breed_id_str.parse().map_err(|_| {
-        rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id_str}"), None)
+        prompt_err(
+            "breed-id",
+            &crate::Error::invalid_breed_id(format!("Invalid breed_id: {breed_id_str}")),
+        )
     })?;
     let gender = require_arg(args, "gender")?;
     let target_trait = require_arg(args, "target_trait")?;
@@ -565,9 +571,9 @@ fn require_arg<'a, S: BuildHasher>(
     args: &'a std::collections::HashMap<String, String, S>,
     name: &str,
 ) -> Result<&'a str, rmcp::ErrorData> {
-    args.get(name).map(String::as_str).ok_or_else(|| {
-        rmcp::ErrorData::invalid_params(format!("Missing required argument: {name}"), None)
-    })
+    args.get(name)
+        .map(String::as_str)
+        .ok_or_else(|| prompt_err("argument", &crate::Error::missing_argument(name.to_owned())))
 }
 
 #[cfg(test)]

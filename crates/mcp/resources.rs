@@ -12,11 +12,11 @@ use crate::NsipClient;
 
 use super::analytics::ebv_glossary;
 
-/// Map a crate-level [`crate::Error`] into an MCP error, attaching the RFC 9457
-/// problem+json envelope as the `data` payload for agent consumers.
+/// Map a crate-level [`crate::Error`] into an MCP error with the RFC 9457
+/// problem+json envelope in `data` and a class-appropriate JSON-RPC code.
+/// See [`crate::mcp::problem_error`].
 fn resource_err(context: &str, err: &crate::Error) -> rmcp::ErrorData {
-    let data = serde_json::to_value(err.to_problem_details("mcp")).ok();
-    rmcp::ErrorData::internal_error(format!("{context}: {err}"), data)
+    super::problem_error(context, err)
 }
 
 // ---------------------------------------------------------------------------
@@ -419,7 +419,10 @@ pub async fn read_resource(
 
         NsipUri::BreedRanges { breed_id } => {
             let id: i64 = breed_id.parse().map_err(|_| {
-                rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id}"), None)
+                resource_err(
+                    "breed-id",
+                    &crate::Error::invalid_breed_id(format!("Invalid breed_id: {breed_id}")),
+                )
             })?;
             let ranges = client
                 .trait_ranges(id)
@@ -430,10 +433,17 @@ pub async fn read_resource(
             )?]))
         },
 
-        NsipUri::Unknown => Err(rmcp::ErrorData::resource_not_found(
-            format!("Unknown resource URI: {uri}"),
-            None,
-        )),
+        NsipUri::Unknown => {
+            // Keep the MCP `resource_not_found` code (clients expect it for an
+            // unknown resource read) but attach the RFC 9457 envelope so agents
+            // still get the structured contract.
+            let err = crate::Error::unknown_resource(format!("Unknown resource URI: {uri}"));
+            let data = serde_json::to_value(err.to_problem_details("read-resource")).ok();
+            Err(rmcp::ErrorData::resource_not_found(
+                format!("Unknown resource URI: {uri}"),
+                data,
+            ))
+        },
     }
 }
 

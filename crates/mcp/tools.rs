@@ -195,12 +195,11 @@ fn json_result(value: &impl serde::Serialize) -> Result<CallToolResult, McpError
     Ok(CallToolResult::success(vec![Content::text(json)]))
 }
 
-/// Map a crate-level [`crate::Error`] into an MCP error, attaching the RFC 9457
-/// problem+json envelope as the `data` payload so an orchestrating agent
-/// receives the full machine-readable contract (`type`, `status`, `retry_after`, …).
+/// Map a crate-level [`crate::Error`] into an MCP error with the RFC 9457
+/// problem+json envelope in `data` and a class-appropriate JSON-RPC code.
+/// See [`crate::mcp::problem_error`].
 fn api_err(context: &str, err: &crate::Error) -> McpError {
-    let data = serde_json::to_value(err.to_problem_details("mcp")).ok();
-    McpError::internal_error(format!("{context}: {err}"), data)
+    super::problem_error(context, err)
 }
 
 /// Build an `McpError::internal_error` for failures that are not a
@@ -407,9 +406,9 @@ impl super::NsipServer {
         Parameters(params): Parameters<CompareParams>,
     ) -> Result<CallToolResult, McpError> {
         if params.lpn_ids.len() < 2 || params.lpn_ids.len() > 5 {
-            return Err(McpError::invalid_params(
-                "lpn_ids must contain 2-5 LPN IDs",
-                None,
+            return Err(api_err(
+                "compare",
+                &crate::Error::compare_arity("lpn_ids must contain 2-5 LPN IDs"),
             ));
         }
 
