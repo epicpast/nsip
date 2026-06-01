@@ -21,16 +21,20 @@ downstream propagation)
 ```
 tag v*.*.*
     │
-    ├─ create-release          Creates the GitHub Release
-    │       │
-    │       ├─ generate-extras   Builds completions + man pages
-    │       ├─ generate-sbom     Generates CycloneDX SBOM
-    │       └─ build-binaries    Builds multi-platform binaries
-    │               │
-    │               └─ (triggers) docker.yml
-    │                            signed-releases.yml
-    │                            slsa-provenance.yml
-    │                            sbom.yml
+    ├─ release.yml (on: tag)
+    │       ├─ create-release       Creates the GitHub Release
+    │       ├─ generate-extras      Builds completions + man pages
+    │       ├─ generate-sbom        Generates the SBOM
+    │       └─ build-binaries       Builds multi-platform binaries
+    │
+    ├─ docker.yml   (on: tag)       Builds + pushes the GHCR image
+    │
+    └─ (after the above)
+            │
+            ├─ on: release.published ─→ sbom.yml, slsa-provenance.yml
+            └─ on: workflow_run(Release completed) ─→ signed-releases.yml
+
+changelog.yml also runs on the tag and opens a CHANGELOG PR into develop.
 ```
 
 ## Jobs

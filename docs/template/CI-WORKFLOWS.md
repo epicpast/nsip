@@ -17,13 +17,13 @@ annotated with trigger conditions, required secrets, and activation status.
 | Release | `release.yml` | tag `v*.*.*`, manual | -- | Active |
 | Release PR | `release-pr.yml` | manual | -- | Active |
 | Changelog | `changelog.yml` | tag `v*.*.*`, manual | -- | Active |
-| Docker (GHCR) | `docker.yml` | push, PR, tag, manual | -- | Active |
+| Docker (GHCR) | `docker.yml` | tag `v*.*.*`, manual | -- | Active |
 | Publish to crates.io | `publish.yml` | tag `v*.*.*`, manual | `CARGO_REGISTRY_TOKEN` | Opt-in |
 | Security Audit | `security-audit.yml` | schedule (daily), push, manual | -- | Active |
-| Secrets Scan | `secrets-scan.yml` | push, PR, manual | `GITLEAKS_LICENSE` | Active |
+| Secrets Scan | `secrets-scan.yml` | manual | `GITLEAKS_LICENSE` | Opt-in |
 | Container Scan | `container-scan.yml` | manual | -- | Opt-in |
-| SBOM Generation | `sbom.yml` | tag `v*.*.*`, release, manual | -- | Active |
-| Signed Releases | `signed-releases.yml` | release | -- | Active |
+| SBOM Generation | `sbom.yml` | release published, manual | -- | Active |
+| Signed Releases | `signed-releases.yml` | workflow_run (after Release) | -- | Active |
 | SLSA Provenance | `slsa-provenance.yml` | release, manual | -- | Active |
 | Dependabot Auto-Merge | `dependabot-automerge.yml` | PR (dependabot actor) | -- | Active |
 | Stale Issue Management | `stale.yml` | manual | -- | Opt-in |
@@ -77,13 +77,14 @@ change frequency or remove the `schedule` trigger to run only on push/manual.
 **What it does:** Scans the repository history for accidentally committed
 secrets using Gitleaks.
 
-**Trigger:** Every push, every pull request, manual.
+**Trigger:** Manual only (`workflow_dispatch`); the `push` and `pull_request`
+triggers are commented out.
 
 **Required secrets:** `GITLEAKS_LICENSE` (optional -- the action works without
 it but may have rate limits).
 
-**How to enable/disable:** Active by default. Remove or comment out the entire
-file to disable.
+**How to enable/disable:** Opt-in. Uncomment the `push` and `pull_request`
+triggers under `on:` to scan automatically.
 
 ### container-scan.yml
 
@@ -104,11 +105,11 @@ and/or `schedule` triggers to activate automatic runs.
 format using `cargo-sbom`. On a published release, the SBOM is attached as a
 release asset.
 
-**Trigger:** Push tag `v*.*.*`, release published, manual.
+**Trigger:** Release published, manual.
 
 **Required secrets:** None.
 
-**How to enable/disable:** Active by default on tags and releases.
+**How to enable/disable:** Active by default on releases.
 
 ### signed-releases.yml
 
@@ -117,7 +118,8 @@ each with Sigstore Cosign (keyless OIDC), generates SHA-256 and SHA-512
 checksum files, signs the checksums, and uploads everything back to the
 release. Appends verification instructions to the release notes.
 
-**Trigger:** Release published.
+**Trigger:** `workflow_run` -- runs automatically after the **Release**
+workflow completes.
 
 **Required secrets:** None (uses GitHub OIDC for keyless signing).
 
@@ -207,10 +209,11 @@ default. Enable the workflow in **Actions** and configure
 
 **What it does:** Builds a multi-platform Docker image (linux/amd64,
 linux/arm64) and pushes it to GitHub Container Registry (ghcr.io). Uses GitHub
-Actions cache for layer caching. Tags follow semver and include `latest` for
-the default branch. Attaches SLSA build provenance to the image.
+Actions cache for layer caching. Tags follow semver (`X.Y.Z`, `X.Y`, `X`),
+include a `sha-<commit>` tag, and `latest` for the newest released version.
+Attaches SLSA build provenance to the image.
 
-**Trigger:** Push tag `v*.*.*`, pull request (build only, no push), manual.
+**Trigger:** Push tag `v*.*.*`, manual (`workflow_dispatch`).
 
 **Required secrets:** None (uses built-in `GITHUB_TOKEN` for GHCR auth).
 

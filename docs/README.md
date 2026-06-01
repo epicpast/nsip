@@ -125,7 +125,7 @@ Detailed reference material organized by topic.
 | [Changelog](workflows/CHANGELOG.md) | Auto-generate `CHANGELOG.md` on version tag |
 | [Stale](workflows/STALE.md) | Stale issue and PR management |
 | [Dependabot Auto-Merge](workflows/DEPENDABOT-AUTOMERGE.md) | Automatically merge patch and minor Dependabot updates |
-| [Contributors](workflows/CONTRIBUTORS.MD) | Generate `CONTRIBUTORS.md` from commit history |
+| [Contributors](workflows/CONTRIBUTORS.md) | Generate `CONTRIBUTORS.md` from commit history |
 | [Copilot Setup Steps](workflows/COPILOT-SETUP-STEPS.md) | Bootstrap environment for GitHub Copilot coding agents |
 | [Docker](workflows/DOCKER.md) | Build and push Docker image to GHCR |
 | [Signed Releases](workflows/SIGNED-RELEASES.md) | Sign release assets with Cosign and generate checksums |

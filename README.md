@@ -284,7 +284,7 @@ This template includes production-ready workflows:
 
 - **CI** (`.github/workflows/ci.yml`) - Format, lint, test, docs, supply chain security, MSRV check, coverage
 - **Security Audit** (`.github/workflows/security-audit.yml`) - Daily cargo-audit scans
-- **Secrets Scan** (`.github/workflows/secrets-scan.yml`) - Gitleaks secret scanning on push/PR
+- **Secrets Scan** (`.github/workflows/secrets-scan.yml`) - Gitleaks secret scanning (manual; enable push/PR triggers to automate)
 - **Container Scan** (`.github/workflows/container-scan.yml`) - Trivy image vulnerability scanning
 
 ### Release and Deployment

@@ -28,8 +28,12 @@ placeholders across the repository with your project's values:
 |---|---|---|
 | `zircote/nsip` | `your-org/your-repo` | `acme/my-awesome-crate` |
 | `zircote` | your GitHub owner | `acme` |
-| `nsip` | your repository name | `my-awesome-crate` |
-| `nsip` | your crate name (underscored) | `my_awesome_crate` |
+| `nsip` (repository / binary name) | your repository name | `my-awesome-crate` |
+| `nsip` (crate name, underscored) | your crate name | `my_awesome_crate` |
+
+Apply the hyphenated repository name first, then the underscored crate name (in
+`Cargo.toml`'s `name =` field and `use` paths), so the two `nsip` replacements
+don't collide.
 
 > The automated **Template Init** workflow is not included in this repository.
 > Perform the replacements manually (e.g. with `sed`/`rg`), or restore a
