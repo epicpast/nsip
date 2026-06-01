@@ -46,8 +46,13 @@ pub fn resolve_format(explicit: Option<Format>, json_flag: bool) -> Format {
 /// detection for absent or unrecognized values.
 #[must_use]
 pub fn detect_format_from_argv() -> Format {
-    let mut args = std::env::args().skip(1);
+    // `args_os`, not `args`: the latter panics on a non-UTF-8 argv element, and
+    // this runs on the error path (a clap parse failure) where a panic would
+    // replace the structured error with an abort. A non-UTF-8 arg cannot match
+    // our ASCII flags, so it is skipped.
+    let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
+        let Some(arg) = arg.to_str() else { continue };
         if arg == "-J" || arg == "--json" {
             return Format::Json;
         }
@@ -55,7 +60,7 @@ pub fn detect_format_from_argv() -> Format {
             return parse_format_value(value);
         }
         if arg == "--format"
-            && let Some(value) = args.next()
+            && let Some(value) = args.next().and_then(|v| v.into_string().ok())
         {
             return parse_format_value(&value);
         }

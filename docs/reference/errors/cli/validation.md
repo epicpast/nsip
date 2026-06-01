@@ -2,7 +2,7 @@
 
 - **type**: `https://github.com/zircote/nsip/blob/main/docs/reference/errors/cli/validation.md`
 - **status**: 400 · **exit_code**: 1 · **class**: caller
-- **`suggested_fix` applicability**: `machine_applicable`
+- **`suggested_fix` applicability**: `maybe_incorrect`
 - **`retry_after`**: never
 
 ## When it occurs
@@ -14,8 +14,10 @@ malformed command line (clap parse failure, including a missing subcommand).
 ## Recovery
 
 Correct the offending argument and re-run. The `detail` names the specific
-problem. Because the fix is deterministic, an agent may correct the argument
-and retry without escalating.
+problem. This is the generic `Other` fallback, so its `suggested_fix` is
+advisory (`maybe_incorrect`) — an agent should verify the corrected input rather
+than apply it blindly. The specific validation types (e.g.
+[`cli/empty-lpn-id`](empty-lpn-id.md)) carry `machine_applicable` fixes.
 
 ## Example
 

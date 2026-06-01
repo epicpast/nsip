@@ -8,7 +8,7 @@
 //! The struct is hand-rolled rather than depending on the `rfc9457` crate
 //! (0.1.0 as of 2026-06): the five RFC 9457 core members plus the
 //! `nsip`-specific extensions are the complete public surface. Applicability
-//! markers live in the documentation catalog (`docs/reference/ERRORS.md`)
+//! markers live in the documentation catalog (`docs/reference/errors/README.md`)
 //! keyed by `type`, not inline, to hold the envelope under the 1 KB cap.
 //!
 //! See [`Error::to_problem_details`](crate::Error::to_problem_details) for the
@@ -87,7 +87,7 @@ const fn validation_title(kind: ValidationKind) -> &'static str {
 
 /// Tailored, per-operation `suggested_fix` for a [`ValidationKind`]. Every kind
 /// has a deterministic fix; applicability markers are catalogued in
-/// `docs/reference/ERRORS.md` keyed by `type`.
+/// `docs/reference/errors/README.md` keyed by `type`.
 fn validation_fix(kind: ValidationKind, message: &str) -> String {
     match kind {
         ValidationKind::EmptyLpnId => "provide a non-empty LPN ID".to_owned(),
@@ -290,7 +290,7 @@ impl Error {
 
     /// Free-text recovery action for this error, or `None` when there is no
     /// deterministic fix. Applicability markers for each fix are catalogued in
-    /// `docs/reference/ERRORS.md`, keyed by `type`.
+    /// `docs/reference/errors/README.md`, keyed by `type`.
     #[must_use]
     pub fn suggested_fix(&self) -> Option<String> {
         let s = match self {
