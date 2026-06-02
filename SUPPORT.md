@@ -10,7 +10,6 @@
 ## Documentation
 
 - **API Docs**: Run `cargo doc --open` locally
-- **Examples**: See the `examples/` directory
 - **CLAUDE.md**: AI-assisted development guidelines
 
 ## Before Opening an Issue

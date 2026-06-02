@@ -10,7 +10,8 @@ and generates SHA-256/SHA-512 checksum files — all signed with Cosign as well.
 Runs automatically after the Release workflow completes.
 
 **Workflow:** `.github/workflows/signed-releases.yml`  
-**Trigger:** Successful completion of the Release workflow (on a `v*.*.*` branch)  
+**Trigger:** Successful completion of the Release workflow for a `v*.*.*` tag
+ref (read from `workflow_run.head_branch`)  
 **Required secrets:** None (keyless signing via Sigstore OIDC)  
 **Permissions:** `contents: write`, `id-token: write`
 
@@ -37,15 +38,15 @@ it verifiable and auditable.
 
 ```bash
 # Download the release assets
-gh release download v0.4.0 --repo zircote/nsip --pattern '*'
+gh release download v0.6.0 --repo zircote/nsip --pattern '*'
 
-# Verify a specific binary
+# Verify a specific binary (assets are bare, versioned binaries — no .tar.gz)
 cosign verify-blob \
-  --signature nsip-linux-amd64.tar.gz.sig \
+  --signature nsip-0.6.0-linux-amd64.sig \
   --certificate-identity \
-    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/v0.4.0" \
+    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/v0.6.0" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  nsip-linux-amd64.tar.gz
+  nsip-0.6.0-linux-amd64
 
 # Verify checksums
 sha256sum --check SHA256SUMS

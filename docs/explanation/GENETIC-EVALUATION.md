@@ -136,9 +136,9 @@ Traits are not independent. Selecting for higher weaning weight also tends to in
 |---|---|---|
 | BWT and WWT | Positive | Selecting for heavier weaning weights tends to increase birth weight |
 | WWT and PWWT | Strongly positive | Growth traits track together |
-| NLB and NWT | Moderate positive | More lambs born generally means more weaned, but not proportionally |
-| EMD and FAT | Weakly positive | Muscular animals tend to carry slightly more fat |
-| WEC and FEC | Strongly positive | Both measure parasite resistance |
+| NLB and NLW | Moderate positive | More lambs born generally means more weaned, but not proportionally |
+| PEMD and PFAT | Weakly positive | Muscular animals tend to carry slightly more fat |
+| WFEC and PFEC | Strongly positive | Both measure parasite resistance |
 | NLB and lamb survival | Negative | More lambs born per litter means lower individual survival |
 
 ### Benefits of Multi-Trait Evaluation
@@ -167,13 +167,15 @@ Animals are grouped into contemporary groups based on flock, year, season, and m
 
 ### 4. BLUP Evaluation
 
-The mixed model equations are constructed and solved, incorporating all performance records, pedigree relationships, and (where available) genomic data. This produces EBVs and accuracies for every animal in the evaluation for all 13 traits.
+The mixed model equations are constructed and solved, incorporating all performance records, pedigree relationships, and (where available) genomic data. This produces EBVs and accuracies for every animal in the evaluation for all 16 traits.
 
 ### 5. Publication
 
 Results are published to the NSIP Search API, where they can be accessed through the `nsip` CLI and library. The `date_last_updated` endpoint reports when the most recent evaluation was published.
 
-### EBVs and EPDs
+---
+
+## EBVs and EPDs
 
 EBVs and **Expected Progeny Differences (EPDs)** are closely related concepts. An EPD is simply half the EBV difference between two animals -- because each parent contributes half its genetics to its offspring. Some livestock industries (notably U.S. beef cattle) use EPDs as the primary metric, while NSIP follows the Australian convention of reporting full EBVs. When comparing across systems, remember: EPD = EBV / 2 for a single parent's contribution.
 

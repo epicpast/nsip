@@ -24,16 +24,16 @@ Place in `.mcp.json` at your project root (Claude Code) or `claude_desktop_confi
 | Tool | Purpose | Key Parameters |
 |---|---|---|
 | `search` | Find animals with filters | `breed_id`, `gender`, `status`, `sort_by` |
-| `details` | Full EBV data for one animal | `animal_id` |
-| `lineage` | Pedigree / ancestry tree | `animal_id` |
-| `progeny` | Offspring list | `animal_id`, `page`, `page_size` |
-| `profile` | Combined details+lineage+progeny | `animal_id` |
+| `details` | Full EBV data for one animal | `lpn_id` |
+| `lineage` | Pedigree / ancestry tree | `lpn_id` |
+| `progeny` | Offspring list | `lpn_id`, `page`, `page_size` |
+| `profile` | Combined details+lineage+progeny | `lpn_id` |
 | `breed_groups` | List all breeds | _(none)_ |
 | `trait_ranges` | Min/max EBVs for a breed | `breed_id` |
 | `compare` | Side-by-side EBV comparison | `lpn_ids` (2-5), `traits` |
 | `rank` | Weighted multi-trait ranking | `breed_id`, `weights`, `gender`, `top_n` |
 | `inbreeding_check` | COI for a potential mating | `sire_id`, `dam_id` |
-| `mating_recommendations` | Find optimal mates | `animal_id`, `breed_id`, `target_traits` |
+| `mating_recommendations` | Find optimal mates | `lpn_id`, `breed_id`, `target_traits` |
 | `flock_summary` | Flock-level statistics | `flock_id`, `breed_id` |
 | `database_status` | DB freshness and statuses | _(none)_ |
 
@@ -103,8 +103,8 @@ Use these MCP prompts for structured breeding workflows:
 
 - **LPN IDs**: String identifiers (e.g., `6401492025FLE029`, `430735-0032`)
 - **Breed IDs**: Numeric -- use `breed_groups` to discover valid IDs
-- **13 EBV traits**: BWT, WWT, PWWT, YWT, FAT, EMD, NLB, NWT, PWT, DAG, WGR, WEC, FEC
-- **Lower-is-better traits**: BWT, DAG, WEC, FEC -- use negative weights in `rank`
+- **16 EBV traits**: BWT, WWT, PWWT, YWT, MWWT, NLB, NLW, PEMD, PFAT, YEMD, YFAT, WFEC, PFEC, YFD, YGFW, YSL
+- **Lower-is-better traits**: BWT, WFEC, PFEC -- use negative weights in `rank`
 - **Status values**: `CURRENT`, `SOLD`, `DEAD`
 - **Gender values**: `Male`, `Female`, `Both`
 

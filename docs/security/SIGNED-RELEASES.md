@@ -11,6 +11,10 @@ Cryptographically sign release artifacts and generate SLSA provenance for supply
 - `.github/workflows/signed-releases.yml` - Cosign signatures
 - `.github/workflows/slsa-provenance.yml` - SLSA Level 3 provenance
 
+> **See also:** [Signed Releases Workflow](../workflows/SIGNED-RELEASES.md) documents
+> the actual `signed-releases.yml` pipeline and is the **authoritative** reference for
+> the exact `--certificate-identity` and `--certificate-oidc-issuer` values used here.
+
 ## Why Sign Releases?
 
 - **Authenticity**: Verify artifacts come from you
@@ -44,29 +48,31 @@ sudo mv cosign-linux-amd64 /usr/local/bin/cosign
 
 **Verify Asset:**
 ```bash
-# Download release and signature
-wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip
-wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip.sig
+# Download release and signature (replace vX.Y.Z with the release tag)
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip.sig
 
-# Verify signature
+# Verify signature against the exact signing workflow identity
 cosign verify-blob \
   --signature nsip.sig \
-  --certificate-identity-regexp=".*" \
-  --certificate-oidc-issuer-regexp=".*" \
+  --certificate-identity \
+    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   nsip
 ```
 
 **Verify Checksums:**
 ```bash
-# Download checksums
-wget https://github.com/USER/REPO/releases/download/v0.1.0/SHA256SUMS
-wget https://github.com/USER/REPO/releases/download/v0.1.0/SHA256SUMS.sig
+# Download checksums (replace vX.Y.Z with the release tag)
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/SHA256SUMS
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/SHA256SUMS.sig
 
-# Verify checksum signature
+# Verify checksum signature against the exact signing workflow identity
 cosign verify-blob \
   --signature SHA256SUMS.sig \
-  --certificate-identity-regexp=".*" \
-  --certificate-oidc-issuer-regexp=".*" \
+  --certificate-identity \
+    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   SHA256SUMS
 
 # Verify file against checksum
@@ -117,12 +123,12 @@ The workflow automatically generates **SLSA Level 3** provenance:
   "predicateType": "https://slsa.dev/provenance/v0.2",
   "predicate": {
     "builder": {
-      "id": "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0"
+      "id": "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0"
     },
     "buildType": "https://github.com/slsa-framework/slsa-github-generator/generic@v1",
     "invocation": {
       "configSource": {
-        "uri": "git+https://github.com/USER/REPO@refs/tags/v0.1.0",
+        "uri": "git+https://github.com/zircote/nsip@refs/tags/v0.1.0",
         "digest": {
           "sha1": "def456..."
         }
@@ -134,7 +140,7 @@ The workflow automatically generates **SLSA Level 3** provenance:
     },
     "materials": [
       {
-        "uri": "git+https://github.com/USER/REPO@refs/tags/v0.1.0",
+        "uri": "git+https://github.com/zircote/nsip@refs/tags/v0.1.0",
         "digest": {
           "sha1": "def456..."
         }
@@ -155,21 +161,21 @@ sudo mv slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier
 
 **Verify Artifact:**
 ```bash
-# Download binary and provenance
-wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip
-wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip.intoto.jsonl
+# Download binary and provenance (replace vX.Y.Z with the release tag)
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip.intoto.jsonl
 
 # Verify provenance
 slsa-verifier verify-artifact \
   --provenance-path nsip.intoto.jsonl \
-  --source-uri github.com/USER/REPO \
+  --source-uri github.com/zircote/nsip \
   nsip
 ```
 
 **Output:**
 ```
 ✓ Verified SLSA provenance
-  Source: github.com/USER/REPO
+  Source: github.com/zircote/nsip
   Builder: https://github.com/slsa-framework/slsa-github-generator
   Build Level: SLSA 3
 ```
@@ -187,8 +193,9 @@ def install
   resource("signature").stage do
     system "cosign", "verify-blob",
            "--signature", "nsip.sig",
-           "--certificate-identity-regexp", ".*",
-           "--certificate-oidc-issuer-regexp", ".*",
+           "--certificate-identity",
+           "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/#{version}",
+           "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
            bin/"nsip"
   end
 end
@@ -197,13 +204,14 @@ end
 ### Docker
 
 ```dockerfile
-# Verify binary before adding to image
-RUN wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip && \
-    wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip.sig && \
+# Verify binary before adding to image (replace vX.Y.Z with the release tag)
+RUN wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip && \
+    wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip.sig && \
     cosign verify-blob \
       --signature nsip.sig \
-      --certificate-identity-regexp=".*" \
-      --certificate-oidc-issuer-regexp=".*" \
+      --certificate-identity \
+        "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
+      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
       nsip
 ```
 
@@ -275,11 +283,12 @@ gpg --verify nsip.asc nsip
 ### Cosign Verification Fails
 
 ```bash
-# Check certificate details
+# Check certificate details (replace vX.Y.Z with the release tag)
 cosign verify-blob \
   --signature nsip.sig \
-  --certificate-identity-regexp=".*" \
-  --certificate-oidc-issuer-regexp=".*" \
+  --certificate-identity \
+    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   --debug \
   nsip
 ```
@@ -295,7 +304,7 @@ cosign verify-blob \
 # Verbose verification
 slsa-verifier verify-artifact \
   --provenance-path nsip.intoto.jsonl \
-  --source-uri github.com/USER/REPO \
+  --source-uri github.com/zircote/nsip \
   --print-provenance \
   nsip
 ```
@@ -336,7 +345,7 @@ Generate reports for audits:
 
 ```bash
 # List all signed releases
-gh release list --repo USER/REPO | while read line; do
+gh release list --repo zircote/nsip | while read line; do
   tag=$(echo $line | awk '{print $1}')
   echo "Release: $tag"
   gh release view $tag --json assets | jq -r '.assets[].name' | grep '\.sig$'

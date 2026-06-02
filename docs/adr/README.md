@@ -17,12 +17,13 @@ Each ADR file must:
   - `status` (proposed, accepted, deprecated, superseded)
   - `created`, `updated` (ISO 8601 dates)
   - `author`, `project`
-- Include the following body sections:
+- Include the following required body sections:
   - Context (background, current limitations)
-  - Decision Drivers (primary, secondary)
-  - Considered Options (with risk assessments)
   - Decision
   - Consequences (positive, negative, neutral)
+- May optionally include (recommended for decisions with non-trivial trade-offs):
+  - Decision Drivers (primary, secondary)
+  - Considered Options (with risk assessments)
 
 ## Workflow
 

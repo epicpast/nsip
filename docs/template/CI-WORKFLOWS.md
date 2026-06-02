@@ -16,13 +16,14 @@ annotated with trigger conditions, required secrets, and activation status.
 | CI | `ci.yml` | push, PR (`develop`/`main`), manual | `CODECOV_TOKEN` | Active |
 | Release | `release.yml` | tag `v*.*.*`, manual | -- | Active |
 | Release PR | `release-pr.yml` | manual | -- | Active |
+| Back-merge | `back-merge.yml` | tag `v*.*.*`, manual | -- | Active |
 | Changelog | `changelog.yml` | tag `v*.*.*`, manual | -- | Active |
 | Docker (GHCR) | `docker.yml` | tag `v*.*.*`, manual | -- | Active |
 | Publish to crates.io | `publish.yml` | tag `v*.*.*`, manual | `CARGO_REGISTRY_TOKEN` | Opt-in |
 | Security Audit | `security-audit.yml` | schedule (daily), push, manual | -- | Active |
 | Secrets Scan | `secrets-scan.yml` | manual | `GITLEAKS_LICENSE` | Opt-in |
 | Container Scan | `container-scan.yml` | manual | -- | Opt-in |
-| SBOM Generation | `sbom.yml` | release published, manual | -- | Active |
+| SBOM Generation | `sbom.yml` | manual (`workflow_dispatch`) | -- | Active |
 | Signed Releases | `signed-releases.yml` | workflow_run (after Release) | -- | Active |
 | SLSA Provenance | `slsa-provenance.yml` | release, manual | -- | Active |
 | Dependabot Auto-Merge | `dependabot-automerge.yml` | PR (dependabot actor) | -- | Active |
@@ -174,6 +175,20 @@ used in the PR title/body.
 
 **How to enable/disable:** Active by default. After merging the PR it opens,
 tag the `main` merge commit to trigger the release.
+
+### back-merge.yml
+
+**What it does:** Keeps `develop` in sync with `main` after a release. Opens (or
+reuses) a pull request back-merging `main` into `develop` and enables auto-merge
+so it lands once required checks pass. Skips when `develop` already contains
+`main`.
+
+**Trigger:** Push tag matching `v*.*.*` (fires alongside the release), manual.
+
+**Required secrets:** None (uses built-in `GITHUB_TOKEN`).
+
+**How to enable/disable:** Active by default. Requires auto-merge to be enabled
+in repository settings for the PR to land automatically.
 
 ### changelog.yml
 

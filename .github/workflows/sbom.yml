@@ -1,13 +1,14 @@
 ---
 name: SBOM Generation
 
+# On-demand SBOM generation only. The authoritative, attested release SBOM is
+# produced by release.yml's generate-sbom job on tag push; attaching here too
+# would clobber that signed artifact and can break its provenance digest.
 "on":
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   generate-sbom:
@@ -30,23 +31,25 @@ jobs:
         with:
           tool: cargo-sbom
 
+      - name: Compute versioned SBOM name
+        run: |
+          set -euo pipefail
+          VERSION="$(cargo metadata --no-deps --format-version 1 \
+            | grep -o '"version":"[^"]*"' | head -n1 | cut -d'"' -f4)"
+          if [ -z "$VERSION" ]; then
+            echo "::error::could not determine package version from cargo metadata" >&2
+            exit 1
+          fi
+          echo "SBOM_NAME=nsip-${VERSION}-sbom-spdx.json" >> "$GITHUB_ENV"
+
       - name: Generate SBOM (SPDX format)
         run: |
-          cargo sbom --output-format spdx_json_2_3 > nsip-sbom-spdx.json
+          cargo sbom --output-format spdx_json_2_3 > "${SBOM_NAME}"
 
       - name: Upload SBOM artifact
         # v4.6.2
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: sbom-spdx
-          path: nsip-sbom-spdx.json
+          name: ${{ env.SBOM_NAME }}
+          path: ${{ env.SBOM_NAME }}
           retention-days: 90
-
-      - name: Attach SBOM to release
-        if: github.event_name == 'release'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.event.release.tag_name }}
-        run: |
-          gh release upload "${TAG_NAME}" nsip-sbom-spdx.json \
-            --clobber

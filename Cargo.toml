@@ -120,6 +120,9 @@ test-case = "3.3.1"
 tokio-test = "0.4"
 wiremock = "0.6"
 
+# Concurrency primitives used only by docs examples (examples/batch_query_concurrent.rs)
+futures = "0.3.32"
+
 # CLI integration tests
 assert_cmd = "2.2"
 predicates = "3.1"

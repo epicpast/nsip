@@ -86,7 +86,7 @@ async fn main() -> Result<(), nsip::Error> {
 
 ### Step 3: Compare Specific Traits
 
-Access the `traits` field on `AnimalDetails` to compare EBVs. Trait keys use standard abbreviations (BWT, WWT, YWT, EMD, etc.):
+Access the `traits` field on `AnimalDetails` to compare EBVs. Trait keys use standard abbreviations (BWT, WWT, YWT, PEMD, etc.):
 
 ```rust
 use nsip::NsipClient;
@@ -214,7 +214,7 @@ For weighted ranking across a breed, use the `rank` tool instead:
 After comparing, confirm that:
 
 1. All requested animals were found (check for `NotFound` errors).
-2. The traits you care about are present for each animal. Not all animals have all 13 EBV traits.
+2. The traits you care about are present for each animal. Not all animals have all 16 EBV traits.
 3. Accuracy values are reasonable -- low-accuracy EBVs (below 40%) should be treated with caution.
 
 ---

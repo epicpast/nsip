@@ -54,28 +54,21 @@ curl https://crates.io/api/v1/crates/nsip/downloads
 }
 ```
 
-### 3. Docker Hub Statistics
+### 3. GitHub Packages (GHCR)
 
-**Container metrics:**
-- **Pulls** - Image download count
-- **Stars** - Repository stars
+This project publishes its container image to the GitHub Container Registry
+(GHCR) only — it does **not** use Docker Hub. Query container package metrics
+via the GitHub Packages API:
 
-**API Access:**
 ```bash
-curl https://hub.docker.com/v2/repositories/username/nsip/
+# Container package metadata (owner: zircote)
+gh api /users/zircote/packages/container/nsip
 
-# Pull statistics
-curl https://hub.docker.com/v2/repositories/username/nsip/stats/
+# Version list (each version carries its own download metadata)
+gh api /users/zircote/packages/container/nsip/versions
 ```
 
-### 4. GitHub Packages
-
-**Package registry metrics:**
-```bash
-gh api /users/USERNAME/packages/container/nsip
-```
-
-### 5. CI/CD Metrics
+### 4. CI/CD Metrics
 
 **Workflow metrics:**
 - **Build times** - Performance tracking
@@ -84,7 +77,7 @@ gh api /users/USERNAME/packages/container/nsip
 
 **Query via GitHub API:**
 ```bash
-gh api repos/USER/REPO/actions/workflows/ci.yml/runs \
+gh api repos/zircote/nsip/actions/workflows/ci.yml/runs \
   --jq '.workflow_runs[] | {created_at, conclusion, run_duration_ms}'
 ```
 
@@ -96,23 +89,20 @@ gh api repos/USER/REPO/actions/workflows/ci.yml/runs \
 
 ```markdown
 <!-- Build Status -->
-![CI](https://github.com/USER/REPO/workflows/CI/badge.svg)
+![CI](https://github.com/zircote/nsip/workflows/CI/badge.svg)
 
 <!-- Coverage -->
-[![codecov](https://codecov.io/gh/USER/REPO/branch/main/graph/badge.svg)](https://codecov.io/gh/USER/REPO)
+[![codecov](https://codecov.io/gh/zircote/nsip/branch/main/graph/badge.svg)](https://codecov.io/gh/zircote/nsip)
 
 <!-- crates.io -->
 [![Crates.io](https://img.shields.io/crates/v/nsip)](https://crates.io/crates/nsip)
 [![Downloads](https://img.shields.io/crates/d/nsip)](https://crates.io/crates/nsip)
 
-<!-- Docker -->
-[![Docker Pulls](https://img.shields.io/docker/pulls/username/nsip)](https://hub.docker.com/r/username/nsip)
-
 <!-- Dependencies -->
-[![Deps.rs](https://deps.rs/repo/github/USER/REPO/status.svg)](https://deps.rs/repo/github/USER/REPO)
+[![Deps.rs](https://deps.rs/repo/github/zircote/nsip/status.svg)](https://deps.rs/repo/github/zircote/nsip)
 
 <!-- Security -->
-[![Security Audit](https://github.com/USER/REPO/workflows/Security%20Audit/badge.svg)](https://github.com/USER/REPO/actions?query=workflow%3A%22Security+Audit%22)
+[![Security Audit](https://github.com/zircote/nsip/workflows/Security%20Audit/badge.svg)](https://github.com/zircote/nsip/actions?query=workflow%3A%22Security+Audit%22)
 ```
 
 ### Option 2: GitHub Metrics Action
@@ -135,7 +125,7 @@ jobs:
       - uses: lowlighter/metrics@latest
         with:
           token: ${{ secrets.METRICS_TOKEN }}
-          user: username
+          user: zircote
           template: classic
           config_timezone: America/New_York
           plugin_lines: yes
@@ -177,7 +167,7 @@ scrape_configs:
   - job_name: 'github'
     static_configs:
       - targets: ['api.github.com']
-    metrics_path: '/repos/USER/REPO'
+    metrics_path: '/repos/zircote/nsip'
 ```
 
 ### Option 4: Plausible Analytics
@@ -327,7 +317,7 @@ plt.savefig("downloads.png")
 ### Dependency Health
 
 **deps.rs Dashboard:**
-- https://deps.rs/repo/github/USER/REPO
+- https://deps.rs/repo/github/zircote/nsip
 
 **Shows:**
 - Outdated dependencies
@@ -337,8 +327,7 @@ plt.savefig("downloads.png")
 ### Code Quality Metrics
 
 **From workflows:**
-- Test coverage (≥80%)
-- Mutation score (≥80%)
+- Test coverage (≥90%, enforced by `ci.yml` via `cargo llvm-cov --fail-under-lines 90`)
 - Clippy warnings (0)
 - Documentation coverage
 
@@ -419,7 +408,7 @@ jobs:
 
 - [GitHub Insights](https://docs.github.com/en/repositories/viewing-activity-and-data-for-your-repository/viewing-traffic-to-a-repository)
 - [crates.io API](https://crates.io/data-access)
-- [Docker Hub API](https://docs.docker.com/registry/spec/api/)
+- [GitHub Packages API](https://docs.github.com/en/rest/packages)
 - [shields.io](https://shields.io/)
 - [Grafana](https://grafana.com/)
 - [Plausible Analytics](https://plausible.io/)

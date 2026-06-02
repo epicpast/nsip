@@ -95,9 +95,14 @@ async fn main() -> Result<(), nsip::Error> {
 
 ### Step 2: Fetch a Dynamic List with Controlled Concurrency
 
-For larger lists, process animals in batches to avoid overwhelming the API:
+For larger lists, process animals in batches to avoid overwhelming the API. This
+uses `futures::future::join_all` to run each batch's requests **concurrently**,
+so a batch completes in roughly the time of its slowest request rather than the
+sum of all of them. Add the `futures` crate to your `Cargo.toml`
+(`cargo add futures`):
 
 ```rust
+use futures::future::join_all;
 use nsip::{AnimalDetails, NsipClient};
 
 async fn fetch_batch(
@@ -108,15 +113,9 @@ async fn fetch_batch(
     let mut results = Vec::new();
 
     for chunk in ids.chunks(batch_size) {
-        let mut handles = Vec::new();
-        for id in chunk {
-            handles.push(client.animal_details(id));
-        }
-
-        // Await all futures in this batch
-        for handle in handles {
-            results.push(handle.await);
-        }
+        // Build one future per ID, then drive them all concurrently.
+        let futures = chunk.iter().map(|id| client.animal_details(id));
+        results.extend(join_all(futures).await);
     }
 
     results

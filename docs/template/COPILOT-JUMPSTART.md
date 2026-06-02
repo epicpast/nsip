@@ -5,7 +5,7 @@ diataxis_type: how-to
 
 When you create a new repository from this template, GitHub offers an optional **"Jumpstart your project with Copilot"** prompt. Paste one of the prompts below into that field, and Copilot will open a pull request that scaffolds your project.
 
-> **How it works:** After repository creation, Copilot reads your prompt, generates the files, and opens a PR for your review. All 31 CI/CD workflows, security tooling, Docker setup, and linting configuration are preserved automatically.
+> **How it works:** After repository creation, Copilot reads your prompt, generates the files, and opens a PR for your review. All 18 CI/CD workflows, security tooling, Docker setup, and linting configuration are preserved automatically.
 
 ---
 

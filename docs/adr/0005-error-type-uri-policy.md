@@ -48,8 +48,6 @@ https://github.com/zircote/nsip/blob/main/docs/reference/errors/<domain>/<slug>.
   slug and conveys the specific HTTP status in the envelope's `status` member
   rather than splitting into per-status slugs.
 
-This matches the policy used by the sibling `git-creep` CLI.
-
 ## Consequences
 
 - Agents can treat the `type` URI as a durable dispatch key and cache

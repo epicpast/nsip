@@ -30,7 +30,13 @@ docker pull ghcr.io/zircote/nsip:VERSION
 
 ### Binary Checksums
 
-<!-- Add checksums here -->
+Checksums (`SHA256SUMS`, `SHA512SUMS`) and Cosign signatures are generated and
+attached automatically by the `signed-releases.yml` workflow after the release
+publishes. Once attached, verify a downloaded asset against them:
+
+```bash
+sha256sum --check SHA256SUMS
+```
 
 ### Docker Image
 

@@ -102,7 +102,9 @@ let client = NsipClient::builder()
     .build()?;
 ```
 
-With 10 retries, backoff delays are: 0.5s, 1s, 2s, 4s, 8s, 16s, 32s, 64s, 128s, 256s (total wait up to ~8.5 minutes before the final attempt).
+With 10 retries, backoff delays are: 0.5s, 1s, 2s, 4s, 8s, 16s, 32s, 60s, 60s, 60s (total wait up to ~4 minutes before the final attempt).
+
+> **Note:** Each backoff delay is capped at 60 seconds (`MAX_RETRY_DELAY_SECS`). The uncapped exponential schedule would reach 64s, 128s, and 256s for the last three attempts, but the client clamps each delay to 60s. A `Retry-After` header from the server takes precedence over the exponential schedule and is also capped at 60s.
 
 ---
 
@@ -135,8 +137,8 @@ match NsipClient::builder().timeout_secs(60).build() {
     Ok(client) => {
         let groups = client.breed_groups().await?;
     }
-    Err(Error::Connection(msg)) => {
-        eprintln!("Failed to create HTTP client: {msg}");
+    Err(Error::Connection { message, .. }) => {
+        eprintln!("Failed to create HTTP client: {message}");
     }
     Err(e) => {
         eprintln!("Unexpected error: {e}");
@@ -165,6 +167,8 @@ If this returns successfully, the client is configured correctly.
 ---
 
 ## Builder Options Reference
+
+For the complete configuration surface (CLI flags, environment variables, and defaults), see the [Configuration Reference](../reference/CONFIGURATION.md).
 
 | Method            | Default                                | Description                                     |
 |-------------------|----------------------------------------|-------------------------------------------------|

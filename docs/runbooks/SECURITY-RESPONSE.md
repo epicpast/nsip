@@ -244,8 +244,7 @@ This project runs multiple layers of automated security scanning:
 | Tool | Workflow | Schedule | What it checks |
 |---|---|---|---|
 | **cargo-audit** | `security-audit.yml` | Daily at 00:00 UTC | RustSec advisory database |
-| **CodeQL** | `codeql-analysis.yml` | Weekly (Monday 06:00 UTC) + every push to main | Static analysis, code quality, security patterns |
-| **Trivy** | `container-scan.yml` | On-demand (workflow_dispatch) | Container image vulnerabilities |
+| **Trivy** | `container-scan.yml` | On-demand (`workflow_dispatch`) only — the `push`/`pull_request`/weekly `schedule` triggers exist in the workflow but are disabled (commented out) | Container image vulnerabilities |
 
 ### Dependency Management
 
@@ -271,8 +270,7 @@ This project runs multiple layers of automated security scanning:
 Supply Chain Attack ──> cargo-deny (sources), Dependabot, secret scanning
 Known Vulnerability ──> cargo-audit (daily), cargo-deny (advisories), Dependabot alerts
 License Violation   ──> cargo-deny (licenses)
-Code-Level Bug      ──> CodeQL (weekly + on push)
-Container Vuln      ──> Trivy (container-scan)
+Container Vuln      ──> Trivy (container-scan, manual)
 Leaked Secret       ──> Gitleaks, GitHub Secret Scanning
 Unsafe Code         ──> Clippy + #[forbid(unsafe_code)] in crate
 ```

@@ -11,7 +11,7 @@ For installation, configuration, resources, and prompts, see [MCP Server Referen
 
 ## Overview
 
-The MCP server exposes 13 tools over the Model Context Protocol (stdio transport, protocol version `2025-06-18`). All tools return JSON results as text content. Errors use standard MCP error codes.
+The MCP server exposes 13 tools over the Model Context Protocol (stdio transport, protocol version `2025-11-25`). All tools return JSON results as text content. Errors use standard MCP error codes.
 
 | Tool | Description |
 |------|-------------|
@@ -79,7 +79,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `animal_id` | string | yes | LPN ID or registration number |
+| `lpn_id` | string | yes | LPN ID or registration number |
 
 **Returns:** `AnimalDetails` -- LPN ID, breed, sex, date of birth, status, EBV traits, and contact info.
 
@@ -89,7 +89,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 {
   "tool": "details",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -104,7 +104,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `animal_id` | string | yes | LPN ID of the animal |
+| `lpn_id` | string | yes | LPN ID of the animal |
 
 **Returns:** `Lineage` -- subject, sire, dam, and extended generations.
 
@@ -114,7 +114,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 {
   "tool": "lineage",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -129,7 +129,7 @@ Get a paginated list of offspring for a specific animal.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `animal_id` | string | yes | -- | LPN ID of the animal |
+| `lpn_id` | string | yes | -- | LPN ID of the animal |
 | `page` | integer | no | 0 | Page number (0-indexed) |
 | `page_size` | integer | no | 10 | Results per page |
 
@@ -141,7 +141,7 @@ Get a paginated list of offspring for a specific animal.
 {
   "tool": "progeny",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "page": 0,
     "page_size": 20
   }
@@ -158,7 +158,7 @@ Get a complete profile for an animal: details, pedigree, and offspring in one ca
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `animal_id` | string | yes | LPN ID of the animal |
+| `lpn_id` | string | yes | LPN ID of the animal |
 
 **Returns:** `AnimalProfile` -- combined details, lineage, and progeny.
 
@@ -168,7 +168,7 @@ Get a complete profile for an animal: details, pedigree, and offspring in one ca
 {
   "tool": "profile",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -239,7 +239,7 @@ Compare 2-5 animals side-by-side on their EBV traits. Optionally filter to speci
   "tool": "compare",
   "arguments": {
     "lpn_ids": ["430735-0032", "430735-0041", "430735-0058"],
-    "traits": "BWT,WWT,YWT,EMD"
+    "traits": "BWT,WWT,YWT,PEMD"
   }
 }
 ```
@@ -275,7 +275,7 @@ Rank animals within a breed by weighted EBV traits. Specify trait weights to pri
       "BWT": -1.0,
       "WWT": 2.0,
       "YWT": 1.5,
-      "EMD": 1.0
+      "PEMD": 1.0
     },
     "gender": "Male",
     "status": "CURRENT",
@@ -293,8 +293,8 @@ Rank animals within a breed by weighted EBV traits. Specify trait weights to pri
     "breed_id": 486,
     "weights": {
       "NLB": 2.0,
-      "NWT": 2.0,
-      "PWT": 1.5,
+      "NLW": 2.0,
+      "MWWT": 1.5,
       "BWT": -0.5
     },
     "gender": "Male",
@@ -323,8 +323,8 @@ Calculate Wright's coefficient of inbreeding (COI) for a potential sire-dam mati
 | Rating | COI range | Interpretation |
 |--------|-----------|----------------|
 | Green | < 6.25% | Acceptable -- proceed with mating |
-| Yellow | 6.25% - 12.5% | Elevated -- consider alternatives |
-| Red | > 12.5% | High -- generally avoid |
+| Yellow | 6.25% to < 12.5% | Elevated -- consider alternatives |
+| Red | >= 12.5% | High -- generally avoid |
 
 **Returns:** COI coefficient, rating, and list of shared ancestors with path depths.
 
@@ -366,7 +366,7 @@ Find optimal mates for an animal. Searches the breed for candidates, checks inbr
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `animal_id` | string | yes | -- | LPN ID of the animal to find mates for |
+| `lpn_id` | string | yes | -- | LPN ID of the animal to find mates for |
 | `breed_id` | integer | yes | -- | Breed ID to search for potential mates |
 | `target_traits` | string | no | `WWT,BWT,NLB` | Traits to optimize (comma-separated) |
 | `max_results` | integer | no | 5 | Maximum number of recommendations |
@@ -376,11 +376,13 @@ Find optimal mates for an animal. Searches the breed for candidates, checks inbr
 - BWT: -0.5
 - NLB: 0.5
 
-Traits where lower values are preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatically receive negative weights.
+Traits where lower values are preferred (`BWT`, `WFEC`, `PFEC`) automatically receive negative weights.
 
 **Offspring EBV prediction:** `predicted_offspring_EBV = (sire_EBV + dam_EBV) / 2`
 
 **Returns:** Ranked list of recommended mates, each with a score, COI check, and predicted offspring EBVs.
+
+Each `coi` object includes a `reliable` boolean. It is `true` when the mate's lineage was fetched successfully and the COI reflects real pedigree overlap. It is `false` when the mate's lineage could not be retrieved; in that case the COI is computed against an empty pedigree (typically `0.0` / `Green`) and should not be trusted.
 
 **Example:**
 
@@ -388,9 +390,9 @@ Traits where lower values are preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatical
 {
   "tool": "mating_recommendations",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "breed_id": 486,
-    "target_traits": "WWT,EMD,NLB",
+    "target_traits": "WWT,PEMD,NLB",
     "max_results": 3
   }
 }
@@ -405,12 +407,13 @@ Traits where lower values are preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatical
     "rank_score": 18.42,
     "coi": {
       "coefficient": 0.015,
-      "rating": "Green"
+      "rating": "Green",
+      "reliable": true
     },
     "predicted_offspring_ebvs": {
       "BWT": 0.15,
       "WWT": 11.3,
-      "EMD": 1.8,
+      "PEMD": 1.8,
       "NLB": 0.12
     }
   }
@@ -458,7 +461,7 @@ Summarize a flock's animals: count, gender breakdown, and average EBV traits.
     "WWT": 8.45,
     "YWT": 12.10,
     "NLB": 0.08,
-    "EMD": 0.95
+    "PEMD": 0.95
   }
 }
 ```
@@ -494,15 +497,18 @@ These abbreviations are used in `sort_by`, `traits`, `weights`, and `target_trai
 | WWT | Weaning Weight | lbs | Higher preferred |
 | PWWT | Post-Weaning Weight | lbs | Higher preferred |
 | YWT | Yearling Weight | lbs | Higher preferred |
-| FAT | Fat Depth | mm | Moderate preferred |
-| EMD | Eye Muscle Depth | mm | Higher preferred |
+| MWWT | Maternal Weaning Weight | lbs | Higher preferred |
 | NLB | Number of Lambs Born | lambs | Higher preferred |
-| NWT | Number of Lambs Weaned | lambs | Higher preferred |
-| PWT | Pounds Weaned | lbs | Higher preferred |
-| DAG | Dag Score | score | Lower preferred |
-| WGR | Wool Growth Rate | g/day | Higher preferred |
-| WEC | Worm Egg Count | eggs/g | Lower preferred |
-| FEC | Fecal Egg Count | eggs/g | Lower preferred |
+| NLW | Number of Lambs Weaned | lambs | Higher preferred |
+| PEMD | Post-Weaning Eye Muscle Depth | mm | Higher preferred |
+| PFAT | Post-Weaning Fat | mm | Moderate preferred |
+| YEMD | Yearling Eye Muscle Depth | mm | Higher preferred |
+| YFAT | Yearling Fat | mm | Moderate preferred |
+| WFEC | Weaning Fecal Egg Count | % | Lower preferred |
+| PFEC | Post-Weaning Fecal Egg Count | % | Lower preferred |
+| YFD | Yearling Fibre Diameter | micron | Lower preferred |
+| YGFW | Yearling Greasy Fleece Weight | % | Higher preferred |
+| YSL | Yearling Staple Length | mm | Higher preferred |
 
 ---
 

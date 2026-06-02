@@ -1,3 +1,6 @@
+---
+diataxis_type: reference
+---
 # Error Envelope (RFC 9457 Problem Details)
 
 `nsip` is a **dual-consumer** CLI: every error serves both the human at the

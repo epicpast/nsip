@@ -263,6 +263,29 @@ fn init_tracing_inner() {
         .init();
 }
 
+/// Human-readable rendering of the database last-updated value.
+///
+/// The upstream endpoint returns a bare JSON date string; render its inner
+/// text without surrounding quotes, falling back to the raw value for any
+/// non-string shape.
+fn fmt_date_updated(data: &serde_json::Value) -> String {
+    data.as_str().map_or_else(
+        || format!("Database last updated: {data}"),
+        |s| format!("Database last updated: {s}"),
+    )
+}
+
+/// Renders the `date-updated` output for the resolved output mode: pretty JSON
+/// when `json` is set, otherwise the human-readable line from
+/// [`fmt_date_updated`].
+fn render_date_updated(data: &serde_json::Value, json: bool) -> String {
+    if json {
+        serde_json::to_string_pretty(data).unwrap_or_default()
+    } else {
+        fmt_date_updated(data)
+    }
+}
+
 /// Runs the application logic.
 ///
 /// Success output is JSON when `-J/--json` or `--format json` is given,
@@ -276,10 +299,7 @@ async fn run(cli: Cli) -> Result<(), nsip::Error> {
     match cli.command {
         Commands::DateUpdated => {
             let updated = client.date_last_updated().await?;
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&updated.data).unwrap_or_default()
-            );
+            println!("{}", render_date_updated(&updated.data, success_json));
         },
 
         Commands::BreedGroups => {
@@ -553,5 +573,42 @@ async fn main() -> ExitCode {
     match run(cli).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => render::render_and_exit(e, command, format),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_date_updated_renders_string_without_quotes() {
+        let data = serde_json::json!("2024-12-15");
+        assert_eq!(fmt_date_updated(&data), "Database last updated: 2024-12-15");
+    }
+
+    #[test]
+    fn fmt_date_updated_falls_back_for_non_string() {
+        let data = serde_json::json!({ "date": "2024-12-15" });
+        let out = fmt_date_updated(&data);
+        assert!(out.starts_with("Database last updated: "));
+        assert!(out.contains("2024-12-15"));
+    }
+
+    #[test]
+    fn render_date_updated_human_mode() {
+        let data = serde_json::json!("2024-12-15");
+        assert_eq!(
+            render_date_updated(&data, false),
+            "Database last updated: 2024-12-15"
+        );
+    }
+
+    #[test]
+    fn render_date_updated_json_mode() {
+        let data = serde_json::json!("2024-12-15");
+        let out = render_date_updated(&data, true);
+        assert_eq!(out, "\"2024-12-15\"");
+        // JSON mode emits valid JSON, not the human-readable prefix.
+        assert!(!out.contains("Database last updated"));
     }
 }

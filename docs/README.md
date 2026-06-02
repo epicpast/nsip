@@ -1,5 +1,5 @@
 ---
-diataxis_type: explanation
+diataxis_type: reference
 ---
 # Documentation Index
 
@@ -59,7 +59,7 @@ Understanding-oriented discussions of key concepts.
 | [Understanding EBVs](explanation/EBV-EXPLAINED.md) | What EBVs are, how they're calculated, accuracy, and selection indexes |
 | [NSIP Data Model](explanation/NSIP-DATA-MODEL.md) | Program structure: breed groups, breeds, flocks, animals, and their relationships |
 | [Genetic Evaluation](explanation/GENETIC-EVALUATION.md) | How BLUP works, pedigree and genomic data, and the evaluation pipeline |
-| [Breed Groups and Traits](explanation/BREED-GROUPS-AND-TRAITS.md) | Understanding breed group categories and the 13 EBV trait abbreviations |
+| [Breed Groups and Traits](explanation/BREED-GROUPS-AND-TRAITS.md) | Understanding breed group categories and the 16 EBV trait abbreviations |
 | [From Data to Decisions](explanation/DATA-TO-DECISIONS.md) | How NSIP API data connects to real-world breeding decisions |
 | [MCP Security](explanation/MCP-SECURITY.md) | OAuth 2.1, PKCE, GitHub PAT authentication, and DNS rebinding protection |
 | [Telemetry](explanation/TELEMETRY.md) | W3C trace context, distributed tracing, and the OpenTelemetry integration |
@@ -177,5 +177,7 @@ Detailed reference material organized by topic.
 | [ADR-0001](adr/0001-use-architectural-decision-records.md) | Use Architectural Decision Records |
 | [ADR-0002](adr/0002-documentation-directory-structure.md) | Documentation Directory Structure |
 | [ADR-0003](adr/0003-adopt-diataxis-documentation-framework.md) | Adopt Diataxis Documentation Framework |
+| [ADR-0004](adr/0004-dual-consumer-error-envelope.md) | Dual-Consumer Error Envelope (RFC 9457) |
+| [ADR-0005](adr/0005-error-type-uri-policy.md) | Error type URI Policy |
 
 See [docs/adr/README.md](adr/README.md) for the full ADR process and workflow.

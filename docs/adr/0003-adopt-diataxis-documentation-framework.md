@@ -56,7 +56,7 @@ Diátaxis organizes documentation into four quadrants:
 
 ### Directory Structure
 
-````
+```
 docs/
 ├── README.md              # Documentation index with Diátaxis organization
 ├── tutorials/             # Learning-oriented guides
@@ -66,7 +66,7 @@ docs/
 ├── runbooks/              # Operational procedures (existing)
 ├── template/              # Template adoption guides (existing)
 └── workflows/             # CI/CD documentation (existing)
-````
+```
 
 ### Initial Documentation Set
 
@@ -90,18 +90,18 @@ docs/
 
 ### Positive
 
-✅ **Clear learning path** - New users can start with tutorials and progress naturally  
-✅ **Findability** - Users know where to look for different types of information  
-✅ **Progressive disclosure** - Information complexity increases with user expertise  
-✅ **Reduced cognitive load** - Each document has a single, clear purpose  
-✅ **Maintainability** - Clear categorization makes updates easier  
-✅ **Industry standard** - Diátaxis is used by Django, NumPy, and other major projects  
+- **Clear learning path** - New users can start with tutorials and progress naturally
+- **Findability** - Users know where to look for different types of information
+- **Progressive disclosure** - Information complexity increases with user expertise
+- **Reduced cognitive load** - Each document has a single, clear purpose
+- **Maintainability** - Clear categorization makes updates easier
+- **Industry standard** - Diátaxis is used by Django, NumPy, and other major projects
 
 ### Negative
 
-⚠️ **Migration effort** - Some existing docs may need recategorization  
-⚠️ **Link updates** - Internal references need updating to new paths  
-⚠️ **Duplication risk** - Clear guidelines needed to avoid content overlap  
+- **Migration effort** - Some existing docs may need recategorization
+- **Link updates** - Internal references need updating to new paths
+- **Duplication risk** - Clear guidelines needed to avoid content overlap
 
 ### Mitigations
 

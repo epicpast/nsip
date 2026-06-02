@@ -52,8 +52,10 @@ regexes = [
 ```bash
 # Install gitleaks
 brew install gitleaks
-# or
-curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+# or download the latest release for your platform from:
+#   https://github.com/gitleaks/gitleaks/releases
+# then extract the tarball, e.g.:
+curl -sSfL <release-tarball-url> | tar -xz
 
 # Scan current changes
 gitleaks detect --source . --verbose
@@ -119,8 +121,9 @@ paths = [
 
 2. **Inline ignore**:
 
-```python
-secret = "not-a-real-secret"  # gitleaks:allow
+```rust
+// crates/config.rs
+let secret = "not-a-real-secret"; // gitleaks:allow
 ```
 
 ### True Positives (Leaked Secrets)

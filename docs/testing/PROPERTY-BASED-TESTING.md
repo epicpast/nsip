@@ -5,7 +5,7 @@ diataxis_type: reference
 
 ## Overview
 
-Property-based testing validates code properties hold for all inputs, not just specific examples. Uses [proptest](https://github.com/proptest-rs/proptest) and [quickcheck](https://github.com/BurntSushi/quickcheck).
+Property-based testing validates code properties hold for all inputs, not just specific examples. This project uses [proptest](https://github.com/proptest-rs/proptest). [quickcheck](https://github.com/BurntSushi/quickcheck) is mentioned only as an optional alternative and is **not** used in this project.
 
 **Philosophy:** Instead of testing specific cases, test universal properties.
 
@@ -45,10 +45,13 @@ proptest! {
 
 ```toml
 [dev-dependencies]
-proptest = "1.5"
-quickcheck = "1.0"
-quickcheck_macros = "1.0"
+proptest = "1.11.0"
 ```
+
+> **Note:** This project depends only on `proptest`. The `quickcheck` example
+> in the [Using QuickCheck](#using-quickcheck) section below is an optional
+> alternative and is **not** used in this project — do not add it to
+> `Cargo.toml` unless you intend to adopt it.
 
 ## Using Proptest
 
@@ -215,8 +218,9 @@ proptest! {
 proptest! {
     #[test]
     fn string_concat_associative(a: String, b: String, c: String) {
-        let left = format!("{}{}{}", a, b, c);
-        let right = format!("{}{}{}", a, b, c);
+        // Property: (a + b) + c == a + (b + c)
+        let left = format!("{}{}", format!("{}{}", a, b), c);
+        let right = format!("{}{}", a, format!("{}{}", b, c));
         prop_assert_eq!(left, right);
     }
 }
@@ -250,9 +254,10 @@ proptest! {
 }
 ```
 
-## Using QuickCheck
+## Using QuickCheck (optional alternative, not used in this project)
 
-Alternative to proptest with simpler API:
+QuickCheck is an alternative to proptest with a simpler API. This project does
+**not** use it; the example below is for reference only:
 
 ```rust
 use quickcheck_macros::quickcheck;

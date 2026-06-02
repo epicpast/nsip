@@ -7,83 +7,31 @@ diataxis_type: reference
 
 Generate Unix manual pages from CLI definitions using [clap_mangen](https://docs.rs/clap_mangen).
 
-## Setup
+## Generating Man Pages
 
-### Add Dependencies
+nsip generates its man pages at runtime through the built-in `man-pages`
+subcommand — there is no `build.rs` step. The CLI is defined in
+`crates/main.rs` (the source lives in `crates/`, not the standard `src/`
+directory) and rendered with [clap_mangen](https://docs.rs/clap_mangen).
 
-```toml
-[dependencies]
-clap = { version = "4.5", features = ["derive"] }
+```bash
+# Build the release binary
+cargo build --release
 
-[build-dependencies]
-clap = { version = "4.5", features = ["derive"] }
-clap_mangen = "0.2"
+# Write all man pages to a directory
+./target/release/nsip man-pages --out-dir man
+
+# Or stream the main page to stdout (omit --out-dir)
+./target/release/nsip man-pages
 ```
 
-### Build Script
+This is the same invocation used by the release pipeline
+(`.github/workflows/release.yml`), which runs
+`./target/release/nsip man-pages --out-dir man` and packages the result as
+`nsip-man-pages.tar.gz`.
 
-**build.rs:**
-
-```rust
-use clap::CommandFactory;
-use clap_mangen::Man;
-use std::fs;
-use std::path::PathBuf;
-
-include!("src/cli.rs");
-
-fn main() {
-    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
-    let man_dir = out_dir.join("man");
-    fs::create_dir_all(&man_dir).unwrap();
-
-    let cmd = Cli::command();
-    let man = Man::new(cmd);
-    let mut buffer = Vec::new();
-    man.render(&mut buffer).unwrap();
-
-    fs::write(man_dir.join("nsip.1"), buffer).unwrap();
-
-    println!("cargo:rerun-if-changed=src/cli.rs");
-}
-```
-
-### CLI Definition
-
-**src/cli.rs:**
-
-```rust
-use clap::Parser;
-
-/// Modern Rust project template with production-ready tooling
-///
-/// This tool provides a comprehensive starting point for Rust projects,
-/// including CI/CD workflows, security scanning, and multi-platform support.
-#[derive(Parser, Debug)]
-#[command(name = "nsip")]
-#[command(author = "Your Name <email@example.com>")]
-#[command(version)]
-#[command(about, long_about = None)]
-pub struct Cli {
-    /// Path to configuration file
-    ///
-    /// Specifies a custom configuration file location.
-    /// If not provided, defaults to ./config.toml
-    #[arg(short, long, value_name = "FILE")]
-    pub config: Option<String>,
-
-    /// Enable verbose output
-    ///
-    /// Increases verbosity of logging output.
-    /// Can be specified multiple times for more verbosity.
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    pub verbose: u8,
-
-    /// Quiet mode (suppress output)
-    #[arg(short, long, conflicts_with = "verbose")]
-    pub quiet: bool,
-}
-```
+The generated files land in the directory you pass to `--out-dir` (for example
+`man/nsip.1`). The examples below use `man/` as that output directory.
 
 ## Installation
 
@@ -94,7 +42,7 @@ pub struct Cli {
 cargo build --release
 
 # Copy man page
-sudo cp target/release/build/nsip-*/out/man/nsip.1 \
+sudo cp man/nsip.1 \
      /usr/local/share/man/man1/
 
 # Update man database
@@ -108,7 +56,7 @@ sudo mandb
 mkdir -p ~/.local/share/man/man1
 
 # Copy man page
-cp target/release/build/nsip-*/out/man/nsip.1 \
+cp man/nsip.1 \
    ~/.local/share/man/man1/
 
 # Add to MANPATH in ~/.bashrc or ~/.zshrc
@@ -134,7 +82,7 @@ man nsip
 [package.metadata.deb]
 assets = [
     ["target/release/nsip", "usr/bin/", "755"],
-    ["target/release/build/nsip-*/out/man/nsip.1", "usr/share/man/man1/", "644"],
+    ["man/nsip.1", "usr/share/man/man1/", "644"],
 ]
 ```
 
@@ -146,7 +94,7 @@ assets = [
 [package.metadata.generate-rpm]
 assets = [
     { source = "target/release/nsip", dest = "/usr/bin/", mode = "755" },
-    { source = "target/release/build/nsip-*/out/man/nsip.1", dest = "/usr/share/man/man1/", mode = "644" },
+    { source = "man/nsip.1", dest = "/usr/share/man/man1/", mode = "644" },
 ]
 ```
 
@@ -157,7 +105,7 @@ def install
   system "cargo", "install", *std_cargo_args
 
   # Install man page
-  man1.install "target/release/build/nsip-*/out/man/nsip.1"
+  man1.install "man/nsip.1"
 end
 ```
 
@@ -324,14 +272,15 @@ pub option: bool,
 ### Verify Generation
 
 ```bash
-# Build
-cargo build
+# Build and generate
+cargo build --release
+./target/release/nsip man-pages --out-dir man
 
-# Find generated man page
-find target -name "*.1"
+# List generated man pages
+ls man/
 
 # View
-man target/release/build/nsip-*/out/man/nsip.1
+man man/nsip.1
 ```
 
 ### Lint Man Page
@@ -362,10 +311,10 @@ fn verify_man_page() {
 
 ```bash
 # View directly
-man target/release/build/nsip-*/out/man/nsip.1
+man man/nsip.1
 
 # Or add to MANPATH temporarily
-export MANPATH="$PWD/target/release/build/nsip-*/out/man:$MANPATH"
+export MANPATH="$PWD/man:$MANPATH"
 man nsip
 ```
 

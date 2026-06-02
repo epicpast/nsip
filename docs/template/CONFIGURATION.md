@@ -1,5 +1,5 @@
 ---
-diataxis_type: reference
+diataxis_type: how-to
 ---
 # Template Configuration Guide
 
@@ -26,7 +26,10 @@ template-init workflow to automate it).
 | `nsip` | Your repo name (hyphenated) | `my-cli` |
 | `nsip` | Your crate name (underscored) | `my_cli` |
 
-### How It Works
+### How It Would Work (if automated)
+
+This repository does not ship a `template-init.yml` workflow, so replacement is
+manual (see below). If you restore such a workflow, the typical flow is:
 
 1. You click **"Use this template"** on GitHub.
 2. You push to `main` (or the initial commit triggers the workflow).
@@ -34,9 +37,9 @@ template-init workflow to automate it).
 4. It runs `sed` replacements across all eligible files.
 5. It regenerates `Cargo.lock` and commits the result.
 
-### Files Excluded from Replacement
+### Files to Exclude from Replacement
 
-The workflow skips these paths to avoid corrupting binaries or breaking CI:
+Skip these paths to avoid corrupting binaries or breaking CI:
 
 - `.git/*` -- Git internals
 - `.github/workflows/*` -- CI workflow files
@@ -78,15 +81,15 @@ After placeholder replacement runs, review and update these fields in `Cargo.tom
 
 | Field | Default | Action |
 |-------|---------|--------|
-| `name` | `nsip` | Auto-replaced by `template-init` |
+| `name` | `nsip` | Replace manually |
 | `version` | `0.1.0` | Update for releases |
 | `edition` | `2024` | Leave as-is unless you need an older edition |
 | `rust-version` | `1.92` | Update if changing MSRV (see section 6) |
 | `authors` | `["Your Name <you@example.com>"]` | Replace with your name and email |
 | `description` | `"A Rust template crate..."` | Replace with your crate's description |
-| `repository` | `https://github.com/zircote/nsip` | Auto-replaced by `template-init` |
-| `homepage` | `https://github.com/zircote/nsip` | Auto-replaced by `template-init` |
-| `documentation` | `https://docs.rs/nsip` | Auto-replaced by `template-init` |
+| `repository` | `https://github.com/zircote/nsip` | Replace manually |
+| `homepage` | `https://github.com/zircote/nsip` | Replace manually |
+| `documentation` | `https://docs.rs/nsip` | Replace manually |
 | `license` | `MIT` | Change if using a different license |
 | `keywords` | `["template", "rust", "example"]` | Replace with up to 5 relevant keywords |
 | `categories` | `["development-tools"]` | Replace with applicable [crate categories](https://crates.io/category_slugs) |
@@ -369,9 +372,9 @@ Instructions for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). 
 
 ### AGENTS.md
 
-Instructions for [GitHub Copilot coding agent](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent). Located at the repo root.
+Instructions for AI coding agents (read by [GitHub Copilot coding agent](https://docs.github.com/en/copilot/using-github-copilot/using-copilot-coding-agent) and compatible systems). Located at the repo root.
 
-- Read by the Copilot coding agent when it works on issues and PRs
+- Read by AI coding agents when they work on issues and PRs
 - Shares the same project conventions as `CLAUDE.md`
 
 ### .github/copilot-instructions.md

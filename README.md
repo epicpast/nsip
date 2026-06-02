@@ -7,7 +7,6 @@
 </picture>
 
 <!-- Badges -->
-[![GitHub Template](https://img.shields.io/badge/template-zircote%2Frust--template-blue?logo=github)](https://github.com/zircote/nsip)
 [![CI](https://github.com/zircote/nsip/actions/workflows/ci.yml/badge.svg)](https://github.com/zircote/nsip/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/nsip.svg?logo=rust&logoColor=white)](https://crates.io/crates/nsip)
 [![Documentation](https://docs.rs/nsip/badge.svg)](https://docs.rs/nsip)
@@ -42,7 +41,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-nsip = "0.4"
+nsip = "0.6"
 ```
 
 Or use cargo add:
@@ -121,7 +120,7 @@ nsip compare <lpn-id-1> <lpn-id-2>
 nsip completions bash
 
 # Generate man pages
-nsip man-pages ./man/
+nsip man-pages --out-dir ./man/
 
 # Start MCP server mode
 nsip mcp
@@ -264,6 +263,11 @@ This project maintains high code quality standards:
 
 ### Running Checks
 
+> **Note:** [`just check`](https://github.com/casey/just) is the canonical local
+> equivalent of the CI pipeline (fmt + clippy + test + doc + deny + coverage).
+> Run `just` to list all available recipes. The raw `cargo` commands below are
+> the underlying equivalents.
+
 ```bash
 # Run all checks
 cargo fmt -- --check && \
@@ -315,8 +319,8 @@ This template includes production-ready workflows:
 1. Update version in `Cargo.toml`
 2. Create and push a version tag:
    ```bash
-   git tag -a v0.4.0 -m "Release v0.4.0"
-   git push origin v0.4.0
+   git tag -a v0.6.0 -m "Release v0.6.0"
+   git push origin v0.6.0
    ```
 3. Workflows automatically:
    - Generate changelog
@@ -341,8 +345,8 @@ Pull and run the container:
 docker pull ghcr.io/zircote/nsip:latest
 
 # Run specific version
-docker pull ghcr.io/zircote/nsip:v0.4.0
-docker run --rm ghcr.io/zircote/nsip:v0.4.0 --version
+docker pull ghcr.io/zircote/nsip:v0.6.0
+docker run --rm ghcr.io/zircote/nsip:v0.6.0 --version
 ```
 
 ## MSRV Policy

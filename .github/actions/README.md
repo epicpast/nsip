@@ -2,7 +2,7 @@
 
 This directory contains reusable composite actions for this repository's workflows.
 
-## 📦 Available Actions
+## Available Actions
 
 ### `setup-rust-cached`
 
@@ -90,11 +90,11 @@ jobs:
 
 ---
 
-## 🎯 Why Composite Actions?
+## Why Composite Actions?
 
 ### Before (Problems):
 ```yaml
-# Repeated 29 times across workflows!
+# Repeated in approximately 29 places across workflows (estimate)!
 - uses: dtolnay/rust-toolchain@<sha-1>  # Different SHAs
   with:
     toolchain: stable
@@ -108,7 +108,7 @@ jobs:
 ```
 
 **Issues:**
-- 🔴 29 places to update when action versions change
+- 🔴 ~29 places to update when action versions change (estimate)
 - 🔴 Inconsistent SHA versions (3 different SHAs for same action!)
 - 🔴 Suboptimal cache keys
 - 🔴 Maintenance nightmare
@@ -129,12 +129,14 @@ jobs:
 
 ---
 
-## 📊 Impact
+## Impact
+
+> The figures below are approximate estimates, not measured benchmarks.
 
 ### Maintenance
-- **Before**: 48 places to update actions
+- **Before**: approximately 48 places to update actions
 - **After**: 1 place to update
-- **Time saved**: 92% (2 hours → 10 minutes)
+- **Time saved**: roughly 90% (estimate)
 
 ### Consistency
 - **Before**: 3 different SHAs for same action
@@ -142,13 +144,13 @@ jobs:
 - **Security**: Reduced attack surface
 
 ### Performance
-- **Before**: ~60% cache hit rate
-- **After**: ~80% cache hit rate
-- **Speed**: 15-20% faster builds
+- **Before**: ~60% cache hit rate (estimate)
+- **After**: ~80% cache hit rate (estimate)
+- **Speed**: approximately 15-20% faster builds (estimate)
 
 ---
 
-## 🔧 Maintenance
+## Maintenance
 
 ### Updating Action Versions
 
@@ -188,15 +190,15 @@ act -j build
 
 ---
 
-## 📚 Best Practices
+## Best Practices
 
-### DO ✅
+### DO
 - Use `cache-key` input to differentiate job-specific caches
 - Pin composite action file updates in commits with SHA references
 - Test composite action changes in one workflow before rollout
 - Document any custom inputs/outputs you add
 
-### DON'T ❌
+### DON'T
 - Don't bypass composite actions unless necessary
 - Don't create workflow-specific composite actions (keep them general)
 - Don't forget to update SHA comments when updating actions
@@ -204,7 +206,7 @@ act -j build
 
 ---
 
-## 🔍 Debugging
+## Debugging
 
 ### Cache Not Hitting?
 Check the cache key includes rustc version:
@@ -230,16 +232,15 @@ components: clippy, rustfmt  # ✗ Wrong
 
 ---
 
-## 📖 Further Reading
+## Further Reading
 
 - [GitHub Actions: Creating Composite Actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action)
 - [Caching Dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows)
 - [Security Hardening](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
-- [Workflow Optimization Report](../../WORKFLOW_ANALYSIS.md)
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 When creating new workflows, **always use these composite actions** instead of directly using:
 - `dtolnay/rust-toolchain` → Use `setup-rust-cached` instead
