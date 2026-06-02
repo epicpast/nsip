@@ -5,61 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [0.6.0] - 2026-06-01
+## [0.6.0] - 2026-06-02
 
 ### Added
 
-- **Dual-consumer error envelope (RFC 9457).** Errors are now emitted as
-  `application/problem+json` for agents/non-TTY consumers (or `--format json` /
-  `-J`) and as a `miette` graphical diagnostic for humans on a TTY. The envelope
-  carries `type`, `title`, `status`, `detail`, `instance`, `exit_code`,
-  `suggested_fix`, `retry_after`, and `docs_url`. See
-  [`docs/reference/ERROR-ENVELOPE.md`](docs/reference/ERROR-ENVELOPE.md) and the
-  [error catalog](docs/reference/errors/). ([ADR-0004](docs/adr/0004-dual-consumer-error-envelope.md), [ADR-0005](docs/adr/0005-error-type-uri-policy.md))
-- **`--format <pretty|json>`** global flag; `-J/--json` is now an alias for
-  `--format json` and also selects error output.
-- MCP tool errors now carry the same problem+json envelope in the JSON-RPC
-  error `data` field.
-- **Per-operation error taxonomy.** `Error::Validation` now carries a
-  [`ValidationKind`] (empty-lpn-id, invalid-breed-id, page-range, empty-search,
-  compare-arity, missing-argument, unknown-resource, invalid-cursor,
-  unknown-transport, other),
-  each with its own `type` URI, catalog page, and tailored `suggested_fix`.
-  Every MCP tool/prompt/resource validation path is now enveloped (previously
-  bare `invalid_params`/`resource_not_found`), the JSON-RPC code is selected by
-  error class (caller → `invalid_params`, unknown-resource → `resource_not_found`,
-  upstream → `internal_error`), and the `instance` URN now identifies the
-  operation (e.g. `urn:nsip:compare:…`).
-- HTTP client now handles `429` and parses the `Retry-After` header
-  (delta-seconds and HTTP-date forms), populating `retry_after` and honoring the
-  delay on retry.
-- `Error` variants now preserve the originating cause via `#[source]`.
-- **Configurable error `type` URIs.** The envelope `type`/`docs_url` base — and,
-  optionally, each error's slug — are configurable from `Cargo.toml` via
-  `[package.metadata.nsip]` (`error-type-uri-base` and `[…​.error-slugs]`), read
-  at build time by `build.rs`, so a fork can point the error catalog at its own
-  documentation without editing source. See
-  [`docs/reference/ERROR-ENVELOPE.md`](docs/reference/ERROR-ENVELOPE.md#configuring-the-type-uri-forks-and-downstream).
+- **errors**: RFC 9457 dual-consumer error envelope (CDC remediation)
+- **errors**: Per-operation error taxonomy + envelope all MCP paths
+- **errors**: Dedicated mcp/invalid-cursor problem type
+- Configurable error type-URI base and per-error slugs via Cargo.toml
 
-### Changed
+### Documentation
 
-- **BREAKING:** process exit codes now vary by error class —
-  `1` (caller / 4xx / not-found), `3` (upstream parse), `75` `EX_TEMPFAIL`
-  (timeout / connection / 429 / 5xx) — instead of a blanket `1`.
-- **BREAKING:** piped / non-TTY invocations emit JSON errors by default; a bare
-  `nsip` invocation emits the error envelope rather than clap's raw usage text.
-- `AnimalDetails::from_api_response` now fails (`Error::Parse`) on a 200 body
-  with no recognized identity field instead of returning an empty record.
-- **BREAKING:** `Error::Validation(String)` is now a struct variant
-  `Error::Validation { kind: ValidationKind, message: String }`.
-- OAuth `OAuthConfig` `Debug` redacts `github_client_secret` and `auth_secret`;
-  transient OAuth `503` responses now advertise a `Retry-After` header.
+- Correct workflow trigger accuracy from PR review
+- Correct release trigger accuracy in RELEASE.md
+- Use annotated tag and dedupe runbook link in RELEASE.md
 
-### Removed
+### Fixed
 
-- Dropped the unused `opentelemetry-otlp` dependency.
+- **ci**: Resolve MSRV -D warnings failure and RUSTSEC-2026-0037
+- Harden error-handling edges found in self-review
+- Address Copilot review feedback on PR #259
+
+### Miscellaneous
+
+- Remove editor, devcontainer, snap, certs, and refactor config
+- Prune disabled workflows and reconcile docs
+- **release**: Bump version to 0.6.0
+
+### Ci
+
+- Automate post-release back-merge and quiet docker attestation
 
 ## [0.5.1] - 2026-06-01
 
@@ -95,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump opentelemetry_sdk from 0.32.0 to 0.32.1 (#248)
 - **deps**: Bump the github-actions group with 3 updates (#249)
 - **deps**: Bump zircote/adrscope (#250)
-- Bump version to 0.5.1
+- Bump version to 0.5.1 (#252)
 
 ### Ci
 
@@ -346,5 +321,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump actions/cache from 4.2.0 to 5.0.3 (#5)
 - **deps**: Bump github/codeql-action from 3 to 4 (#6)
 - **deps**: Bump actions/github-script from 7.0.1 to 8.0.0 (#4)
+
+[0.6.0]: https://github.com/zircote/nsip/compare/v0.5.1..v0.6.0
+[0.5.1]: https://github.com/zircote/nsip/compare/v0.5.0..v0.5.1
+[0.5.0]: https://github.com/zircote/nsip/compare/v0.4.0..v0.5.0
+[0.4.0]: https://github.com/zircote/nsip/compare/v0.4.0-rc1..v0.4.0
+[0.4.0-rc1]: https://github.com/zircote/nsip/compare/v0.3.3..v0.4.0-rc1
+[0.3.3]: https://github.com/zircote/nsip/compare/v0.3.3-rc.3..v0.3.3
+[0.3.3-rc.3]: https://github.com/zircote/nsip/compare/v0.3.2..v0.3.3-rc.3
+[0.3.2]: https://github.com/zircote/nsip/compare/v0.3.1..v0.3.2
+[0.3.1]: https://github.com/zircote/nsip/compare/v0.3.0..v0.3.1
+[0.3.0]: https://github.com/zircote/nsip/tree/v0.3.0
 
 <!-- generated by git-cliff -->
