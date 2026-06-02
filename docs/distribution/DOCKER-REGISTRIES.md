@@ -22,18 +22,20 @@ Container Registry (ghcr.io).
 
 **Default public registry**
 
-```bash
-# Not published to Docker Hub — see ghcr.io/zircote/nsip
-# Pull image
-docker pull username/nsip:latest
-docker pull username/nsip:0.1.0
+> `nsip` is **not** published to Docker Hub — official images live at
+> `ghcr.io/zircote/nsip`. The commands below are generic Docker Hub usage;
+> substitute your own `<user>/<image>`.
 
-# Not published to Docker Hub — see ghcr.io/zircote/nsip
+```bash
+# Pull image
+docker pull <user>/<image>:latest
+docker pull <user>/<image>:<version>
+
 # Run container
-docker run -it username/nsip:latest
+docker run -it <user>/<image>:latest
 ```
 
-**URL:** https://hub.docker.com/r/username/nsip
+**URL:** `https://hub.docker.com/r/<user>/<image>`
 
 ### 2. GitHub Container Registry (ghcr.io)
 
