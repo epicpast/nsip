@@ -138,9 +138,12 @@ jobs:
           # page under docs/reference/errors/.
           missing=0
           # Match any "domain/slug" literal (not just the current cli/api/mcp
-          # domains) so a new error domain is caught, but drop RFC media types
-          # like application/problem+json that share the shape.
-          slugs=$(grep -oE '"[a-z][a-z0-9]*/[a-z0-9][a-z0-9-]*"' crates/problem.rs \
+          # domains) so a new error domain is caught. Strip the #[cfg(test)]
+          # module first (test fixtures contain non-slug strings like
+          # "errors/custom"), and drop RFC media types like
+          # application/problem+json that share the shape.
+          slugs=$(sed '/#\[cfg(test)\]/,$d' crates/problem.rs \
+            | grep -oE '"[a-z][a-z0-9]*/[a-z0-9][a-z0-9-]*"' \
             | tr -d '"' \
             | grep -Ev '^(application|text|image|multipart|audio|video|font|model|message|example)/' \
             | sort -u)
