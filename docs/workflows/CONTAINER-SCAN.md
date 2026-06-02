@@ -8,8 +8,13 @@ diataxis_type: reference
 Automated Docker container vulnerability scanning using [Trivy](https://github.com/aquasecurity/trivy).
 
 **Workflow:** `.github/workflows/container-scan.yml`  
-**Triggers:** Push, PR, Weekly schedule, Manual  
+**Triggers:** Manual (`workflow_dispatch`) only  
 **Integration:** GitHub Security tab (SARIF upload)
+
+> **Note:** The workflow also contains `push`, `pull_request`, and weekly
+> `schedule` trigger blocks, but they are commented out (disabled). Only
+> `workflow_dispatch` is active today. Uncomment those blocks in
+> `container-scan.yml` to enable automatic scanning.
 
 ## How It Works
 
@@ -163,11 +168,13 @@ CVE-2021-12345  # Mitigated by network isolation
 
 ## Scheduled Scans
 
-Weekly scans run automatically:
+The workflow ships with a weekly schedule block, but it is currently
+**disabled** (commented out). The scan runs only on manual
+`workflow_dispatch` until the block is uncommented:
 
 ```yaml
-schedule:
-  - cron: "0 0 * * 0"  # Every Sunday at midnight
+# schedule:
+#   - cron: "0 0 * * 0"  # Every Sunday at midnight
 ```
 
 ## Troubleshooting

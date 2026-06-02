@@ -14,34 +14,71 @@ Complete reference for error handling in the `nsip` crate.
 
 ## Error Type
 
-The crate defines a single error enum with six variants, implemented using `thiserror`:
+The crate defines a single error enum with six variants, implemented using
+`thiserror` and `miette::Diagnostic`. Every variant maps to an RFC 9457 Problem
+Details envelope via [`Error::to_problem_details`](ERROR-ENVELOPE.md). The
+fallible-API variants carry an optional `#[source]` to preserve the originating
+`reqwest` / `serde_json` cause chain, and the transient variants also carry an
+optional `retry_after`:
 
 ```rust
+use miette::Diagnostic;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+/// Boxed, thread-safe source error used to preserve the cause chain.
+type BoxSource = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+#[derive(Error, Debug, Diagnostic)]
+#[non_exhaustive]
 pub enum Error {
-    #[error("validation error: {0}")]
-    Validation(String),
+    #[error("validation error: {message}")]
+    Validation {
+        kind: ValidationKind,
+        message: String,
+    },
 
     #[error("API error (HTTP {status}): {message}")]
-    Api { status: u16, message: String },
+    Api {
+        status: u16,
+        message: String,
+        retry_after: Option<RetryAfter>,
+        #[source]
+        source: Option<BoxSource>,
+    },
 
     #[error("not found: {0}")]
     NotFound(String),
 
-    #[error("request timed out: {0}")]
-    Timeout(String),
+    #[error("request timed out: {message}")]
+    Timeout {
+        message: String,
+        retry_after: Option<RetryAfter>,
+        #[source]
+        source: Option<BoxSource>,
+    },
 
-    #[error("connection error: {0}")]
-    Connection(String),
+    #[error("connection error: {message}")]
+    Connection {
+        message: String,
+        retry_after: Option<RetryAfter>,
+        #[source]
+        source: Option<BoxSource>,
+    },
 
-    #[error("parse error: {0}")]
-    Parse(String),
+    #[error("parse error: {message}")]
+    Parse {
+        message: String,
+        #[source]
+        source: Option<BoxSource>,
+    },
 }
 ```
 
-All variants implement `std::fmt::Display` and `std::error::Error`.
+All variants implement `std::fmt::Display`, `std::error::Error`, and
+`miette::Diagnostic`. The enum is `#[non_exhaustive]`, so downstream `match`
+expressions must include a wildcard `_ =>` arm. Construct errors with the
+provided constructors (e.g. `Error::empty_lpn_id()`, `Error::api(503, "down")`)
+rather than building struct variants directly.
 
 ---
 
@@ -64,11 +101,54 @@ async fn fetch_animal(lpn_id: &str) -> nsip::Result<nsip::AnimalDetails> {
 
 ---
 
+## Validation Kinds
+
+`Error::Validation` carries a `kind: ValidationKind` that classifies the
+specific input failure. Each kind selects a distinct RFC 9457 problem `type` URI
+and a tailored recovery hint (see the [error catalog](errors/)). `ValidationKind`
+is `#[non_exhaustive]`.
+
+Each kind has a dedicated constructor on `Error`. `empty_lpn_id()` takes no
+argument; every other named constructor takes an `impl Into<String>` message.
+The generic `Other` kind has no dedicated constructor — use `Error::validation(msg)`
+(or `Error::validation_kind(ValidationKind::Other, msg)`).
+
+| `ValidationKind` | Constructor | Meaning |
+|------------------|-------------|---------|
+| `EmptyLpnId` | `Error::empty_lpn_id()` | An LPN ID argument was empty or blank |
+| `InvalidBreedId` | `Error::invalid_breed_id(msg)` | A breed ID was non-positive or unparseable |
+| `PageRange` | `Error::page_range(msg)` | A `page` / `page_size` parameter was out of range |
+| `EmptySearch` | `Error::empty_search(msg)` | A search request carried no usable filter |
+| `CompareArity` | `Error::compare_arity(msg)` | A comparison was given fewer than 2 or more than 5 animals |
+| `MissingArgument` | `Error::missing_argument(msg)` | A required MCP argument was absent |
+| `UnknownResource` | `Error::unknown_resource(msg)` | An MCP resource URI matched no known resource or template |
+| `InvalidCursor` | `Error::invalid_cursor(msg)` | An MCP pagination cursor could not be decoded or was out of range |
+| `UnknownTransport` | `Error::unknown_transport(msg)` | An MCP transport other than `stdio` / `http` was requested |
+| `Other` | `Error::validation(msg)` | Any other input validation failure (the generic fallback) |
+
+```rust
+use nsip::{Error, ValidationKind};
+
+let err = Error::empty_lpn_id();
+let generic = Error::validation("something else was wrong");
+
+// Dispatch on the specific kind.
+if let Error::Validation { kind, message } = &err {
+    match kind {
+        ValidationKind::EmptyLpnId => eprintln!("provide a non-empty LPN ID"),
+        ValidationKind::CompareArity => eprintln!("pass between 2 and 5 LPN IDs: {message}"),
+        _ => eprintln!("validation error: {message}"),
+    }
+}
+```
+
+---
+
 ## Error Variants
 
 ### `Error::Validation`
 
-Returned when input parameters fail local validation before a request is sent to the API.
+Returned when input parameters fail local validation before a request is sent to the API. Carries a [`ValidationKind`](#validation-kinds) and a human-readable `message`.
 
 **Display format:** `validation error: {message}`
 
@@ -93,8 +173,8 @@ let client = NsipClient::new();
 
 // page_size of 0 triggers Validation
 match client.search_animals(0, 0, None, None, None, None).await {
-    Err(Error::Validation(msg)) => {
-        eprintln!("Invalid input: {}", msg);
+    Err(Error::Validation { kind, message }) => {
+        eprintln!("Invalid input ({kind:?}): {message}");
         // Fix the input -- do not retry
     }
     Ok(results) => { /* process results */ }
@@ -114,7 +194,9 @@ Returned when the NSIP API responds with a non-success HTTP status code that is 
 
 **Fields:**
 - `status: u16` -- the HTTP status code
-- `message: String` -- human-readable description
+- `message: String` -- human-readable description (the response body where available)
+- `retry_after: Option<RetryAfter>` -- retry delay parsed from the upstream `Retry-After` header, for transient (429 / 5xx) responses
+- `source: Option<BoxSource>` -- originating transport error, preserved for the cause chain
 
 **Common status codes:**
 
@@ -131,7 +213,7 @@ Returned when the NSIP API responds with a non-success HTTP status code that is 
 
 ```rust
 match client.breed_groups().await {
-    Err(Error::Api { status, message }) => {
+    Err(Error::Api { status, message, .. }) => {
         match status {
             400 => eprintln!("Bad request: {}", message),
             500..=599 => eprintln!("Server error ({}): {}", status, message),
@@ -191,8 +273,8 @@ Returned when the HTTP request exceeds the configured timeout duration. The defa
 
 ```rust
 match client.search_animals(0, 100, None, None, None, None).await {
-    Err(Error::Timeout(msg)) => {
-        eprintln!("Timed out: {}", msg);
+    Err(Error::Timeout { message, .. }) => {
+        eprintln!("Timed out: {}", message);
         // Reduce page size or increase timeout
         let client = NsipClient::builder()
             .timeout_secs(120)
@@ -226,8 +308,8 @@ Returned when the HTTP client cannot establish a connection to the API server.
 use std::time::Duration;
 
 match client.breed_groups().await {
-    Err(Error::Connection(msg)) => {
-        eprintln!("Connection failed: {}", msg);
+    Err(Error::Connection { message, .. }) => {
+        eprintln!("Connection failed: {}", message);
         // Check network, then retry
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
@@ -256,8 +338,8 @@ Returned when the API response cannot be deserialized into the expected data typ
 
 ```rust
 match client.trait_ranges(640).await {
-    Err(Error::Parse(msg)) => {
-        eprintln!("Parse error: {}", msg);
+    Err(Error::Parse { message, .. }) => {
+        eprintln!("Parse error: {}", message);
         // Likely an API change -- report as a bug
     }
     Ok(ranges) => { /* process ranges */ }
@@ -315,12 +397,12 @@ Each variant produces a distinct display prefix:
 
 | Variant | Display prefix |
 |---------|---------------|
-| `Validation(msg)` | `validation error: {msg}` |
-| `Api { status, message }` | `API error (HTTP {status}): {message}` |
+| `Validation { kind, message }` | `validation error: {message}` |
+| `Api { status, message, .. }` | `API error (HTTP {status}): {message}` |
 | `NotFound(msg)` | `not found: {msg}` |
-| `Timeout(msg)` | `request timed out: {msg}` |
-| `Connection(msg)` | `connection error: {msg}` |
-| `Parse(msg)` | `parse error: {msg}` |
+| `Timeout { message, .. }` | `request timed out: {message}` |
+| `Connection { message, .. }` | `connection error: {message}` |
+| `Parse { message, .. }` | `parse error: {message}` |
 
 ---
 
@@ -337,11 +419,11 @@ match client.animal_details("430735-0032").await {
     Ok(animal) => {
         println!("Retrieved: {}", animal.lpn_id);
     }
-    Err(Error::Validation(msg)) => {
+    Err(Error::Validation { kind, message }) => {
         // Bad input -- fix and do not retry
-        eprintln!("Invalid input: {}", msg);
+        eprintln!("Invalid input ({kind:?}): {message}");
     }
-    Err(Error::Api { status, message }) => {
+    Err(Error::Api { status, message, .. }) => {
         // Server returned an error HTTP status
         eprintln!("API error (HTTP {}): {}", status, message);
     }
@@ -349,18 +431,20 @@ match client.animal_details("430735-0032").await {
         // Resource does not exist
         eprintln!("Not found: {}", msg);
     }
-    Err(Error::Timeout(msg)) => {
+    Err(Error::Timeout { message, .. }) => {
         // Request exceeded timeout
-        eprintln!("Timed out: {}", msg);
+        eprintln!("Timed out: {}", message);
     }
-    Err(Error::Connection(msg)) => {
+    Err(Error::Connection { message, .. }) => {
         // Network-level failure
-        eprintln!("Connection error: {}", msg);
+        eprintln!("Connection error: {}", message);
     }
-    Err(Error::Parse(msg)) => {
+    Err(Error::Parse { message, .. }) => {
         // Response deserialization failed
-        eprintln!("Parse error: {}", msg);
+        eprintln!("Parse error: {}", message);
     }
+    // `Error` is #[non_exhaustive]; a wildcard arm is required.
+    Err(e) => eprintln!("Unexpected error: {e}"),
 }
 ```
 

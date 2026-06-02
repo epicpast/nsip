@@ -16,6 +16,7 @@ annotated with trigger conditions, required secrets, and activation status.
 | CI | `ci.yml` | push, PR (`develop`/`main`), manual | `CODECOV_TOKEN` | Active |
 | Release | `release.yml` | tag `v*.*.*`, manual | -- | Active |
 | Release PR | `release-pr.yml` | manual | -- | Active |
+| Back-merge | `back-merge.yml` | tag `v*.*.*`, manual | -- | Active |
 | Changelog | `changelog.yml` | tag `v*.*.*`, manual | -- | Active |
 | Docker (GHCR) | `docker.yml` | tag `v*.*.*`, manual | -- | Active |
 | Publish to crates.io | `publish.yml` | tag `v*.*.*`, manual | `CARGO_REGISTRY_TOKEN` | Opt-in |
@@ -174,6 +175,20 @@ used in the PR title/body.
 
 **How to enable/disable:** Active by default. After merging the PR it opens,
 tag the `main` merge commit to trigger the release.
+
+### back-merge.yml
+
+**What it does:** Keeps `develop` in sync with `main` after a release. Opens (or
+reuses) a pull request back-merging `main` into `develop` and enables auto-merge
+so it lands once required checks pass. Skips when `develop` already contains
+`main`.
+
+**Trigger:** Push tag matching `v*.*.*` (fires alongside the release), manual.
+
+**Required secrets:** None (uses built-in `GITHUB_TOKEN`).
+
+**How to enable/disable:** Active by default. Requires auto-merge to be enabled
+in repository settings for the PR to land automatically.
 
 ### changelog.yml
 

@@ -11,7 +11,7 @@ For installation, configuration, resources, and prompts, see [MCP Server Referen
 
 ## Overview
 
-The MCP server exposes 13 tools over the Model Context Protocol (stdio transport, protocol version `2025-06-18`). All tools return JSON results as text content. Errors use standard MCP error codes.
+The MCP server exposes 13 tools over the Model Context Protocol (stdio transport, protocol version `2025-11-25`). All tools return JSON results as text content. Errors use standard MCP error codes.
 
 | Tool | Description |
 |------|-------------|
@@ -79,7 +79,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `animal_id` | string | yes | LPN ID or registration number |
+| `lpn_id` | string | yes | LPN ID or registration number |
 
 **Returns:** `AnimalDetails` -- LPN ID, breed, sex, date of birth, status, EBV traits, and contact info.
 
@@ -89,7 +89,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 {
   "tool": "details",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -104,7 +104,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `animal_id` | string | yes | LPN ID of the animal |
+| `lpn_id` | string | yes | LPN ID of the animal |
 
 **Returns:** `Lineage` -- subject, sire, dam, and extended generations.
 
@@ -114,7 +114,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 {
   "tool": "lineage",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -129,7 +129,7 @@ Get a paginated list of offspring for a specific animal.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `animal_id` | string | yes | -- | LPN ID of the animal |
+| `lpn_id` | string | yes | -- | LPN ID of the animal |
 | `page` | integer | no | 0 | Page number (0-indexed) |
 | `page_size` | integer | no | 10 | Results per page |
 
@@ -141,7 +141,7 @@ Get a paginated list of offspring for a specific animal.
 {
   "tool": "progeny",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "page": 0,
     "page_size": 20
   }
@@ -158,7 +158,7 @@ Get a complete profile for an animal: details, pedigree, and offspring in one ca
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `animal_id` | string | yes | LPN ID of the animal |
+| `lpn_id` | string | yes | LPN ID of the animal |
 
 **Returns:** `AnimalProfile` -- combined details, lineage, and progeny.
 
@@ -168,7 +168,7 @@ Get a complete profile for an animal: details, pedigree, and offspring in one ca
 {
   "tool": "profile",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -323,8 +323,8 @@ Calculate Wright's coefficient of inbreeding (COI) for a potential sire-dam mati
 | Rating | COI range | Interpretation |
 |--------|-----------|----------------|
 | Green | < 6.25% | Acceptable -- proceed with mating |
-| Yellow | 6.25% - 12.5% | Elevated -- consider alternatives |
-| Red | > 12.5% | High -- generally avoid |
+| Yellow | 6.25% to < 12.5% | Elevated -- consider alternatives |
+| Red | >= 12.5% | High -- generally avoid |
 
 **Returns:** COI coefficient, rating, and list of shared ancestors with path depths.
 
@@ -366,7 +366,7 @@ Find optimal mates for an animal. Searches the breed for candidates, checks inbr
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `animal_id` | string | yes | -- | LPN ID of the animal to find mates for |
+| `lpn_id` | string | yes | -- | LPN ID of the animal to find mates for |
 | `breed_id` | integer | yes | -- | Breed ID to search for potential mates |
 | `target_traits` | string | no | `WWT,BWT,NLB` | Traits to optimize (comma-separated) |
 | `max_results` | integer | no | 5 | Maximum number of recommendations |
@@ -382,13 +382,15 @@ Traits where lower values are preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatical
 
 **Returns:** Ranked list of recommended mates, each with a score, COI check, and predicted offspring EBVs.
 
+Each `coi` object includes a `reliable` boolean. It is `true` when the mate's lineage was fetched successfully and the COI reflects real pedigree overlap. It is `false` when the mate's lineage could not be retrieved; in that case the COI is computed against an empty pedigree (typically `0.0` / `Green`) and should not be trusted.
+
 **Example:**
 
 ```json
 {
   "tool": "mating_recommendations",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "breed_id": 486,
     "target_traits": "WWT,EMD,NLB",
     "max_results": 3
@@ -405,7 +407,8 @@ Traits where lower values are preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatical
     "rank_score": 18.42,
     "coi": {
       "coefficient": 0.015,
-      "rating": "Green"
+      "rating": "Green",
+      "reliable": true
     },
     "predicted_offspring_ebvs": {
       "BWT": 0.15,

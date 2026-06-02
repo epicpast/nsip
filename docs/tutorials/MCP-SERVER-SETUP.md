@@ -37,19 +37,19 @@ cargo install nsip
 
 Download the binary for your platform from [GitHub Releases](https://github.com/zircote/nsip/releases):
 
-| Platform       | Binary                    |
-|----------------|---------------------------|
-| Linux x86_64   | `nsip-linux-amd64`        |
-| Linux ARM64    | `nsip-linux-arm64`        |
-| macOS x86_64   | `nsip-macos-amd64`        |
-| macOS ARM64    | `nsip-macos-arm64`        |
-| Windows x86_64 | `nsip-windows-amd64.exe`  |
+| Platform       | Binary                        |
+|----------------|-------------------------------|
+| Linux x86_64   | `nsip-0.6.0-linux-amd64`       |
+| Linux ARM64    | `nsip-0.6.0-linux-arm64`       |
+| macOS x86_64   | `nsip-0.6.0-macos-amd64`       |
+| macOS ARM64    | `nsip-0.6.0-macos-arm64`       |
+| Windows x86_64 | `nsip-0.6.0-windows-amd64.exe` |
 
 After downloading, make it executable and move it to your PATH:
 
 ```bash
-chmod +x nsip-macos-arm64
-sudo mv nsip-macos-arm64 /usr/local/bin/nsip
+chmod +x nsip-0.6.0-macos-arm64
+sudo mv nsip-0.6.0-macos-arm64 /usr/local/bin/nsip
 ```
 
 **Via Docker:**

@@ -155,7 +155,7 @@ The complete evaluation pipeline involves several stages:
 
 ### 1. Data Collection
 
-Breeders record performance data on their animals: birth weights, weaning weights, ultrasound measurements (PEMD, PFAT), reproduction records (NLB, NLW), fecal egg counts (WFEC, PFEC), scrotal circumference (SC), and wool traits for wool breeds. This data is submitted to NSIP every two weeks along with pedigree information (sire, dam) and management details (flock, birth date, birth type). The data flows through Pedigree Master software to LAMBPLAN in Australia for BLUP processing.
+Breeders record performance data on their animals: birth weights, weaning weights, ultrasound measurements (EMD, FAT), reproduction records (NLB, NWT), fecal egg counts (WEC, FEC), scrotal circumference (SC), and wool traits for wool breeds. This data is submitted to NSIP every two weeks along with pedigree information (sire, dam) and management details (flock, birth date, birth type). The data flows through Pedigree Master software to LAMBPLAN in Australia for BLUP processing.
 
 ### 2. Data Validation
 
@@ -173,7 +173,9 @@ The mixed model equations are constructed and solved, incorporating all performa
 
 Results are published to the NSIP Search API, where they can be accessed through the `nsip` CLI and library. The `date_last_updated` endpoint reports when the most recent evaluation was published.
 
-### EBVs and EPDs
+---
+
+## EBVs and EPDs
 
 EBVs and **Expected Progeny Differences (EPDs)** are closely related concepts. An EPD is simply half the EBV difference between two animals -- because each parent contributes half its genetics to its offspring. Some livestock industries (notably U.S. beef cattle) use EPDs as the primary metric, while NSIP follows the Australian convention of reporting full EBVs. When comparing across systems, remember: EPD = EBV / 2 for a single parent's contribution.
 

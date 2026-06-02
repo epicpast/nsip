@@ -30,7 +30,7 @@ brew upgrade nsip
 ```
 
 **Setup Requirements:**
-1. Create `homebrew-tap` repository: `https://github.com/USER/homebrew-tap`
+1. Create `homebrew-tap` repository: `https://github.com/zircote/homebrew-tap`
 2. Add secret `HOMEBREW_TAP_TOKEN` with repo access
 3. Formula auto-updates on releases
 
@@ -38,7 +38,7 @@ brew upgrade nsip
 
 ```bash
 # Download from releases
-wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip_0.1.0_amd64.deb
+wget https://github.com/zircote/nsip/releases/download/v0.1.0/nsip_0.1.0_amd64.deb
 
 # Install
 sudo dpkg -i nsip_0.1.0_amd64.deb
@@ -56,7 +56,7 @@ sudo apt-get install -f
 
 ```bash
 # Download from releases
-wget https://github.com/USER/REPO/releases/download/v0.1.0/nsip-0.1.0-1.x86_64.rpm
+wget https://github.com/zircote/nsip/releases/download/v0.1.0/nsip-0.1.0-1.x86_64.rpm
 
 # Install
 sudo rpm -i nsip-0.1.0-1.x86_64.rpm
@@ -85,7 +85,7 @@ sudo snap install nsip_0.1.0_amd64.snap --dangerous
 
 ```powershell
 # Download MSI from releases
-# https://github.com/USER/REPO/releases/download/v0.1.0/nsip-0.1.0-x64.msi
+# https://github.com/zircote/nsip/releases/download/v0.1.0/nsip-0.1.0-x64.msi
 
 # Install via GUI or command line
 msiexec /i nsip-0.1.0-x64.msi
@@ -99,12 +99,12 @@ msiexec /i nsip-0.1.0-x64.msi /quiet
 ### MCP Bundle (.mcpb)
 
 ```bash
-# Download from releases
-curl -LO https://github.com/zircote/nsip/releases/latest/download/nsip.mcpb
+# Download from releases (asset name carries the version)
+curl -LO https://github.com/zircote/nsip/releases/download/v0.6.0/nsip-0.6.0.mcpb
 
 # Install in Claude Desktop: drag into Settings > Extensions
 # Verify integrity:
-gh attestation verify nsip.mcpb --repo zircote/nsip
+gh attestation verify nsip-0.6.0.mcpb --repo zircote/nsip
 ```
 
 **Workflow:** `.github/workflows/release.yml` (package-mcpb job)
@@ -325,7 +325,7 @@ ShortDescription: Modern Rust template
 Installers:
   - Architecture: x64
     InstallerType: wix
-    InstallerUrl: https://github.com/USER/REPO/releases/download/v0.1.0/nsip-0.1.0-x64.msi
+    InstallerUrl: https://github.com/zircote/nsip/releases/download/v0.1.0/nsip-0.1.0-x64.msi
     InstallerSha256: HASH
 ManifestType: singleton
 ManifestVersion: 1.0.0

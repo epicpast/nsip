@@ -7,10 +7,22 @@ diataxis_type: reference
 
 Automated generation of Software Bill of Materials in SPDX format for supply chain transparency and compliance.
 
-**Workflow:** `.github/workflows/sbom.yml`  
 **Tool:** `cargo-sbom`  
 **Format:** SPDX 2.3 JSON  
-**Triggers:** Version tags, releases
+**Artifact filename:** `nsip-sbom-spdx.json`
+
+## SBOM Generation Paths
+
+An SBOM is produced through **two** distinct paths, with different
+provenance guarantees:
+
+| Path | Workflow / Job | Trigger | Provenance attestation |
+|---|---|---|---|
+| Release pipeline | `release.yml` → `generate-sbom` job | Push of a `v*.*.*` tag | **Yes** — attested with `actions/attest-build-provenance`; uploads `nsip-sbom-spdx.json` **and** `nsip-sbom-spdx.json.sigstore.json` |
+| Standalone | `sbom.yml` | `release: published` (and manual `workflow_dispatch`) | **No** — generates and attaches `nsip-sbom-spdx.json` only, without an attestation bundle |
+
+Both paths upload the same `nsip-sbom-spdx.json` to the GitHub Release.
+The release-pipeline path additionally signs it with a Sigstore attestation.
 
 ## What is an SBOM?
 
@@ -52,11 +64,11 @@ cat sbom.json | jq '.packages[] | {name, version, licenseConcluded}'
 ### Access from Release
 
 ```bash
-# Download from GitHub release
-wget https://github.com/zircote/nsip/releases/download/v0.1.0/sbom-spdx.json
+# Download from GitHub release (replace vX.Y.Z with the release tag)
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-sbom-spdx.json
 
 # Analyze with SBOM tools
-sbom-tool validate sbom-spdx.json
+sbom-tool validate nsip-sbom-spdx.json
 ```
 
 ## Configuration
@@ -81,7 +93,7 @@ The generated SBOM includes:
   "packages": [
     {
       "name": "nsip",
-      "versionInfo": "0.1.0",
+      "versionInfo": "X.Y.Z",
       "licenseConcluded": "MIT",
       "supplier": "Organization: zircote"
     }
@@ -144,7 +156,7 @@ Validate SBOM:
 pip install spdx-tools
 
 # Validate
-spdx-tools validate sbom-spdx.json
+spdx-tools validate nsip-sbom-spdx.json
 ```
 
 ## Links

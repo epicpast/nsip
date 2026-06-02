@@ -23,10 +23,12 @@ Container Registry (ghcr.io).
 **Default public registry**
 
 ```bash
+# Not published to Docker Hub — see ghcr.io/zircote/nsip
 # Pull image
 docker pull username/nsip:latest
 docker pull username/nsip:0.1.0
 
+# Not published to Docker Hub — see ghcr.io/zircote/nsip
 # Run container
 docker run -it username/nsip:latest
 ```
@@ -243,7 +245,7 @@ Automatically added via `docker/metadata-action`:
 
 ```dockerfile
 LABEL org.opencontainers.image.source="https://github.com/USER/REPO"
-LABEL org.opencontainers.image.description="Modern Rust template"
+LABEL org.opencontainers.image.description="NSIP Search API client for nsipsearch.nsip.org/api"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.version="0.1.0"
 ```

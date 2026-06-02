@@ -1,5 +1,5 @@
 ---
-diataxis_type: explanation
+diataxis_type: reference
 ---
 # Documentation Index
 
@@ -177,5 +177,7 @@ Detailed reference material organized by topic.
 | [ADR-0001](adr/0001-use-architectural-decision-records.md) | Use Architectural Decision Records |
 | [ADR-0002](adr/0002-documentation-directory-structure.md) | Documentation Directory Structure |
 | [ADR-0003](adr/0003-adopt-diataxis-documentation-framework.md) | Adopt Diataxis Documentation Framework |
+| [ADR-0004](adr/0004-dual-consumer-error-envelope.md) | Dual-Consumer Error Envelope (RFC 9457) |
+| [ADR-0005](adr/0005-error-type-uri-policy.md) | Error type URI Policy |
 
 See [docs/adr/README.md](adr/README.md) for the full ADR process and workflow.

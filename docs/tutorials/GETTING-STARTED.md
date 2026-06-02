@@ -40,7 +40,7 @@ Your `Cargo.toml` should now include:
 
 ```toml
 [dependencies]
-nsip = "0.4"
+nsip = "0.6"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -292,14 +292,14 @@ async fn main() {
         Err(Error::NotFound(msg)) => {
             eprintln!("Animal not found: {}", msg);
         }
-        Err(Error::Timeout(msg)) => {
-            eprintln!("Request timed out: {}", msg);
+        Err(Error::Timeout { message, .. }) => {
+            eprintln!("Request timed out: {}", message);
         }
-        Err(Error::Api { status, message }) => {
+        Err(Error::Api { status, message, .. }) => {
             eprintln!("API error (HTTP {}): {}", status, message);
         }
-        Err(Error::Connection(msg)) => {
-            eprintln!("Connection failed: {}", msg);
+        Err(Error::Connection { message, .. }) => {
+            eprintln!("Connection failed: {}", message);
         }
         Err(e) => {
             eprintln!("Unexpected error: {}", e);

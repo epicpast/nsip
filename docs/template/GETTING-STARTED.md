@@ -102,7 +102,7 @@ Key points:
 - **Source code** lives under `crates/`, not `src/`. The paths are configured in `Cargo.toml` via `[lib]` and `[[bin]]`.
 - **Unit tests** go inside `crates/*.rs` files within `#[cfg(test)]` modules.
 - **Integration tests** go in the `tests/` directory.
-- **CI/CD workflows** are in `.github/workflows/`. The template ships with 30+ workflows covering CI, security, releases, and more.
+- **CI/CD workflows** are in `.github/workflows/`. The template ships with 18 workflows covering CI, security, releases, and more.
 
 ---
 
@@ -140,14 +140,14 @@ Open `Cargo.toml` and update the package metadata to match your project:
 
 ```toml
 [package]
-name = "your_crate_name"          # already set by template-init
+name = "your_crate_name"          # set during placeholder replacement
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92"
 description = "A short description of your crate"  # <-- update
 license = "MIT"                                      # <-- update if needed
 authors = ["Your Name <you@example.com>"]            # <-- update
-repository = "https://github.com/you/your-repo"     # already set by template-init
+repository = "https://github.com/you/your-repo"     # set during placeholder replacement
 keywords = ["your", "keywords"]                      # <-- update
 categories = ["development-tools"]                   # <-- update
 ```

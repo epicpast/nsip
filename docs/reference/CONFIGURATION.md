@@ -86,13 +86,19 @@ let client = NsipClient::builder()
 
 The CLI binary has no configuration file. All options are provided as command-line flags and arguments.
 
-### Global Flag
+### Global Flags
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--json` | `-J` | Output raw JSON instead of human-readable ASCII tables |
+| Flag | Short | Value | Description |
+|------|-------|-------|-------------|
+| `--json` | `-J` | -- | Output raw JSON instead of human-readable ASCII tables (alias for `--format json`) |
+| `--format` | -- | `pretty` \| `json` | Output format for both success and error output. Defaults to TTY detection. |
 
-This flag is global and applies to all subcommands.
+These flags are global and apply to all subcommands. `--format` controls both
+success output and error rendering: `json` emits JSON plus the RFC 9457
+`application/problem+json` envelope on error; `pretty` emits human-readable
+output plus a `miette` diagnostic. When omitted, the format is detected from the
+stderr TTY (interactive terminal → `pretty`, non-TTY → `json`). An explicit
+`--format` takes precedence over `-J/--json`.
 
 ### Pagination Defaults
 

@@ -33,6 +33,11 @@ Thank you for your interest in contributing to nsip!
    cargo deny check
    ```
 
+   > **Tip:** This project uses the [`just`](https://github.com/casey/just) task
+   > runner. `just check` runs the full CI-equivalent pipeline (fmt + clippy +
+   > test + doc + deny + coverage) in one command. Run `just` to list all
+   > available recipes.
+
 ## Commit Conventions
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/):
@@ -88,7 +93,7 @@ manage.
 
 Before submitting a PR, ensure:
 
-- [ ] Code compiles without warnings (`cargo clippy -- -D warnings`)
+- [ ] Code compiles without warnings (`cargo clippy --all-targets --all-features -- -D warnings`)
 - [ ] All tests pass (`cargo test --all-features`)
 - [ ] Code is formatted (`cargo fmt -- --check`)
 - [ ] Documentation builds (`cargo doc --no-deps`)

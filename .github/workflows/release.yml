@@ -96,28 +96,37 @@ jobs:
           mkdir -p man
           ./target/release/nsip man-pages --out-dir man
 
+      - name: Compute versioned archive names
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+        run: |
+          {
+            echo "COMP_NAME=nsip-${VERSION}-completions.tar.gz"
+            echo "MAN_NAME=nsip-${VERSION}-man-pages.tar.gz"
+          } >> "$GITHUB_ENV"
+
       - name: Package completions
         run: >-
-          tar czf nsip-completions.tar.gz
+          tar czf "$COMP_NAME"
           -C completions .
 
       - name: Package man pages
         run: >-
-          tar czf nsip-man-pages.tar.gz -C man .
+          tar czf "$MAN_NAME" -C man .
 
       - name: Attest completions archive
         id: attest_completions
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
         with:
-          subject-path: nsip-completions.tar.gz
+          subject-path: ${{ env.COMP_NAME }}
 
       - name: Attest man pages archive
         id: attest_man
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
         with:
-          subject-path: nsip-man-pages.tar.gz
+          subject-path: ${{ env.MAN_NAME }}
 
       - name: Rename attestation bundles
         env:
@@ -125,19 +134,19 @@ jobs:
           MAN_BUNDLE: ${{ steps.attest_man.outputs.bundle-path }}
         run: |
           cp "$COMP_BUNDLE" \
-            nsip-completions.tar.gz.sigstore.json
+            "${COMP_NAME}.sigstore.json"
           cp "$MAN_BUNDLE" \
-            nsip-man-pages.tar.gz.sigstore.json
+            "${MAN_NAME}.sigstore.json"
 
       - name: Upload to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.ref_name }}" \
-            nsip-completions.tar.gz \
-            nsip-man-pages.tar.gz \
-            nsip-completions.tar.gz.sigstore.json \
-            nsip-man-pages.tar.gz.sigstore.json \
+            "$COMP_NAME" \
+            "$MAN_NAME" \
+            "${COMP_NAME}.sigstore.json" \
+            "${MAN_NAME}.sigstore.json" \
             --clobber
 
   generate-sbom:
@@ -162,40 +171,45 @@ jobs:
         with:
           tool: cargo-sbom
 
+      - name: Compute versioned SBOM name
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+        run: echo "SBOM_NAME=nsip-${VERSION}-sbom-spdx.json" >> "$GITHUB_ENV"
+
       - name: Generate SBOM (SPDX format)
         run: >-
           cargo sbom --output-format spdx_json_2_3
-          > nsip-sbom-spdx.json
+          > "$SBOM_NAME"
 
       - name: Attest SBOM provenance
         id: attest_sbom
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
         with:
-          subject-path: nsip-sbom-spdx.json
+          subject-path: ${{ env.SBOM_NAME }}
 
       - name: Rename attestation bundle
         env:
           SBOM_BUNDLE: ${{ steps.attest_sbom.outputs.bundle-path }}
         run: >-
           cp "$SBOM_BUNDLE"
-          nsip-sbom-spdx.json.sigstore.json
+          "${SBOM_NAME}.sigstore.json"
 
       - name: Upload SBOM to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.ref_name }}" \
-            nsip-sbom-spdx.json \
-            nsip-sbom-spdx.json.sigstore.json \
+            "$SBOM_NAME" \
+            "${SBOM_NAME}.sigstore.json" \
             --clobber
 
       - name: Upload SBOM artifact
         # yamllint disable-line rule:line-length
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: nsip-sbom-spdx
-          path: nsip-sbom-spdx.json
+          name: ${{ env.SBOM_NAME }}
+          path: ${{ env.SBOM_NAME }}
           retention-days: 90
 
   build-binaries:
@@ -211,27 +225,27 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: nsip
-            asset_name: nsip-linux-amd64
+            platform: linux-amd64
           # Linux aarch64
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             artifact_name: nsip
-            asset_name: nsip-linux-arm64
+            platform: linux-arm64
           # macOS x86_64
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: nsip
-            asset_name: nsip-macos-amd64
+            platform: macos-amd64
           # macOS aarch64
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: nsip
-            asset_name: nsip-macos-arm64
+            platform: macos-arm64
           # Windows x86_64 (pinned: deterministic release artifacts)
           - os: windows-2022
             target: x86_64-pc-windows-msvc
             artifact_name: nsip.exe
-            asset_name: nsip-windows-amd64.exe
+            platform: windows-amd64.exe
 
     steps:
       - name: Checkout repository
@@ -271,26 +285,32 @@ jobs:
               "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}"
           fi
 
+      - name: Compute versioned asset name
+        shell: bash
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: echo "ASSET_NAME=nsip-${VERSION}-${PLATFORM}" >> "$GITHUB_ENV"
+
       - name: Rename binary for release
         shell: bash
         run: |
           cp "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}" \
-             "${{ matrix.asset_name }}"
+             "$ASSET_NAME"
 
       - name: Attest binary provenance
         id: attest_binary
         # yamllint disable-line rule:line-length
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
         with:
-          subject-path: ${{ matrix.asset_name }}
+          subject-path: ${{ env.ASSET_NAME }}
 
       - name: Rename attestation bundle
         shell: bash
         env:
           BUNDLE: ${{ steps.attest_binary.outputs.bundle-path }}
-          ASSET: ${{ matrix.asset_name }}
         run: >-
-          cp "$BUNDLE" "${ASSET}.sigstore.json"
+          cp "$BUNDLE" "${ASSET_NAME}.sigstore.json"
 
       - name: Upload release asset
         shell: bash
@@ -298,16 +318,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.ref_name }}" \
-            "${{ matrix.asset_name }}" \
-            "${{ matrix.asset_name }}.sigstore.json" \
+            "$ASSET_NAME" \
+            "${ASSET_NAME}.sigstore.json" \
             --clobber
 
       - name: Upload artifact
         # yamllint disable-line rule:line-length
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: ${{ matrix.asset_name }}
-          path: ${{ matrix.asset_name }}
+          name: ${{ env.ASSET_NAME }}
+          path: ${{ env.ASSET_NAME }}
 
   package-mcpb:
     name: Package MCPB Bundle
@@ -322,15 +342,24 @@ jobs:
       - name: Download platform binaries
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.create-release.outputs.version }}
         run: |
           mkdir -p server
           gh release download "${{ github.ref_name }}" \
-            --pattern "nsip-linux-amd64" \
-            --pattern "nsip-linux-arm64" \
-            --pattern "nsip-macos-amd64" \
-            --pattern "nsip-macos-arm64" \
-            --pattern "nsip-windows-amd64.exe" \
+            --pattern "nsip-${VERSION}-linux-amd64" \
+            --pattern "nsip-${VERSION}-linux-arm64" \
+            --pattern "nsip-${VERSION}-macos-amd64" \
+            --pattern "nsip-${VERSION}-macos-arm64" \
+            --pattern "nsip-${VERSION}-windows-amd64.exe" \
             --dir server
+          # manifest.json references unversioned server/nsip-<platform>
+          # filenames; rename the versioned release assets back to the
+          # names the MCPB bundle expects.
+          for platform in linux-amd64 linux-arm64 macos-amd64 \
+                          macos-arm64 windows-amd64.exe; do
+            mv "server/nsip-${VERSION}-${platform}" \
+               "server/nsip-${platform}"
+          done
 
       - name: Set binary permissions
         run: chmod +x server/nsip-*

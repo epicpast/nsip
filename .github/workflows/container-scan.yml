@@ -28,13 +28,13 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Build Docker image for scanning
-        run: docker build -t rust-template:scan .
+        run: docker build -t nsip:scan .
 
       - name: Run Trivy vulnerability scanner
         # master
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
-          image-ref: rust-template:scan
+          image-ref: nsip:scan
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH,MEDIUM
@@ -50,7 +50,7 @@ jobs:
         # master
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
-          image-ref: rust-template:scan
+          image-ref: nsip:scan
           format: table
           output: trivy-report.txt
 

@@ -30,16 +30,22 @@ jobs:
         with:
           tool: cargo-sbom
 
+      - name: Compute versioned SBOM name
+        run: |
+          VERSION="$(cargo metadata --no-deps --format-version 1 \
+            | grep -o '"version":"[^"]*"' | head -n1 | cut -d'"' -f4)"
+          echo "SBOM_NAME=nsip-${VERSION}-sbom-spdx.json" >> "$GITHUB_ENV"
+
       - name: Generate SBOM (SPDX format)
         run: |
-          cargo sbom --output-format spdx_json_2_3 > nsip-sbom-spdx.json
+          cargo sbom --output-format spdx_json_2_3 > "${SBOM_NAME}"
 
       - name: Upload SBOM artifact
         # v4.6.2
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: sbom-spdx
-          path: nsip-sbom-spdx.json
+          name: ${{ env.SBOM_NAME }}
+          path: ${{ env.SBOM_NAME }}
           retention-days: 90
 
       - name: Attach SBOM to release
@@ -48,5 +54,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
-          gh release upload "${TAG_NAME}" nsip-sbom-spdx.json \
+          gh release upload "${TAG_NAME}" "${SBOM_NAME}" \
             --clobber

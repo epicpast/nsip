@@ -15,13 +15,16 @@ nsip [OPTIONS] <COMMAND>
 
 ## Global Options
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--json` | `-J` | Output raw JSON instead of human-readable format |
-| `--version` | `-V` | Print version information |
-| `--help` | `-h` | Print help information |
+| Option | Short | Value | Description |
+|--------|-------|-------|-------------|
+| `--json` | `-J` | -- | Output raw JSON instead of human-readable format (alias for `--format json`) |
+| `--format` | -- | `pretty` \| `json` | Output format for both success and error output. Defaults to TTY detection. |
+| `--version` | `-V` | -- | Print version information |
+| `--help` | `-h` | -- | Print help information |
 
 The `--json` flag is global and applies to all subcommands. When set, the output is the raw JSON response from the NSIP API. When omitted (the default), output is formatted as human-readable ASCII tables.
+
+The `--format` flag is global and controls both success and error output. `--format json` emits JSON success output and the RFC 9457 `application/problem+json` envelope on error; `--format pretty` emits human-readable success output and a `miette` graphical diagnostic on error. When `--format` is omitted, the format is detected from the stderr TTY: an interactive terminal gets `pretty`, while a non-TTY (pipe, file, agent) gets `json`. An explicit `--format` takes precedence over `-J/--json`.
 
 ---
 
@@ -38,7 +41,7 @@ nsip -J date-updated
 
 **Arguments:** None
 
-**Output:** The last-updated date from the NSIP Search API. Always outputs JSON regardless of the `--json` flag.
+**Output:** The last-updated date from the NSIP Search API. Honors the global output mode: a human-readable line (`Database last updated: <date>`) by default, or JSON when `--json`/`-J` or `--format json` is set.
 
 ---
 
@@ -410,19 +413,21 @@ nsip mcp --transport http --tools search --auth
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Error (validation, API, connection, timeout, parse, or not found) |
+| 1 | Caller error: validation failure, not found, or a non-transient API status (4xx other than 429) |
+| 3 | Upstream-parse error: the NSIP API returned a response whose body could not be parsed |
+| 75 | Transient error (`EX_TEMPFAIL`): timeout, connection failure, HTTP 429, or 5xx upstream status. The `retry_after` envelope field is populated where a delay is known. |
 
-On error, the error message is printed to stderr in the format `Error: {message}`.
+Exit codes are `sysexits.h`-aligned. On error, the message is rendered to stderr either as a `miette` graphical diagnostic (on a TTY, or with `--format pretty`) or as an RFC 9457 `application/problem+json` envelope (on a non-TTY, with `-J/--json`, or with `--format json`).
 
 ---
 
 ## Output Modes
 
-The CLI supports two output modes controlled by the global `--json` / `-J` flag:
+The CLI supports two output modes, controlled by the global `--format` flag (or its `-J` / `--json` alias):
 
-**Human-readable (default):** Formatted ASCII tables and structured text output designed for terminal use.
+**Human-readable (`--format pretty`):** Formatted ASCII tables and structured text output designed for terminal use. This is the default when stderr is an interactive terminal.
 
-**JSON (`--json`):** Raw JSON output from the NSIP API, pretty-printed with indentation. Suitable for piping to `jq` or other JSON-processing tools.
+**JSON (`--format json` or `-J` / `--json`):** Raw JSON output from the NSIP API, pretty-printed with indentation. Suitable for piping to `jq` or other JSON-processing tools. This is the default when stderr is not a terminal.
 
 ```bash
 # Pipe JSON output to jq

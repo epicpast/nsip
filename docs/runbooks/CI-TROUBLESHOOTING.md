@@ -89,7 +89,7 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo clippy --fix --all-targets --all-features
 
 # Check a specific file
-cargo clippy --all-features -- -D warnings 2>&1 | grep "src/myfile.rs"
+cargo clippy --all-features -- -D warnings 2>&1 | grep "crates/myfile.rs"
 ```
 
 ### When to Allow a Lint
@@ -329,38 +329,6 @@ If a test passes sometimes and fails sometimes:
 
 ---
 
-## CodeQL Failures
-
-**Workflow:** `codeql-analysis.yml`
-**Schedule:** Weekly (Monday 06:00 UTC) + pushes to `main`
-
-### Common Findings
-
-| Finding | Description | Fix |
-|---|---|---|
-| Uncontrolled format string | User input in `format!()` | Sanitize or use `{}` placeholder |
-| Path traversal | User input in file paths | Validate and canonicalize paths |
-| Command injection | User input in shell commands | Avoid shell; use `Command::new()` |
-| Integer overflow | Unchecked arithmetic | Use `.checked_add()` or `wrapping_add()` |
-
-### False Positives
-
-CodeQL uses the `cpp` extractor for Rust, which can produce false positives. To dismiss:
-
-1. Review the finding in **Security > Code scanning alerts**
-2. If it is a false positive, click **"Dismiss alert"** and select a reason
-3. Add a comment explaining why it is not a real issue
-
-### Running CodeQL Locally
-
-```bash
-# Install CodeQL CLI: https://github.com/github/codeql-cli-binaries
-codeql database create my-db --language=cpp --command="cargo build --all-features"
-codeql database analyze my-db --format=sarif-latest --output=results.sarif
-```
-
----
-
 ## Release Workflow Failures
 
 **Workflow:** `release.yml`
@@ -405,7 +373,7 @@ Secrets needed:
 ## Docker Build Failures
 
 **Workflow:** `docker.yml`
-**Trigger:** Push to `main`, tag push, or PR (build-only)
+**Trigger:** Push of a `v*.*.*` tag, or manual (`workflow_dispatch`)
 
 ### Common Issues
 
@@ -552,7 +520,6 @@ open target/llvm-cov/html/index.html
 | Cargo Deny | `cargo deny check` | Yes |
 | MSRV | `cargo +1.92 check --all-features` | Yes |
 | Coverage | `cargo llvm-cov --all-features` | No |
-| CodeQL | Build + static analysis | No (scheduled) |
 | Security Audit | `cargo audit --deny warnings` | No (scheduled) |
 
 ### Run Everything at Once

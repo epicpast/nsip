@@ -10,7 +10,7 @@ diataxis_type: how-to
 
 - `nsip` CLI installed, or the NSIP MCP server configured in your AI assistant
 - LPN IDs for the animals you want to evaluate
-- Breed ID for your breed (use `nsip breeds` or the `breed_groups` MCP tool to look it up)
+- Breed ID for your breed (use `nsip breed-groups` or the `breed_groups` MCP tool to look it up)
 
 ---
 
@@ -210,14 +210,14 @@ Each recommendation includes:
 
 ## Putting it all together
 
-A typical breeding decision workflow:
+Run a breeding decision in four steps:
 
 1. **Rank** your breed to identify the top candidates for your objective.
-2. **Compare** your shortlisted animals side-by-side, filtering to the traits you care about.
-3. **Check inbreeding** for each candidate pairing you are considering.
-4. **Get recommendations** to let the tool automate steps 1--3 and surface the best mates.
+2. **Compare** the shortlist side-by-side, filtered to the traits you care about.
+3. **Check inbreeding** for each pairing you are considering.
+4. **Get recommendations** to automate steps 1--3 and surface the best mates.
 
-You can use the MCP guided prompts for a more conversational workflow. Ask your AI assistant to use the `evaluate-ram`, `evaluate-ewe`, or `plan-mating` prompts for structured breeding assessments that incorporate all of these tools automatically.
+For a conversational workflow, invoke the `evaluate-ram`, `evaluate-ewe`, or `plan-mating` MCP prompts -- they chain these tools into a structured assessment automatically.
 
 ---
 

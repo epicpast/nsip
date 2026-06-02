@@ -121,6 +121,42 @@ jobs:
       - name: Run cargo-deny
         run: cargo deny check
 
+  slug-docs:
+    name: Error Slug Docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Assert every error slug has a catalog page
+        run: |
+          set -euo pipefail
+          # Source of truth: the default slug literals in crates/problem.rs
+          # (slug_path / validation_slug). Each must resolve to a Markdown
+          # page under docs/reference/errors/.
+          missing=0
+          slugs=$(grep -oE '"(cli|api|mcp)/[a-z-]+"' crates/problem.rs \
+            | tr -d '"' | sort -u)
+          if [ -z "$slugs" ]; then
+            echo "ERROR: no slug literals found in crates/problem.rs" >&2
+            exit 1
+          fi
+          for slug in $slugs; do
+            page="docs/reference/errors/${slug}.md"
+            if [ -f "$page" ]; then
+              echo "ok: $slug -> $page"
+            else
+              echo "MISSING: $slug has no catalog page at $page" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Error slug catalog is incomplete." >&2
+            exit 1
+          fi
+
   msrv:
     name: MSRV Check
     runs-on: ubuntu-latest

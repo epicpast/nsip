@@ -17,30 +17,9 @@ NSIP organizes breeds into **breed groups** that share similar production object
 
 ## Breed Group Structure in the API
 
-Breed groups are the entry point to the NSIP data hierarchy. Each group has a numeric ID, a name, and a list of member breeds.
+Breed groups are the entry point to the NSIP data hierarchy. Each group has a numeric ID, a name, and a list of member breeds, and each breed in turn carries its own numeric ID and name. (For the exact Rust types that model this, see [NSIP Data Model](NSIP-DATA-MODEL.md).)
 
-```rust
-pub struct BreedGroup {
-    pub id: i64,
-    pub name: String,
-    pub breeds: Vec<Breed>,
-}
-
-pub struct Breed {
-    pub id: i64,
-    pub name: String,
-}
-```
-
-The breed group ID is required for many API operations, particularly searching for animals and querying trait ranges. The breed ID further narrows within a group.
-
-```bash
-# List all breed groups
-nsip breed-groups
-
-# Get trait ranges for a specific breed
-nsip trait-ranges 640
-```
+The breed group ID is required for many API operations, particularly searching for animals and querying trait ranges. The breed ID further narrows within a group. These identifiers are what tie the conceptual hierarchy to concrete queries: every search, comparison, and trait-range lookup is ultimately scoped by a breed or breed group ID.
 
 ---
 
@@ -50,13 +29,13 @@ NSIP organizes its 23 participating breeds into four primary groups, each reflec
 
 ### USA Hair
 
-Shedding breeds that do not require shearing. They are selected primarily for meat production and maternal traits. Katahdin is the most-represented breed in the NSIP system, accounting for approximately 35% of all records.
+Shedding breeds that do not require shearing. They are selected primarily for meat production and maternal traits. Katahdin is the most-represented breed in the NSIP system, accounting for roughly a third of all records as of the most recent evaluation cycle.
 
 **Breeds:** Katahdin, Dorper, St. Croix
 
-**Key traits:** BWT, WWT, MWWT, PWWT, YWT, NLB, NLW, PEMD, PFAT, WFEC, PFEC, SC
+**Key traits:** BWT, WWT, MWWT, PWWT, YWT, NLB, NWT, EMD, FAT, WEC, FEC, SC
 
-Hair sheep evaluations do not include wool traits. The **USA MAT-HAIR Index** is the primary selection index for this group -- it maximizes total weight of lamb weaned per ewe lambing by combining DWWT, MWWT, NLB, and NLW, with NLW receiving the heaviest economic weighting.
+Hair sheep evaluations do not include wool traits. The **USA MAT-HAIR Index** is the primary selection index for this group -- it maximizes total weight of lamb weaned per ewe lambing by combining DWWT, MWWT, NLB, and NWT, with NWT receiving the heaviest economic weighting. In this index context, **DWWT (Direct Weaning Weight) is the same trait as WWT** -- it captures the lamb's own direct genetic contribution to weaning weight. The "Direct" label exists only to distinguish it from MWWT (Maternal Weaning Weight), which captures the dam's contribution through milk and mothering. The two components are reported separately so the index can weight a lamb's own growth and its dam's maternal ability independently.
 
 ### USA Terminal
 
@@ -64,7 +43,7 @@ Terminal sires are used in crossbreeding programs. Their offspring are all desti
 
 **Breeds:** Suffolk, Hampshire, Texel, Dorset, White Suffolk, Southdown
 
-**Key traits:** BWT, WWT, PWWT, YWT, PEMD, PFAT. Maternal traits are less emphasized because daughters are not typically retained.
+**Key traits:** BWT, WWT, PWWT, YWT, EMD, FAT. Maternal traits are less emphasized because daughters are not typically retained.
 
 The **USA Terminal Index** is the primary selection index for this group, emphasizing lean meat production and growth rate.
 
@@ -74,7 +53,7 @@ Breeds selected for maternal performance -- the ewe's ability to conceive, carry
 
 **Breeds:** Polypay, Finnsheep, Coopworth, Border Leicester, Corriedale
 
-**Key traits:** NLB, NLW, MWWT, WWT, BWT, WFEC, PFEC
+**Key traits:** NLB, NWT, MWWT, WWT, BWT, WEC, FEC
 
 ### USA Range
 
@@ -94,25 +73,11 @@ Several breeds fall outside the four primary groups: Romney, Cheviot, Clun Fores
 
 Not every breed has data for every trait. Trait availability depends on:
 
-1. **Relevance.** Wool traits are not measured in hair breeds. WFEC/PFEC are not routinely measured in all breeds.
+1. **Relevance.** Wool traits are not measured in hair breeds. WEC/FEC are not routinely measured in all breeds.
 2. **Data volume.** A trait must have sufficient performance records to estimate genetic parameters reliably. Small breeds or newly added traits may have limited data.
 3. **Recording infrastructure.** Some traits (like ultrasound EMD and FAT) require specialized equipment that not all breeders have access to.
 
-Use the `trait_ranges` endpoint to discover which traits are available for a specific breed and what value ranges to expect:
-
-```rust
-let ranges = client.trait_ranges(breed_id).await?;
-for range in &ranges {
-    println!("{}: {:.2} to {:.2} {}",
-        range.trait_name,
-        range.min_value,
-        range.max_value,
-        range.unit.as_deref().unwrap_or(""),
-    );
-}
-```
-
-If a trait is not returned by `trait_ranges` for a given breed, that trait is either not evaluated for that breed or has insufficient data.
+The breed-level trait-ranges data is what reveals, in practice, which traits are available for a specific breed and what value spread to expect. A trait that appears with a meaningful min and max is evaluated for that breed; a trait absent from the response is either not evaluated there or lacks sufficient data to estimate genetic parameters reliably. This makes the trait-ranges view both a catalog of what can be queried and a sanity check on the filters you set. See [How to Filter Search Results](../how-to/FILTER-SEARCH-RESULTS.md) for retrieving and using these ranges.
 
 ---
 
@@ -134,9 +99,9 @@ Growth traits (BWT, WWT, MWWT, PWWT, YWT) are evaluated for virtually all breeds
 
 Carcass traits are standardized to a reference body weight of **55 kg (121 lbs)** to allow fair comparison across animals measured at different weights.
 
-**Post-Weaning Eye Muscle Depth (PEMD/EMD)** measures the cross-sectional area of the longissimus dorsi (loin) muscle via ultrasound scanning, in mm. Higher PEMD indicates greater lean meat yield and is almost always desirable.
+**Post-Weaning Eye Muscle Depth (EMD)** measures the cross-sectional area of the longissimus dorsi (loin) muscle via ultrasound scanning, in mm. Higher EMD indicates greater lean meat yield and is almost always desirable.
 
-**Post-Weaning Fat Depth (PFAT/CF)** measures subcutaneous fat thickness via ultrasound, in mm. Lower values are preferred, indicating leaner carcasses with better dressing percentage.
+**Post-Weaning Fat Depth (FAT/CF)** measures subcutaneous fat thickness via ultrasound, in mm. Lower values are preferred, indicating leaner carcasses with better dressing percentage.
 
 NSIP also provides a **Carcass Plus** composite that combines EMD, FAT, and PWWT into a single carcass merit value for simplified selection.
 
@@ -146,13 +111,13 @@ Reproduction efficiency is the largest single driver of profitability in sheep e
 
 **Number of Lambs Born (NLB)** measures prolificacy. Higher NLB means more lambs per ewe per year. However, very high NLB (triplets and quads) comes with increased lamb mortality, higher labor requirements, and potential animal welfare concerns.
 
-**Number of Lambs Weaned (NLW)** captures the combined effect of prolificacy (NLB) and lamb survival. It is a more complete measure of reproductive success than NLB alone because it includes the ewe's ability to raise her lambs to weaning. NLW receives the heaviest economic weighting in the USA MAT-HAIR Index.
+**Number of Lambs Weaned (NWT)** captures the combined effect of prolificacy (NLB) and lamb survival. It is a more complete measure of reproductive success than NLB alone because it includes the ewe's ability to raise her lambs to weaning. NWT receives the heaviest economic weighting in the USA MAT-HAIR Index.
 
 **Scrotal Circumference (SC)** is a male fertility indicator measured in mm. Higher values correlate with improved fertility in both the ram and his daughters, making it valuable for indirect selection on female reproduction.
 
 ### Parasite Resistance Traits: Reducing Input Costs
 
-**Weaning Fecal Egg Count (WFEC) and Post-Weaning Fecal Egg Count (PFEC)** measure resistance to internal parasites, specifically gastrointestinal nematodes. These are expressed as **% relative to breed average**, where **negative values indicate greater resistance**. For example, a ram with a WFEC of -90% has the potential to reduce worm burden in his lambs by approximately 45% (since half the genetics pass to offspring).
+**Weaning Fecal Egg Count (WEC) and Post-Weaning Fecal Egg Count (FEC)** measure resistance to internal parasites, specifically gastrointestinal nematodes. These are expressed as **% relative to breed average**, where **negative values indicate greater resistance**. For example, a ram with a WEC of -90% has the potential to reduce worm burden in his lambs by approximately 45% (since half the genetics pass to offspring).
 
 Selecting for parasite resistance reduces the need for anthelmintic (deworming) treatments, which saves labor and chemical costs, slows the development of drug-resistant parasite populations, and improves animal welfare. These traits are gaining importance as anthelmintic resistance spreads globally.
 
@@ -170,8 +135,8 @@ Understanding trait correlations is essential for effective selection. The major
 
 - BWT with WWT, PWWT, YWT -- growth genes tend to affect all stages
 - WWT with PWWT -- early and late growth are strongly linked
-- NLB with NLW -- more born usually means more weaned
-- WFEC with PFEC -- both measure aspects of parasite resistance
+- NLB with NWT -- more born usually means more weaned
+- WEC with FEC -- both measure aspects of parasite resistance
 
 ### Antagonistic Relationships (Trade-offs)
 
@@ -192,52 +157,19 @@ The appropriate traits to select depend on your production system and market:
 
 | Production System | Priority Traits | Secondary Traits | Recommended Index |
 |---|---|---|---|
-| Terminal sire (all lambs marketed) | WWT, PWWT, PEMD, PFAT | BWT (minimize) | USA Terminal Index |
-| Self-replacing hair flock | NLW, MWWT, WWT | BWT, WFEC | USA MAT-HAIR Index |
-| Dual-purpose (meat + wool) | WWT, NLW, GFW, FD | PEMD, PFAT | -- |
-| Parasite-challenged environment | WFEC/PFEC, NLW | WWT, MWWT | -- |
-| Low-input/extensive | NLW, MWWT | BWT (minimize), WFEC | USA MAT-HAIR Index |
+| Terminal sire (all lambs marketed) | WWT, PWWT, EMD, FAT | BWT (minimize) | USA Terminal Index |
+| Self-replacing hair flock | NWT, MWWT, WWT | BWT, WEC | USA MAT-HAIR Index |
+| Dual-purpose (meat + wool) | WWT, NWT, GFW, FD | EMD, FAT | -- |
+| Parasite-challenged environment | WEC/FEC, NWT | WWT, MWWT | -- |
+| Low-input/extensive | NWT, MWWT | BWT (minimize), WEC | USA MAT-HAIR Index |
 
 Published selection indexes combine these traits with appropriate economic weights. See [Understanding EBVs](EBV-EXPLAINED.md) for more on selection indexes.
 
 ---
 
-## Querying Breed and Trait Data
+## Putting Breed and Trait Knowledge to Use
 
-### List All Available Breeds
-
-```bash
-nsip breed-groups
-```
-
-```rust
-let groups = client.breed_groups().await?;
-```
-
-### Get Trait Ranges for a Breed
-
-```bash
-nsip trait-ranges <breed_id>
-```
-
-```rust
-let ranges = client.trait_ranges(breed_id).await?;
-```
-
-### Search Within a Breed Group
-
-```bash
-nsip search --breed-id 640 --status CURRENT --gender Male
-```
-
-```rust
-let criteria = SearchCriteria::new()
-    .with_breed_id(640)
-    .with_status("CURRENT")
-    .with_gender("Male");
-
-let results = client.search_animals(0, 25, 640, None, false, &criteria).await?;
-```
+Knowing how breeds are grouped and which traits each group is evaluated for is the foundation for two practical tasks: discovering the value ranges a breed actually spans, and searching within a breed for animals that fit your objective. For the commands and code that list breeds, retrieve a breed's trait ranges, and filter a search within a breed group, see [How to Filter Search Results](../how-to/FILTER-SEARCH-RESULTS.md) and [How to Compare Animals](../how-to/COMPARE-ANIMALS.md).
 
 ---
 

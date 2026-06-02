@@ -37,6 +37,20 @@ Add to your MCP configuration (`.mcp.json` or equivalent):
 | `flock_summary` | Flock-level statistics | `flock_id`, `breed_id` |
 | `database_status` | DB freshness and statuses | _(none)_ |
 
+## Guided Prompts
+
+Use these MCP prompts for structured breeding workflows:
+
+| Prompt | Purpose | Arguments |
+|---|---|---|
+| `evaluate-ram` | Assess a ram's breeding value | `lpn_id` |
+| `evaluate-ewe` | Assess a ewe's breeding value | `lpn_id` |
+| `compare-breeding-stock` | Side-by-side animal comparison | `lpn_ids` (comma-separated) |
+| `plan-mating` | Mating assessment with COI check | `sire_id`, `dam_id` |
+| `flock-improvement` | Trait gap analysis | `breed_id`, `flock_id` (optional) |
+| `select-replacement` | Find top replacement candidates | `breed_id`, `gender`, `target_trait` |
+| `interpret-ebvs` | Farmer-friendly EBV explanation | `lpn_id` |
+
 ## Common Workflows
 
 ### 1. Evaluate an Animal

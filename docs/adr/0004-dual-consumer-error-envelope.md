@@ -69,8 +69,6 @@ the five standard members plus the agent extensions `exit_code`,
   2.1); it only gains a `Retry-After` header on transient 503s and redacted
   secrets in `Debug`.
 
-This mirrors the reference implementation in the sibling `git-creep` CLI.
-
 ## Consequences
 
 - **Breaking:** exit codes now vary by error class (1 / 3 / 75) instead of
