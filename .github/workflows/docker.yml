@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@7c525be6cc8a882d5163ce04293cac18617c709f  # v3.9.0
+        uses: docker/setup-buildx-action@22b48a429f10e1de233237b5c534c9c3d2e41597  # v3.9.0
 
       - name: Log in to Container Registry
         uses: docker/login-action@3227f5311cb93ffd14d13e65d8cc400d30f4dd8a  # v3.4.0
