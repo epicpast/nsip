@@ -654,17 +654,19 @@ fn build_comparison(
     })
 }
 
-/// Traits where lower EBV values are desirable (e.g. birth weight, parasite resistance).
-const NEGATIVE_SELECTION_TRAITS: &[&str] = &["BWT", "WFEC", "PFEC"];
-
 /// Build default weights from a comma-separated list of target traits.
+///
+/// Traits where lower EBV values are desirable (birth weight, parasite egg
+/// counts, fibre diameter) receive negative weights. The lower-is-better set is
+/// derived from the canonical EBV glossary via
+/// [`super::analytics::is_lower_is_better`] so it stays in sync as traits change.
 fn build_target_weights(target_traits: Option<&str>) -> HashMap<String, f64> {
     let mut weights = HashMap::new();
 
     if let Some(traits_str) = target_traits {
         for trait_name in traits_str.split(',') {
             let name = trait_name.trim().to_uppercase();
-            let weight = if NEGATIVE_SELECTION_TRAITS.contains(&name.as_str()) {
+            let weight = if super::analytics::is_lower_is_better(&name) {
                 -1.0
             } else {
                 1.0
@@ -743,11 +745,16 @@ mod tests {
 
     #[test]
     fn build_target_weights_negative_traits() {
-        let weights = build_target_weights(Some("BWT, WFEC, PFEC"));
-        assert_eq!(weights.len(), 3);
+        // All four lower-is-better glossary traits (incl. YFD) must be negative;
+        // derived from EBV_TRAITS so this can't drift from the glossary.
+        let weights = build_target_weights(Some("BWT, WFEC, PFEC, YFD"));
+        assert_eq!(weights.len(), 4);
         assert!(*weights.get("BWT").unwrap() < 0.0);
         assert!(*weights.get("WFEC").unwrap() < 0.0);
         assert!(*weights.get("PFEC").unwrap() < 0.0);
+        assert!(*weights.get("YFD").unwrap() < 0.0);
+        // A higher-is-better trait stays positive.
+        assert!(*build_target_weights(Some("YWT")).get("YWT").unwrap() > 0.0);
     }
 
     #[test]

@@ -56,7 +56,7 @@ Carcass traits are standardized to a reference body weight of 55 kg (121 lbs) to
 | PFAT | Post-Weaning Fat | mm | Moderate preferred (breed-dependent) |
 | PEMD | Post-Weaning Eye Muscle Depth | mm | Higher preferred |
 
-Eye muscle depth measures the loin muscle cross-section and correlates with lean meat yield. Fat depth is measured as subcutaneous fat thickness via ultrasound -- lower values indicate leaner carcasses. NSIP also provides a **Carcass Plus** composite that combines PEMD, PFAT, and PWWT into a single carcass merit value.
+Eye muscle depth measures the loin muscle cross-section and correlates with lean meat yield. Fat depth is measured as subcutaneous fat thickness via ultrasound -- lower values indicate leaner carcasses, though the preferred direction is breed- and market-dependent (terminal programmes often weight PFAT negatively, while some markets reward finish). NSIP also provides a **Carcass Plus** composite that combines PEMD, PFAT, and PWWT into a single carcass merit value.
 
 ### Reproduction Traits
 

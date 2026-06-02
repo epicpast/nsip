@@ -33,8 +33,13 @@ jobs:
 
       - name: Compute versioned SBOM name
         run: |
+          set -euo pipefail
           VERSION="$(cargo metadata --no-deps --format-version 1 \
             | grep -o '"version":"[^"]*"' | head -n1 | cut -d'"' -f4)"
+          if [ -z "$VERSION" ]; then
+            echo "::error::could not determine package version from cargo metadata" >&2
+            exit 1
+          fi
           echo "SBOM_NAME=nsip-${VERSION}-sbom-spdx.json" >> "$GITHUB_ENV"
 
       - name: Generate SBOM (SPDX format)

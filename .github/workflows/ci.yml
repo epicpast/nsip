@@ -137,8 +137,13 @@ jobs:
           # (slug_path / validation_slug). Each must resolve to a Markdown
           # page under docs/reference/errors/.
           missing=0
-          slugs=$(grep -oE '"(cli|api|mcp)/[a-z-]+"' crates/problem.rs \
-            | tr -d '"' | sort -u)
+          # Match any "domain/slug" literal (not just the current cli/api/mcp
+          # domains) so a new error domain is caught, but drop RFC media types
+          # like application/problem+json that share the shape.
+          slugs=$(grep -oE '"[a-z][a-z0-9]*/[a-z0-9][a-z0-9-]*"' crates/problem.rs \
+            | tr -d '"' \
+            | grep -Ev '^(application|text|image|multipart|audio|video|font|model|message|example)/' \
+            | sort -u)
           if [ -z "$slugs" ]; then
             echo "ERROR: no slug literals found in crates/problem.rs" >&2
             exit 1
@@ -221,7 +226,7 @@ jobs:
   all-checks-pass:
     name: All Checks Pass
     if: always()
-    needs: [fmt, clippy, test, doc, deny, msrv, coverage]
+    needs: [fmt, clippy, test, doc, deny, msrv, coverage, slug-docs]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs passed

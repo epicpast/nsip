@@ -239,7 +239,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 
 | Parameter   | Type   | Required | Description                              |
 |-------------|--------|----------|------------------------------------------|
-| `animal_id` | string | yes      | LPN ID or registration number            |
+| `lpn_id` | string | yes      | LPN ID or registration number            |
 
 **Example:**
 
@@ -247,7 +247,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 {
   "tool": "details",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -260,7 +260,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 
 | Parameter   | Type   | Required | Description                   |
 |-------------|--------|----------|-------------------------------|
-| `animal_id` | string | yes      | LPN ID of the animal          |
+| `lpn_id` | string | yes      | LPN ID of the animal          |
 
 **Example:**
 
@@ -268,7 +268,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 {
   "tool": "lineage",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -281,7 +281,7 @@ Get paginated list of offspring for a specific animal.
 
 | Parameter   | Type    | Required | Default | Description                   |
 |-------------|---------|----------|---------|-------------------------------|
-| `animal_id` | string  | yes      |         | LPN ID of the animal          |
+| `lpn_id` | string  | yes      |         | LPN ID of the animal          |
 | `page`      | integer | no       | 0       | Page number (0-indexed)       |
 | `page_size` | integer | no       | 10      | Results per page              |
 
@@ -291,7 +291,7 @@ Get paginated list of offspring for a specific animal.
 {
   "tool": "progeny",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "page": 0,
     "page_size": 20
   }
@@ -306,7 +306,7 @@ Get complete profile for an animal: details, pedigree, and offspring in one call
 
 | Parameter   | Type   | Required | Description                   |
 |-------------|--------|----------|-------------------------------|
-| `animal_id` | string | yes      | LPN ID of the animal          |
+| `lpn_id` | string | yes      | LPN ID of the animal          |
 
 **Example:**
 
@@ -314,7 +314,7 @@ Get complete profile for an animal: details, pedigree, and offspring in one call
 {
   "tool": "profile",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -480,14 +480,14 @@ Find optimal mates for an animal: searches the breed for candidates, checks inbr
 
 | Parameter       | Type    | Required | Default | Description                                              |
 |-----------------|---------|----------|---------|----------------------------------------------------------|
-| `animal_id`     | string  | yes      |         | LPN ID of the animal to find mates for                   |
+| `lpn_id`     | string  | yes      |         | LPN ID of the animal to find mates for                   |
 | `breed_id`      | integer | yes      |         | Breed ID to search for potential mates                   |
 | `target_traits` | string  | no       |         | Traits to optimize (comma-separated, e.g. `"WWT,NLB"`)  |
 | `max_results`   | integer | no       | 5       | Maximum number of recommendations                        |
 
 When `target_traits` is omitted, defaults to `WWT` (weight 1.0), `BWT` (weight -0.5), and `NLB` (weight 0.5).
 
-Traits where lower is preferred (`BWT`, `WFEC`, `PFEC`) automatically receive negative weights.
+Traits where lower is preferred (`BWT`, `WFEC`, `PFEC`, `YFD`) automatically receive negative weights.
 
 **Example:**
 
@@ -495,7 +495,7 @@ Traits where lower is preferred (`BWT`, `WFEC`, `PFEC`) automatically receive ne
 {
   "tool": "mating_recommendations",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "breed_id": 486,
     "target_traits": "WWT,PEMD,NLB",
     "max_results": 3

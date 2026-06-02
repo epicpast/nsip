@@ -400,6 +400,17 @@ pub fn ebv_glossary() -> Vec<TraitDefinition> {
     EBV_TRAITS.to_vec()
 }
 
+/// Whether lower EBV values are preferred for `abbreviation`, derived from the
+/// canonical [`EBV_TRAITS`] table so the ranking sign and the glossary cannot
+/// drift apart. A trait is "lower-is-better" when its selection direction
+/// begins with "Lower" (e.g. BWT, WFEC, PFEC, YFD).
+#[must_use]
+pub(crate) fn is_lower_is_better(abbreviation: &str) -> bool {
+    EBV_TRAITS
+        .iter()
+        .any(|t| t.abbreviation == abbreviation && t.selection_direction.starts_with("Lower"))
+}
+
 // ---------------------------------------------------------------------------
 // Unit tests
 // ---------------------------------------------------------------------------

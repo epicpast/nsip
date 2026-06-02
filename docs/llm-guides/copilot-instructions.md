@@ -18,16 +18,16 @@ Full reference: `docs/MCP.md`
 ## Tools
 
 - `search` -- Find animals (params: `breed_id`, `gender`, `status`, `sort_by`, `page`, `page_size`)
-- `details` -- Full EBV data (params: `animal_id`)
-- `lineage` -- Pedigree tree (params: `animal_id`)
-- `progeny` -- Offspring list (params: `animal_id`, `page`, `page_size`)
-- `profile` -- Details+lineage+progeny combined (params: `animal_id`)
+- `details` -- Full EBV data (params: `lpn_id`)
+- `lineage` -- Pedigree tree (params: `lpn_id`)
+- `progeny` -- Offspring list (params: `lpn_id`, `page`, `page_size`)
+- `profile` -- Details+lineage+progeny combined (params: `lpn_id`)
 - `breed_groups` -- List all breeds (no params)
 - `trait_ranges` -- Min/max EBVs for a breed (params: `breed_id`)
 - `compare` -- Side-by-side comparison (params: `lpn_ids` 2-5, `traits`)
 - `rank` -- Weighted multi-trait ranking (params: `breed_id`, `weights`, `gender`, `top_n`)
 - `inbreeding_check` -- COI calculation (params: `sire_id`, `dam_id`)
-- `mating_recommendations` -- Optimal mates (params: `animal_id`, `breed_id`, `target_traits`)
+- `mating_recommendations` -- Optimal mates (params: `lpn_id`, `breed_id`, `target_traits`)
 - `flock_summary` -- Flock statistics (params: `flock_id`, `breed_id`)
 - `database_status` -- DB freshness (no params)
 

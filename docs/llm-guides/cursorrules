@@ -22,16 +22,16 @@ Full reference: `docs/MCP.md`
 | Tool | Purpose | Key Parameters |
 |---|---|---|
 | `search` | Find animals with filters | `breed_id`, `gender`, `status`, `sort_by` |
-| `details` | Full EBV data for one animal | `animal_id` |
-| `lineage` | Pedigree / ancestry tree | `animal_id` |
-| `progeny` | Offspring list | `animal_id`, `page`, `page_size` |
-| `profile` | Combined details+lineage+progeny | `animal_id` |
+| `details` | Full EBV data for one animal | `lpn_id` |
+| `lineage` | Pedigree / ancestry tree | `lpn_id` |
+| `progeny` | Offspring list | `lpn_id`, `page`, `page_size` |
+| `profile` | Combined details+lineage+progeny | `lpn_id` |
 | `breed_groups` | List all breeds | _(none)_ |
 | `trait_ranges` | Min/max EBVs for a breed | `breed_id` |
 | `compare` | Side-by-side EBV comparison | `lpn_ids` (2-5), `traits` |
 | `rank` | Weighted multi-trait ranking | `breed_id`, `weights`, `gender`, `top_n` |
 | `inbreeding_check` | COI for a potential mating | `sire_id`, `dam_id` |
-| `mating_recommendations` | Find optimal mates | `animal_id`, `breed_id`, `target_traits` |
+| `mating_recommendations` | Find optimal mates | `lpn_id`, `breed_id`, `target_traits` |
 | `flock_summary` | Flock-level statistics | `flock_id`, `breed_id` |
 | `database_status` | DB freshness and statuses | _(none)_ |
 

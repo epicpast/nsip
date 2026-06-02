@@ -160,7 +160,7 @@ Call the `mating_recommendations` tool with the animal you want to find mates fo
 {
   "tool": "mating_recommendations",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "breed_id": 486,
     "target_traits": "WWT,PEMD,NLB",
     "max_results": 3
@@ -172,12 +172,12 @@ Call the `mating_recommendations` tool with the animal you want to find mates fo
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
-| `animal_id` | yes | -- | LPN ID of the animal to find mates for |
+| `lpn_id` | yes | -- | LPN ID of the animal to find mates for |
 | `breed_id` | yes | -- | Breed to search within |
 | `target_traits` | no | `WWT,BWT,NLB` | Traits to optimize (comma-separated) |
 | `max_results` | no | 5 | Number of recommendations to return |
 
-When you omit `target_traits`, the tool defaults to weaning weight (positive), birth weight (negative), and number of lambs born (positive). Traits where lower is preferred -- BWT, WFEC, PFEC -- automatically receive negative weights.
+When you omit `target_traits`, the tool defaults to weaning weight (positive), birth weight (negative), and number of lambs born (positive). Traits where lower is preferred -- BWT, WFEC, PFEC, YFD -- automatically receive negative weights.
 
 **Example response:**
 

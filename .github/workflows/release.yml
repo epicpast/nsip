@@ -33,8 +33,17 @@ jobs:
 
       - name: Get version from tag
         id: get_version
-        # yamllint disable-line rule:line-length
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF#refs/tags/v}"
+          # On a manual workflow_dispatch GITHUB_REF is a branch ref, which
+          # would poison every versioned asset name (embedded slashes) and the
+          # release-upload target. Require a clean vX.Y.Z tag ref.
+          if [ "$version" = "$GITHUB_REF" ] || printf '%s' "$version" | grep -q '/'; then
+            echo "::error::release.yml must run on a refs/tags/vX.Y.Z ref; got '$GITHUB_REF'" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Generate changelog
         id: changelog
@@ -42,7 +51,10 @@ jobs:
         uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5  # v4.5.0
         with:
           config: cliff.toml
-          args: --latest --strip header
+          # Strip header AND footer: the footer carries compare-link reference
+          # definitions and a generator comment meant for CHANGELOG.md, not the
+          # per-release GitHub notes body.
+          args: --latest --strip all
 
       - name: Create GitHub Release
         id: create_release
