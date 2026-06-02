@@ -67,7 +67,7 @@ fn prompt_evaluate_ram() -> Prompt {
 fn prompt_evaluate_ewe() -> Prompt {
     Prompt::new(
         "evaluate-ewe",
-        Some("Evaluate a ewe's breeding value — emphasizes maternal traits (NLB, NWT, PWT)"),
+        Some("Evaluate a ewe's breeding value — emphasizes maternal traits (NLB, NLW, MWWT)"),
         Some(vec![
             PromptArgument::new("lpn_id")
                 .with_title("LPN ID")
@@ -224,12 +224,12 @@ async fn evaluate_animal<S: BuildHasher + Sync>(
     let (type_name, emphasis) = match animal_type {
         AnimalType::Ram => (
             "ram",
-            "Focus on growth traits (WWT, YWT, EMD) and carcass quality (FAT). \
+            "Focus on growth traits (WWT, YWT, PEMD) and carcass quality (PFAT). \
              Consider his value as a terminal sire vs. maternal sire.",
         ),
         AnimalType::Ewe => (
             "ewe",
-            "Focus on maternal traits (NLB, NWT, PWT) and moderate birth weight (BWT). \
+            "Focus on maternal traits (NLB, NLW, MWWT) and moderate birth weight (BWT). \
              Consider her prolificacy, lamb-rearing ability, and longevity potential.",
         ),
     };

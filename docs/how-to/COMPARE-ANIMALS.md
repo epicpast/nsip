@@ -28,7 +28,7 @@ This outputs a side-by-side ASCII table with all EBV traits aligned for comparis
 Use `--traits` to focus on the traits that matter for your breeding goal:
 
 ```bash
-nsip compare 430735-0032 430735-0041 --traits BWT,WWT,YWT,EMD
+nsip compare 430735-0032 430735-0041 --traits BWT,WWT,YWT,PEMD
 ```
 
 ### Step 3: Get JSON Output
@@ -86,7 +86,7 @@ async fn main() -> Result<(), nsip::Error> {
 
 ### Step 3: Compare Specific Traits
 
-Access the `traits` field on `AnimalDetails` to compare EBVs. Trait keys use standard abbreviations (BWT, WWT, YWT, EMD, etc.):
+Access the `traits` field on `AnimalDetails` to compare EBVs. Trait keys use standard abbreviations (BWT, WWT, YWT, PEMD, etc.):
 
 ```rust
 use nsip::NsipClient;
@@ -101,7 +101,7 @@ async fn main() -> Result<(), nsip::Error> {
     );
     let animals = vec![a?, b?];
 
-    let traits_of_interest = ["BWT", "WWT", "YWT", "EMD"];
+    let traits_of_interest = ["BWT", "WWT", "YWT", "PEMD"];
 
     for animal in &animals {
         println!("Animal: {}", animal.lpn_id);
@@ -156,7 +156,7 @@ async fn main() -> Result<(), nsip::Error> {
         ("BWT", -1.0),
         ("WWT", 2.0),
         ("YWT", 1.5),
-        ("EMD", 1.0),
+        ("PEMD", 1.0),
     ]);
 
     let mut scored: Vec<_> = animals
@@ -185,7 +185,7 @@ If you are using the NSIP MCP server through an AI assistant:
   "tool": "compare",
   "arguments": {
     "lpn_ids": ["430735-0032", "430735-0041", "430735-0058"],
-    "traits": "BWT,WWT,YWT,EMD"
+    "traits": "BWT,WWT,YWT,PEMD"
   }
 }
 ```
@@ -199,7 +199,7 @@ For weighted ranking across a breed, use the `rank` tool instead:
   "tool": "rank",
   "arguments": {
     "breed_id": 486,
-    "weights": { "BWT": -1.0, "WWT": 2.0, "YWT": 1.5, "EMD": 1.0 },
+    "weights": { "BWT": -1.0, "WWT": 2.0, "YWT": 1.5, "PEMD": 1.0 },
     "gender": "Male",
     "status": "CURRENT",
     "top_n": 5
@@ -214,7 +214,7 @@ For weighted ranking across a breed, use the `rank` tool instead:
 After comparing, confirm that:
 
 1. All requested animals were found (check for `NotFound` errors).
-2. The traits you care about are present for each animal. Not all animals have all 13 EBV traits.
+2. The traits you care about are present for each animal. Not all animals have all 16 EBV traits.
 3. Accuracy values are reasonable -- low-accuracy EBVs (below 40%) should be treated with caution.
 
 ---

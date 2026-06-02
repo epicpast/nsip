@@ -50,7 +50,7 @@ Rank current rams in breed 486 by terminal sire traits:
       "BWT": -1.0,
       "WWT": 2.0,
       "YWT": 1.5,
-      "EMD": 1.0
+      "PEMD": 1.0
     },
     "gender": "Male",
     "status": "CURRENT",
@@ -93,7 +93,7 @@ Use these MCP prompts for structured breeding workflows:
 ### 3. Rank a Flock or Breed
 
 1. Call `breed_groups` to discover the breed ID (if unknown)
-2. Call `rank` with trait weights -- use negative weights for lower-is-better traits (BWT, DAG, WEC, FEC)
+2. Call `rank` with trait weights -- use negative weights for lower-is-better traits (BWT, WFEC, PFEC)
 3. Call `compare` on the top-ranked candidates for a side-by-side view
 
 ### 4. Flock Improvement
@@ -106,8 +106,8 @@ Use these MCP prompts for structured breeding workflows:
 
 - **LPN IDs**: String identifiers (e.g., `6401492025FLE029`, `430735-0032`)
 - **Breed IDs**: Numeric -- use `breed_groups` to discover valid IDs
-- **13 EBV traits**: BWT, WWT, PWWT, YWT, FAT, EMD, NLB, NWT, PWT, DAG, WGR, WEC, FEC
-- **Lower-is-better traits**: BWT, DAG, WEC, FEC -- use negative weights in `rank`
+- **16 EBV traits**: BWT, WWT, PWWT, YWT, MWWT, NLB, NLW, PEMD, PFAT, YEMD, YFAT, WFEC, PFEC, YFD, YGFW, YSL
+- **Lower-is-better traits**: BWT, WFEC, PFEC -- use negative weights in `rank`
 - **Status values**: `CURRENT`, `SOLD`, `DEAD`
 - **Gender values**: `Male`, `Female`, `Both`
 

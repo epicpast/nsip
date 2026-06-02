@@ -655,7 +655,7 @@ fn build_comparison(
 }
 
 /// Traits where lower EBV values are desirable (e.g. birth weight, parasite resistance).
-const NEGATIVE_SELECTION_TRAITS: &[&str] = &["BWT", "DAG", "WEC", "FEC"];
+const NEGATIVE_SELECTION_TRAITS: &[&str] = &["BWT", "WFEC", "PFEC"];
 
 /// Build default weights from a comma-separated list of target traits.
 fn build_target_weights(target_traits: Option<&str>) -> HashMap<String, f64> {
@@ -743,11 +743,11 @@ mod tests {
 
     #[test]
     fn build_target_weights_negative_traits() {
-        let weights = build_target_weights(Some("DAG, WEC, FEC"));
+        let weights = build_target_weights(Some("BWT, WFEC, PFEC"));
         assert_eq!(weights.len(), 3);
-        assert!(*weights.get("DAG").unwrap() < 0.0);
-        assert!(*weights.get("WEC").unwrap() < 0.0);
-        assert!(*weights.get("FEC").unwrap() < 0.0);
+        assert!(*weights.get("BWT").unwrap() < 0.0);
+        assert!(*weights.get("WFEC").unwrap() < 0.0);
+        assert!(*weights.get("PFEC").unwrap() < 0.0);
     }
 
     #[test]

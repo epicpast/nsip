@@ -61,7 +61,7 @@ fn append_analytics_tools(out: &mut String) {
         "\n## Analytics Tools\n\n\
          - **compare**: Side-by-side EBV comparison of 2\u{2013}5 animals with trait-level \
          differences and optional trait filtering.\n\
-         - **rank**: Rank animals within a breed by a target trait (e.g. YWT, EMD, \
+         - **rank**: Rank animals within a breed by a target trait (e.g. YWT, PEMD, \
          NLB). Returns top-N ranked by weighted composite score. \
          Note: ranking is based on a sample of up to 100 animals per search page.\n\
          - **inbreeding_check**: Compute inbreeding coefficient (COI) between two \
@@ -114,7 +114,7 @@ fn append_prompt_guide(out: &mut String) {
          - **evaluate-ram**: Evaluate a ram's breeding value \u{2014} fetches EBVs, breed \
          ranges, and constructs a comprehensive assessment.\n\
          - **evaluate-ewe**: Evaluate a ewe's breeding value with emphasis on maternal \
-         traits (NLB, NWT, PWT).\n\
+         traits (NLB, NLW, MWWT).\n\
          - **compare-breeding-stock**: Compare multiple animals side-by-side with trait \
          analysis and breeding recommendations.\n\
          - **plan-mating**: Plan a specific mating \u{2014} COI check, trait complementarity, \

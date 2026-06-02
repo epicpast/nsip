@@ -53,33 +53,32 @@ Carcass traits are standardized to a reference body weight of 55 kg (121 lbs) to
 
 | Abbreviation | Trait | Unit | Selection Direction |
 |---|---|---|---|
-| FAT (CF) | Post-Weaning Fat Depth | mm | Lower preferred (less fat) |
-| EMD | Post-Weaning Eye Muscle Depth | mm | Higher preferred |
+| PFAT | Post-Weaning Fat | mm | Moderate preferred (breed-dependent) |
+| PEMD | Post-Weaning Eye Muscle Depth | mm | Higher preferred |
 
-Eye muscle depth measures the loin muscle cross-section and correlates with lean meat yield. Fat depth is measured as subcutaneous fat thickness via ultrasound -- lower values indicate leaner carcasses. NSIP also provides a **Carcass Plus** composite that combines EMD, FAT, and PWWT into a single carcass merit value.
+Eye muscle depth measures the loin muscle cross-section and correlates with lean meat yield. Fat depth is measured as subcutaneous fat thickness via ultrasound -- lower values indicate leaner carcasses. NSIP also provides a **Carcass Plus** composite that combines PEMD, PFAT, and PWWT into a single carcass merit value.
 
 ### Reproduction Traits
 
 | Abbreviation | Trait | Unit | Selection Direction |
 |---|---|---|---|
-| NLB | Number of Lambs Born | % above breed avg | Higher (with caution) |
-| NWT | Number of Lambs Weaned | % above breed avg | Higher preferred |
-| SC | Scrotal Circumference | mm | Higher preferred (fertility indicator) |
+| NLB | Number of Lambs Born | lambs | Higher (with caution) |
+| NLW | Number of Lambs Weaned | lambs | Higher preferred |
 
-NLB drives prolificacy but must be balanced against lamb survival -- triplets and quads have higher mortality. NWT captures the combined effect of prolificacy and lamb survival, making it a more practical selection target than NLB alone. SC (Scrotal Circumference) is a male fertility indicator -- higher values correlate with improved fertility in both the ram and his daughters.
+NLB drives prolificacy but must be balanced against lamb survival -- triplets and quads have higher mortality. NLW captures the combined effect of prolificacy and lamb survival, making it a more practical selection target than NLB alone. NSIP also evaluates scrotal circumference (a male fertility indicator) for some breeds, but it is not among the EBVs returned by the Search API.
 
 ### Parasite Resistance Traits
 
 | Abbreviation | Trait | Unit | Selection Direction |
 |---|---|---|---|
-| WEC | Weaning Fecal Egg Count | % | Lower/negative preferred |
-| FEC | Post-Weaning Fecal Egg Count | % | Lower/negative preferred |
+| WFEC | Weaning Fecal Egg Count | % | Lower/negative preferred |
+| PFEC | Post-Weaning Fecal Egg Count | % | Lower/negative preferred |
 
-WEC and FEC measure parasite resistance as a percentage relative to the breed average. **Negative values indicate greater resistance.** For example, a ram with a WEC of -90% has the potential to reduce worm burden in his lambs by approximately 45% (since half the genetics pass to offspring). Selecting for parasite resistance reduces the need for anthelmintic (deworming) treatments, slows the development of drug-resistant parasite populations, and improves animal welfare.
+WFEC and PFEC measure parasite resistance as a percentage relative to the breed average. **Negative values indicate greater resistance.** For example, a ram with a WFEC of -90% has the potential to reduce worm burden in his lambs by approximately 45% (since half the genetics pass to offspring). Selecting for parasite resistance reduces the need for anthelmintic (deworming) treatments, slows the development of drug-resistant parasite populations, and improves animal welfare.
 
 ### Wool Traits (Wool Breeds Only)
 
-For wool-producing breeds, additional traits may be evaluated including GFW (Greasy Fleece Weight), CFW (Clean Fleece Weight), FD (Fiber Diameter), SL (Staple Length), SS (Staple Strength), FDCV (Fiber Diameter CV), and CURV (Fiber Curvature). These traits are not relevant for hair sheep breeds.
+For wool-producing breeds, the Search API returns yearling wool EBVs: **YGFW** (Yearling Greasy Fleece Weight), **YFD** (Yearling Fibre Diameter), and **YSL** (Yearling Staple Length). NSIP evaluates additional wool traits (e.g. clean fleece weight, staple strength, fibre-diameter CV, curvature) that are not exposed via the Search API. Wool traits are not relevant for hair sheep breeds.
 
 ---
 
@@ -175,7 +174,7 @@ Selecting on individual traits one at a time is inefficient and can cause proble
 An index assigns economic weights to each trait based on its impact on profitability. For example, a simplified terminal sire index might look like:
 
 ```
-Index = (w1 x WWT) + (w2 x PWWT) + (w3 x EMD) - (w4 x FAT) - (w5 x BWT)
+Index = (w1 x WWT) + (w2 x PWWT) + (w3 x PEMD) - (w4 x PFAT) - (w5 x BWT)
 ```
 
 The weights (w1 through w5) are derived from economic modeling and genetic parameters (heritabilities and correlations). Negative weight on BWT means the index penalizes animals that increase birth weight.
@@ -184,7 +183,7 @@ The weights (w1 through w5) are derived from economic modeling and genetic param
 
 NSIP provides several selection indexes tailored to different production systems:
 
-- **USA MAT-HAIR Index** -- designed to maximize the total weight of lamb weaned per ewe lambing. It combines DWWT (Direct Weaning Weight), MWWT (Maternal Weaning Weight), NLB, and NWT, with NWT receiving the heaviest economic weighting. This index is used for hair sheep breeds such as Katahdin and Dorper.
+- **USA MAT-HAIR Index** -- designed to maximize the total weight of lamb weaned per ewe lambing. It combines DWWT (Direct Weaning Weight), MWWT (Maternal Weaning Weight), NLB, and NLW, with NLW receiving the heaviest economic weighting. This index is used for hair sheep breeds such as Katahdin and Dorper.
 - **USA Terminal Index** -- emphasizes growth and carcass traits for terminal sire breeds (Suffolk, Hampshire, Texel, etc.), prioritizing lean meat production.
 
 The NSIP API provides index values through the lineage endpoint. The `LineageAnimal` struct includes:
@@ -219,7 +218,7 @@ These conditions are what make comparison meaningful rather than misleading: hol
 ## Common Misconceptions
 
 **"A higher EBV is always better."**
-Not true. For BWT, lower is preferred. For FAT, lower is preferred (less fat). For WEC and FEC, lower/negative values are preferred (indicating greater parasite resistance). Always check the selection direction for each trait.
+Not true. For BWT, lower is generally preferred. For PFAT, the preferred direction is breed- and market-dependent (moderate cover). For WFEC and PFEC, lower/negative values are preferred (indicating greater parasite resistance). Always check the selection direction for each trait.
 
 **"EBVs predict an animal's own performance."**
 EBVs predict genetic contribution to offspring, not the animal's own phenotype. A ewe with a high WWT EBV may have been a light lamb herself if she was raised in poor conditions.

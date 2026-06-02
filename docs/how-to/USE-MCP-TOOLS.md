@@ -67,7 +67,7 @@ If you prefer not to install the binary:
 Test that the server responds to an MCP initialize request:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
 ```
 
 A successful response includes `"result"` with server capabilities.
@@ -175,7 +175,7 @@ Returns paginated offspring list.
   "tool": "compare",
   "arguments": {
     "lpn_ids": ["430735-0032", "430735-0041"],
-    "traits": "BWT,WWT,YWT,EMD"
+    "traits": "BWT,WWT,YWT,PEMD"
   }
 }
 ```
@@ -191,7 +191,7 @@ Returns paginated offspring list.
   "tool": "rank",
   "arguments": {
     "breed_id": 486,
-    "weights": { "BWT": -1.0, "WWT": 2.0, "YWT": 1.5, "EMD": 1.0 },
+    "weights": { "BWT": -1.0, "WWT": 2.0, "YWT": 1.5, "PEMD": 1.0 },
     "gender": "Male",
     "status": "CURRENT",
     "top_n": 5
@@ -221,7 +221,7 @@ Returns Wright's COI with a traffic-light rating (Green/Yellow/Red).
   "arguments": {
     "animal_id": "430735-0032",
     "breed_id": 486,
-    "target_traits": "WWT,EMD,NLB",
+    "target_traits": "WWT,PEMD,NLB",
     "max_results": 3
   }
 }

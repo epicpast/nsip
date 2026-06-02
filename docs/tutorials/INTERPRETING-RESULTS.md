@@ -84,16 +84,16 @@ An EBV (Estimated Breeding Value) is not the animal's own weight or measurement.
 NSIP reports the same prediction pattern across several families of traits:
 
 - **Growth** -- `BWT` (Birth Weight), `WWT` (Weaning Weight), `PWWT` (Post-Weaning Weight), and `YWT` (Yearling Weight), all in lbs. Higher generally means faster growth; for `BWT`, lower is usually preferred to reduce lambing difficulty.
-- **Carcass** -- `EMD` (Eye Muscle Depth) and `FAT` (Fat Depth), both in mm. Higher `EMD` means more muscle; `FAT` is breed-dependent (moderate is often the goal).
-- **Reproduction** -- `NLB` (Number of Lambs Born), `NWT` (Number of Lambs Weaned), and `PWT` (Pounds Weaned). `NLB` and `NWT` are measured in lambs; `PWT` in lbs.
-- **Parasite resistance** -- `WEC` (Worm Egg Count) and `FEC` (Fecal Egg Count), in eggs/g. For these, **lower** values are desirable -- they indicate genetic resistance to internal parasites. A ram with a strongly negative `WEC` EBV passes lower worm burden to his lambs (each parent contributes about half the EBV).
+- **Carcass** -- `PEMD` (Post-Weaning Eye Muscle Depth) and `PFAT` (Post-Weaning Fat), both in mm. Higher `PEMD` means more muscle; `PFAT` is breed-dependent (moderate is often the goal).
+- **Reproduction** -- `NLB` (Number of Lambs Born), `NLW` (Number of Lambs Weaned), and `MWWT` (Maternal Weaning Weight). `NLB` and `NLW` are measured in lambs; `MWWT` in lbs.
+- **Parasite resistance** -- `WFEC` (Weaning Fecal Egg Count) and `PFEC` (Post-Weaning Fecal Egg Count), in %. For these, **lower** values are desirable -- they indicate genetic resistance to internal parasites. A ram with a strongly negative `WFEC` EBV passes lower worm burden to his lambs (each parent contributes about half the EBV).
 
 For two quick teaching examples:
 
 - `BWT = 0.35 lbs` -- offspring expected 0.35 lbs heavier at birth than breed average (a small positive value is typical).
 - `WWT = 4.20 lbs` -- offspring expected 4.20 lbs heavier at weaning than average (higher is better for growth).
 
-For the complete, authoritative list of all 13 traits with units, selection direction, and definitions, see the [EBV Trait Glossary](../MCP.md#ebv-trait-glossary) (or read the live `nsip://glossary` MCP resource). Wool breeds report additional fleece traits not covered here.
+For the complete, authoritative list of all 16 traits with units, selection direction, and definitions, see the [EBV Trait Glossary](../MCP.md#ebv-trait-glossary) (or read the live `nsip://glossary` MCP resource). Wool breeds report additional fleece traits not covered here.
 
 ---
 
@@ -225,7 +225,7 @@ async fn main() -> Result<(), nsip::Error> {
 
 - **Number of offspring** -- more progeny means the parent's EBV estimates are more accurate.
 - **Trait consistency** -- if most offspring show similar trait values, the parent is a reliable transmitter of those genetics.
-- **Sex distribution** -- relevant for reproductive traits (NLB, NWT) which are primarily expressed in female offspring.
+- **Sex distribution** -- relevant for reproductive traits (NLB, NLW) which are primarily expressed in female offspring.
 - Progeny data is paginated. Use the `page` and `page_size` parameters to retrieve more offspring.
 
 ---
@@ -270,7 +270,7 @@ async fn main() -> Result<(), nsip::Error> {
 
     // 3. Reproduction traits
     println!("\n--- Reproduction Traits ---");
-    let repro_traits = ["NLB", "NWT"];
+    let repro_traits = ["NLB", "NLW"];
     for abbrev in &repro_traits {
         if let Some(t) = profile.details.traits.get(*abbrev) {
             let acc_str = t.accuracy
@@ -301,7 +301,7 @@ async fn main() -> Result<(), nsip::Error> {
 
 1. **Check status** -- only `CURRENT` animals are actively evaluated and available for breeding.
 2. **Prioritize high-accuracy traits** -- focus on traits with accuracy above 60% for breeding decisions.
-3. **Consider the breeding objective** -- terminal sire breeds (Suffolk, Hampshire, Texel) prioritize growth and carcass traits (WWT, YWT, EMD); maternal breeds (Polypay, Finnsheep) prioritize reproduction (NLB, NWT) and lamb survival; hair sheep breeds (Katahdin, Dorper) use the USA MAT-HAIR Index which combines growth and maternal traits.
+3. **Consider the breeding objective** -- terminal sire breeds (Suffolk, Hampshire, Texel) prioritize growth and carcass traits (WWT, YWT, PEMD); maternal breeds (Polypay, Finnsheep) prioritize reproduction (NLB, NLW) and lamb survival; hair sheep breeds (Katahdin, Dorper) use the USA MAT-HAIR Index which combines growth and maternal traits.
 4. **Look at the pedigree** -- strong ancestors with high indexes suggest the animal's genetics are well-supported.
 5. **Check progeny count** -- animals with more offspring have more reliable EBVs.
 

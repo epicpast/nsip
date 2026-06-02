@@ -263,6 +263,7 @@ pub fn trait_complementarity(sire: &AnimalDetails, dam: &AnimalDetails) -> HashM
 // ---------------------------------------------------------------------------
 
 /// EBV trait definitions with units, interpretation, and selection direction.
+#[derive(Clone, Copy)]
 pub struct TraitDefinition {
     /// Trait abbreviation (e.g. "BWT").
     pub abbreviation: &'static str,
@@ -276,102 +277,127 @@ pub struct TraitDefinition {
     pub selection_direction: &'static str,
 }
 
+/// Complete set of NSIP EBV trait definitions, validated against the live
+/// `nsipsearch.nsip.org/api` response fields (`search`/`details`/`trait_ranges`).
+const EBV_TRAITS: &[TraitDefinition] = &[
+    TraitDefinition {
+        abbreviation: "BWT",
+        name: "Birth Weight",
+        unit: "lbs",
+        description: "Predicted difference in birth weight of lambs. Lower values reduce dystocia risk.",
+        selection_direction: "Lower is generally preferred",
+    },
+    TraitDefinition {
+        abbreviation: "WWT",
+        name: "Weaning Weight",
+        unit: "lbs",
+        description: "Predicted difference in weight at weaning (60 days). Higher values indicate faster early growth.",
+        selection_direction: "Higher is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "PWWT",
+        name: "Post-Weaning Weight",
+        unit: "lbs",
+        description: "Predicted difference in post-weaning weight. Reflects growth potential after weaning.",
+        selection_direction: "Higher is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "YWT",
+        name: "Yearling Weight",
+        unit: "lbs",
+        description: "Predicted difference in yearling weight (365 days). Important for market lamb production.",
+        selection_direction: "Higher is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "MWWT",
+        name: "Maternal Weaning Weight",
+        unit: "lbs",
+        description: "Predicted difference in lamb weaning weight due to the dam's maternal (milk and mothering) contribution.",
+        selection_direction: "Higher is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "NLB",
+        name: "Number of Lambs Born",
+        unit: "lambs",
+        description: "Predicted difference in number of lambs born per lambing. Key maternal trait for prolificacy.",
+        selection_direction: "Higher is preferred (with caution)",
+    },
+    TraitDefinition {
+        abbreviation: "NLW",
+        name: "Number of Lambs Weaned",
+        unit: "lambs",
+        description: "Predicted difference in number of lambs weaned per lambing. Reflects prolificacy, maternal ability, and lamb survival.",
+        selection_direction: "Higher is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "PEMD",
+        name: "Post-Weaning Eye Muscle Depth",
+        unit: "mm",
+        description: "Predicted difference in ultrasound loin eye muscle depth measured post-weaning. Higher values indicate more muscling.",
+        selection_direction: "Higher is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "PFAT",
+        name: "Post-Weaning Fat",
+        unit: "mm",
+        description: "Predicted difference in ultrasound subcutaneous fat depth measured post-weaning. Affects carcass finish.",
+        selection_direction: "Moderate preferred (breed-dependent)",
+    },
+    TraitDefinition {
+        abbreviation: "YEMD",
+        name: "Yearling Eye Muscle Depth",
+        unit: "mm",
+        description: "Predicted difference in ultrasound loin eye muscle depth measured at yearling age.",
+        selection_direction: "Higher is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "YFAT",
+        name: "Yearling Fat",
+        unit: "mm",
+        description: "Predicted difference in ultrasound subcutaneous fat depth measured at yearling age.",
+        selection_direction: "Moderate preferred (breed-dependent)",
+    },
+    TraitDefinition {
+        abbreviation: "WFEC",
+        name: "Weaning Fecal Egg Count",
+        unit: "%",
+        description: "Predicted difference in fecal worm egg count at weaning. Lower values indicate parasite resistance.",
+        selection_direction: "Lower is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "PFEC",
+        name: "Post-Weaning Fecal Egg Count",
+        unit: "%",
+        description: "Predicted difference in fecal worm egg count post-weaning. Lower values indicate parasite resistance.",
+        selection_direction: "Lower is preferred",
+    },
+    TraitDefinition {
+        abbreviation: "YFD",
+        name: "Yearling Fibre Diameter",
+        unit: "micron",
+        description: "Predicted difference in wool fibre diameter at yearling age. Finer (lower) wool is generally more valuable.",
+        selection_direction: "Lower is generally preferred (wool breeds)",
+    },
+    TraitDefinition {
+        abbreviation: "YGFW",
+        name: "Yearling Greasy Fleece Weight",
+        unit: "%",
+        description: "Predicted difference in greasy fleece weight at yearling age. Important for wool breeds.",
+        selection_direction: "Higher is preferred (wool breeds)",
+    },
+    TraitDefinition {
+        abbreviation: "YSL",
+        name: "Yearling Staple Length",
+        unit: "mm",
+        description: "Predicted difference in wool staple length at yearling age. Important for wool breeds.",
+        selection_direction: "Higher is preferred (wool breeds)",
+    },
+];
+
 /// Complete glossary of NSIP EBV traits.
 #[must_use]
 pub fn ebv_glossary() -> Vec<TraitDefinition> {
-    vec![
-        TraitDefinition {
-            abbreviation: "BWT",
-            name: "Birth Weight",
-            unit: "lbs",
-            description: "Predicted difference in birth weight of lambs. Lower values reduce dystocia risk.",
-            selection_direction: "Lower is generally preferred",
-        },
-        TraitDefinition {
-            abbreviation: "WWT",
-            name: "Weaning Weight",
-            unit: "lbs",
-            description: "Predicted difference in weight at weaning (60 days). Higher values indicate faster early growth.",
-            selection_direction: "Higher is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "PWWT",
-            name: "Post-Weaning Weight",
-            unit: "lbs",
-            description: "Predicted difference in post-weaning weight. Reflects growth potential after weaning.",
-            selection_direction: "Higher is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "YWT",
-            name: "Yearling Weight",
-            unit: "lbs",
-            description: "Predicted difference in yearling weight (365 days). Important for market lamb production.",
-            selection_direction: "Higher is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "FAT",
-            name: "Fat Depth",
-            unit: "mm",
-            description: "Predicted difference in subcutaneous fat depth at the 12th-13th rib. Affects carcass quality.",
-            selection_direction: "Moderate preferred (breed-dependent)",
-        },
-        TraitDefinition {
-            abbreviation: "EMD",
-            name: "Eye Muscle Depth",
-            unit: "mm",
-            description: "Predicted difference in loin eye muscle depth. Higher values indicate more muscling.",
-            selection_direction: "Higher is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "NLB",
-            name: "Number of Lambs Born",
-            unit: "lambs",
-            description: "Predicted difference in number of lambs born per lambing. Key maternal trait for prolificacy.",
-            selection_direction: "Higher is preferred (with caution)",
-        },
-        TraitDefinition {
-            abbreviation: "NWT",
-            name: "Number of Lambs Weaned",
-            unit: "lambs",
-            description: "Predicted difference in number of lambs weaned per lambing. Reflects maternal ability and lamb survival.",
-            selection_direction: "Higher is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "PWT",
-            name: "Pounds Weaned",
-            unit: "lbs",
-            description: "Total weight of lambs weaned per ewe lambing. Combines prolificacy and growth.",
-            selection_direction: "Higher is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "DAG",
-            name: "Dag Score",
-            unit: "score",
-            description: "Predicted difference in dags (fecal soiling of the breech). Lower values mean cleaner sheep.",
-            selection_direction: "Lower is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "WGR",
-            name: "Wool Growth Rate",
-            unit: "g/day",
-            description: "Predicted difference in daily wool growth. Important for wool breeds.",
-            selection_direction: "Higher is preferred (wool breeds)",
-        },
-        TraitDefinition {
-            abbreviation: "WEC",
-            name: "Worm Egg Count",
-            unit: "eggs/g",
-            description: "Predicted difference in fecal worm egg count. Lower values indicate parasite resistance.",
-            selection_direction: "Lower is preferred",
-        },
-        TraitDefinition {
-            abbreviation: "FEC",
-            name: "Fecal Egg Count",
-            unit: "eggs/g",
-            description: "Predicted difference in fecal egg count (alternate measure). Lower values indicate parasite resistance.",
-            selection_direction: "Lower is preferred",
-        },
-    ]
+    EBV_TRAITS.to_vec()
 }
 
 // ---------------------------------------------------------------------------
@@ -542,12 +568,12 @@ mod tests {
     #[test]
     fn ebv_glossary_has_all_traits() {
         let glossary = ebv_glossary();
-        assert_eq!(glossary.len(), 13);
+        assert_eq!(glossary.len(), 16);
         let abbreviations: Vec<&str> = glossary.iter().map(|t| t.abbreviation).collect();
         assert!(abbreviations.contains(&"BWT"));
         assert!(abbreviations.contains(&"WWT"));
         assert!(abbreviations.contains(&"NLB"));
-        assert!(abbreviations.contains(&"FEC"));
+        assert!(abbreviations.contains(&"PFEC"));
     }
 
     // ── ancestor_path_combinations ────────────────────────────────────
@@ -834,13 +860,13 @@ mod tests {
         let sire = make_animal("S", &[("WWT", 8.0, 80)]);
         let dam = make_animal(
             "D",
-            &[("WWT", 12.0, 85), ("YWT", 20.0, 75), ("EMD", 5.0, 60)],
+            &[("WWT", 12.0, 85), ("YWT", 20.0, 75), ("PEMD", 5.0, 60)],
         );
         let comp = trait_complementarity(&sire, &dam);
         assert_eq!(comp.len(), 1);
         assert!(comp.contains_key("WWT"));
         assert!(!comp.contains_key("YWT"));
-        assert!(!comp.contains_key("EMD"));
+        assert!(!comp.contains_key("PEMD"));
         // Midparent = (8.0 + 12.0) / 2.0 = 10.0
         assert!((comp["WWT"] - 10.0).abs() < f64::EPSILON);
     }
@@ -848,11 +874,11 @@ mod tests {
     #[test]
     fn trait_complementarity_sire_has_extra_traits() {
         // Traits only in sire should not appear
-        let sire = make_animal("S", &[("WWT", 8.0, 80), ("FAT", 2.0, 70)]);
+        let sire = make_animal("S", &[("WWT", 8.0, 80), ("PFAT", 2.0, 70)]);
         let dam = make_animal("D", &[("WWT", 12.0, 85)]);
         let comp = trait_complementarity(&sire, &dam);
         assert_eq!(comp.len(), 1);
-        assert!(!comp.contains_key("FAT"));
+        assert!(!comp.contains_key("PFAT"));
     }
 
     // ── ebv_glossary ─────────────────────────────────────────────────
@@ -863,8 +889,8 @@ mod tests {
         let abbrevs: std::collections::HashSet<&str> =
             glossary.iter().map(|t| t.abbreviation).collect();
         for expected in &[
-            "BWT", "WWT", "PWWT", "YWT", "FAT", "EMD", "NLB", "NWT", "PWT", "DAG", "WGR", "WEC",
-            "FEC",
+            "BWT", "WWT", "PWWT", "YWT", "MWWT", "NLB", "NLW", "PEMD", "PFAT", "YEMD", "YFAT",
+            "WFEC", "PFEC", "YFD", "YGFW", "YSL",
         ] {
             assert!(
                 abbrevs.contains(expected),

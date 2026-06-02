@@ -118,10 +118,10 @@ fn selection_guide_content() -> String {
          4. Rank candidates using weighted trait scores.\n\
          5. Check inbreeding (COI) before finalizing matings.\n\n\
          ### Common Breeding Objectives\n\n\
-         - **Terminal sire:** Emphasize WWT, YWT, EMD, FAT.\n\
-         - **Maternal flock:** Emphasize NLB, NWT, PWT, and moderate BWT.\n\
-         - **Dual purpose:** Balance growth (WWT, YWT) with maternal traits (NLB, NWT).\n\
-         - **Parasite resistance:** Emphasize WEC/FEC (lower is better).\n",
+         - **Terminal sire:** Emphasize WWT, YWT, PEMD, PFAT.\n\
+         - **Maternal flock:** Emphasize NLB, NLW, MWWT, and moderate BWT.\n\
+         - **Dual purpose:** Balance growth (WWT, YWT) with maternal traits (NLB, NLW).\n\
+         - **Parasite resistance:** Emphasize WFEC/PFEC (lower is better).\n",
     )
 }
 
@@ -172,7 +172,7 @@ pub fn list_resources() -> ListResourcesResult {
             name: "EBV Trait Glossary".to_string(),
             title: Some("EBV Trait Glossary".to_string()),
             description: Some(
-                "Definitions of all 13 NSIP EBV traits with units, interpretation, and selection direction"
+                "Definitions of all 16 NSIP EBV traits with units, interpretation, and selection direction"
                     .to_string(),
             ),
             mime_type: Some("text/markdown".to_string()),
@@ -720,7 +720,7 @@ mod tests {
         let content = glossary_content();
         assert!(content.contains("BWT"));
         assert!(content.contains("WWT"));
-        assert!(content.contains("FEC"));
+        assert!(content.contains("PFEC"));
         assert!(content.contains("Birth Weight"));
     }
 
@@ -731,11 +731,11 @@ mod tests {
     }
 
     #[test]
-    fn glossary_content_has_all_thirteen_traits() {
+    fn glossary_content_has_all_sixteen_traits() {
         let content = glossary_content();
         let abbreviations = [
-            "BWT", "WWT", "PWWT", "YWT", "FAT", "EMD", "NLB", "NWT", "PWT", "DAG", "WGR", "WEC",
-            "FEC",
+            "BWT", "WWT", "PWWT", "YWT", "MWWT", "NLB", "NLW", "PEMD", "PFAT", "YEMD", "YFAT",
+            "WFEC", "PFEC", "YFD", "YGFW", "YSL",
         ];
         for abbrev in &abbreviations {
             assert!(content.contains(abbrev), "Glossary missing trait: {abbrev}");

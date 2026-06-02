@@ -830,7 +830,7 @@ for ancestor in shared {
 
 **`ebv_glossary() -> Vec<TraitDefinition>`**
 
-Returns complete glossary of all 13 NSIP EBV traits with metadata for each trait.
+Returns complete glossary of all 16 NSIP EBV traits with metadata for each trait.
 
 ```rust
 use nsip::mcp::analytics::ebv_glossary;

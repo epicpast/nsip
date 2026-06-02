@@ -136,9 +136,9 @@ Traits are not independent. Selecting for higher weaning weight also tends to in
 |---|---|---|
 | BWT and WWT | Positive | Selecting for heavier weaning weights tends to increase birth weight |
 | WWT and PWWT | Strongly positive | Growth traits track together |
-| NLB and NWT | Moderate positive | More lambs born generally means more weaned, but not proportionally |
-| EMD and FAT | Weakly positive | Muscular animals tend to carry slightly more fat |
-| WEC and FEC | Strongly positive | Both measure parasite resistance |
+| NLB and NLW | Moderate positive | More lambs born generally means more weaned, but not proportionally |
+| PEMD and PFAT | Weakly positive | Muscular animals tend to carry slightly more fat |
+| WFEC and PFEC | Strongly positive | Both measure parasite resistance |
 | NLB and lamb survival | Negative | More lambs born per litter means lower individual survival |
 
 ### Benefits of Multi-Trait Evaluation
@@ -155,7 +155,7 @@ The complete evaluation pipeline involves several stages:
 
 ### 1. Data Collection
 
-Breeders record performance data on their animals: birth weights, weaning weights, ultrasound measurements (EMD, FAT), reproduction records (NLB, NWT), fecal egg counts (WEC, FEC), scrotal circumference (SC), and wool traits for wool breeds. This data is submitted to NSIP every two weeks along with pedigree information (sire, dam) and management details (flock, birth date, birth type). The data flows through Pedigree Master software to LAMBPLAN in Australia for BLUP processing.
+Breeders record performance data on their animals: birth weights, weaning weights, ultrasound measurements (PEMD, PFAT), reproduction records (NLB, NLW), fecal egg counts (WFEC, PFEC), scrotal circumference (SC), and wool traits for wool breeds. This data is submitted to NSIP every two weeks along with pedigree information (sire, dam) and management details (flock, birth date, birth type). The data flows through Pedigree Master software to LAMBPLAN in Australia for BLUP processing.
 
 ### 2. Data Validation
 
@@ -167,7 +167,7 @@ Animals are grouped into contemporary groups based on flock, year, season, and m
 
 ### 4. BLUP Evaluation
 
-The mixed model equations are constructed and solved, incorporating all performance records, pedigree relationships, and (where available) genomic data. This produces EBVs and accuracies for every animal in the evaluation for all 13 traits.
+The mixed model equations are constructed and solved, incorporating all performance records, pedigree relationships, and (where available) genomic data. This produces EBVs and accuracies for every animal in the evaluation for all 16 traits.
 
 ### 5. Publication
 

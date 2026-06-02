@@ -33,9 +33,9 @@ Shedding breeds that do not require shearing. They are selected primarily for me
 
 **Breeds:** Katahdin, Dorper, St. Croix
 
-**Key traits:** BWT, WWT, MWWT, PWWT, YWT, NLB, NWT, EMD, FAT, WEC, FEC, SC
+**Key traits:** BWT, WWT, MWWT, PWWT, YWT, NLB, NLW, PEMD, PFAT, WFEC, PFEC
 
-Hair sheep evaluations do not include wool traits. The **USA MAT-HAIR Index** is the primary selection index for this group -- it maximizes total weight of lamb weaned per ewe lambing by combining DWWT, MWWT, NLB, and NWT, with NWT receiving the heaviest economic weighting. In this index context, **DWWT (Direct Weaning Weight) is the same trait as WWT** -- it captures the lamb's own direct genetic contribution to weaning weight. The "Direct" label exists only to distinguish it from MWWT (Maternal Weaning Weight), which captures the dam's contribution through milk and mothering. The two components are reported separately so the index can weight a lamb's own growth and its dam's maternal ability independently.
+Hair sheep evaluations do not include wool traits. The **USA MAT-HAIR Index** is the primary selection index for this group -- it maximizes total weight of lamb weaned per ewe lambing by combining DWWT, MWWT, NLB, and NLW, with NLW receiving the heaviest economic weighting. In this index context, **DWWT (Direct Weaning Weight) is the same trait as WWT** -- it captures the lamb's own direct genetic contribution to weaning weight. The "Direct" label exists only to distinguish it from MWWT (Maternal Weaning Weight), which captures the dam's contribution through milk and mothering. The two components are reported separately so the index can weight a lamb's own growth and its dam's maternal ability independently.
 
 ### USA Terminal
 
@@ -43,7 +43,7 @@ Terminal sires are used in crossbreeding programs. Their offspring are all desti
 
 **Breeds:** Suffolk, Hampshire, Texel, Dorset, White Suffolk, Southdown
 
-**Key traits:** BWT, WWT, PWWT, YWT, EMD, FAT. Maternal traits are less emphasized because daughters are not typically retained.
+**Key traits:** BWT, WWT, PWWT, YWT, PEMD, PFAT. Maternal traits are less emphasized because daughters are not typically retained.
 
 The **USA Terminal Index** is the primary selection index for this group, emphasizing lean meat production and growth rate.
 
@@ -53,7 +53,7 @@ Breeds selected for maternal performance -- the ewe's ability to conceive, carry
 
 **Breeds:** Polypay, Finnsheep, Coopworth, Border Leicester, Corriedale
 
-**Key traits:** NLB, NWT, MWWT, WWT, BWT, WEC, FEC
+**Key traits:** NLB, NLW, MWWT, WWT, BWT, WFEC, PFEC
 
 ### USA Range
 
@@ -61,7 +61,7 @@ Western range and wool breeds that produce both meat and wool. Selection balance
 
 **Breeds:** Targhee, Rambouillet, Columbia, SAMM (South African Meat Merino)
 
-**Key traits:** All growth, carcass, and reproduction traits, plus wool traits (GFW, CFW, FD, SL, SS, FDCV, CURV) that are only meaningful for wool-producing breeds.
+**Key traits:** All growth, carcass, and reproduction traits, plus the yearling wool EBVs the Search API returns (YGFW, YFD, YSL). NSIP evaluates further wool traits (clean fleece weight, staple strength, fibre-diameter CV, curvature) that are not exposed via the API and are only meaningful for wool-producing breeds.
 
 ### Other / Dual Purpose
 
@@ -73,9 +73,9 @@ Several breeds fall outside the four primary groups: Romney, Cheviot, Clun Fores
 
 Not every breed has data for every trait. Trait availability depends on:
 
-1. **Relevance.** Wool traits are not measured in hair breeds. WEC/FEC are not routinely measured in all breeds.
+1. **Relevance.** Wool traits are not measured in hair breeds. WFEC/PFEC are not routinely measured in all breeds.
 2. **Data volume.** A trait must have sufficient performance records to estimate genetic parameters reliably. Small breeds or newly added traits may have limited data.
-3. **Recording infrastructure.** Some traits (like ultrasound EMD and FAT) require specialized equipment that not all breeders have access to.
+3. **Recording infrastructure.** Some traits (like ultrasound PEMD and PFAT) require specialized equipment that not all breeders have access to.
 
 The breed-level trait-ranges data is what reveals, in practice, which traits are available for a specific breed and what value spread to expect. A trait that appears with a meaningful min and max is evaluated for that breed; a trait absent from the response is either not evaluated there or lacks sufficient data to estimate genetic parameters reliably. This makes the trait-ranges view both a catalog of what can be queried and a sanity check on the filters you set. See [How to Filter Search Results](../how-to/FILTER-SEARCH-RESULTS.md) for retrieving and using these ranges.
 
@@ -99,31 +99,31 @@ Growth traits (BWT, WWT, MWWT, PWWT, YWT) are evaluated for virtually all breeds
 
 Carcass traits are standardized to a reference body weight of **55 kg (121 lbs)** to allow fair comparison across animals measured at different weights.
 
-**Post-Weaning Eye Muscle Depth (EMD)** measures the cross-sectional area of the longissimus dorsi (loin) muscle via ultrasound scanning, in mm. Higher EMD indicates greater lean meat yield and is almost always desirable.
+**Post-Weaning Eye Muscle Depth (PEMD)** measures the cross-sectional area of the longissimus dorsi (loin) muscle via ultrasound scanning, in mm. Higher PEMD indicates greater lean meat yield and is almost always desirable.
 
-**Post-Weaning Fat Depth (FAT/CF)** measures subcutaneous fat thickness via ultrasound, in mm. Lower values are preferred, indicating leaner carcasses with better dressing percentage.
+**Post-Weaning Fat (PFAT)** measures subcutaneous fat thickness via ultrasound, in mm. The preferred direction is breed- and market-dependent: leaner carcasses suit many terminal markets, but some markets reward fat cover.
 
-NSIP also provides a **Carcass Plus** composite that combines EMD, FAT, and PWWT into a single carcass merit value for simplified selection.
+NSIP also provides a **Carcass Plus** composite that combines PEMD, PFAT, and PWWT into a single carcass merit value for simplified selection.
 
 ### Reproduction Traits: Profitability Drivers
 
-Reproduction efficiency is the largest single driver of profitability in sheep enterprises. Reproduction traits are expressed as **% above breed average**.
+Reproduction efficiency is the largest single driver of profitability in sheep enterprises. Reproduction EBVs (NLB, NLW) are expressed as a **predicted difference in number of lambs** per lambing.
 
 **Number of Lambs Born (NLB)** measures prolificacy. Higher NLB means more lambs per ewe per year. However, very high NLB (triplets and quads) comes with increased lamb mortality, higher labor requirements, and potential animal welfare concerns.
 
-**Number of Lambs Weaned (NWT)** captures the combined effect of prolificacy (NLB) and lamb survival. It is a more complete measure of reproductive success than NLB alone because it includes the ewe's ability to raise her lambs to weaning. NWT receives the heaviest economic weighting in the USA MAT-HAIR Index.
+**Number of Lambs Weaned (NLW)** captures the combined effect of prolificacy (NLB) and lamb survival. It is a more complete measure of reproductive success than NLB alone because it includes the ewe's ability to raise her lambs to weaning. NLW receives the heaviest economic weighting in the USA MAT-HAIR Index.
 
-**Scrotal Circumference (SC)** is a male fertility indicator measured in mm. Higher values correlate with improved fertility in both the ram and his daughters, making it valuable for indirect selection on female reproduction.
+NSIP also evaluates **scrotal circumference** (a male fertility indicator, measured in mm) for some breeds. Higher values correlate with improved fertility in both the ram and his daughters, making it valuable for indirect selection on female reproduction. It is not among the EBVs returned by the Search API.
 
 ### Parasite Resistance Traits: Reducing Input Costs
 
-**Weaning Fecal Egg Count (WEC) and Post-Weaning Fecal Egg Count (FEC)** measure resistance to internal parasites, specifically gastrointestinal nematodes. These are expressed as **% relative to breed average**, where **negative values indicate greater resistance**. For example, a ram with a WEC of -90% has the potential to reduce worm burden in his lambs by approximately 45% (since half the genetics pass to offspring).
+**Weaning Fecal Egg Count (WFEC) and Post-Weaning Fecal Egg Count (PFEC)** measure resistance to internal parasites, specifically gastrointestinal nematodes. These are expressed as **% relative to breed average**, where **negative values indicate greater resistance**. For example, a ram with a WFEC of -90% has the potential to reduce worm burden in his lambs by approximately 45% (since half the genetics pass to offspring).
 
 Selecting for parasite resistance reduces the need for anthelmintic (deworming) treatments, which saves labor and chemical costs, slows the development of drug-resistant parasite populations, and improves animal welfare. These traits are gaining importance as anthelmintic resistance spreads globally.
 
 ### Wool Traits (Wool Breeds Only)
 
-For USA Range and other wool-producing breeds, additional traits are evaluated: GFW (Greasy Fleece Weight), CFW (Clean Fleece Weight), FD (Fiber Diameter), SL (Staple Length), SS (Staple Strength), FDCV (Fiber Diameter CV), and CURV (Fiber Curvature). These traits are irrelevant for hair breeds.
+For USA Range and other wool-producing breeds, the Search API returns yearling wool EBVs: YGFW (Yearling Greasy Fleece Weight), YFD (Yearling Fibre Diameter), and YSL (Yearling Staple Length). NSIP evaluates further wool traits (clean fleece weight, staple strength, fibre-diameter CV, curvature) that are not exposed via the API. Wool traits are irrelevant for hair breeds.
 
 ---
 
@@ -135,14 +135,14 @@ Understanding trait correlations is essential for effective selection. The major
 
 - BWT with WWT, PWWT, YWT -- growth genes tend to affect all stages
 - WWT with PWWT -- early and late growth are strongly linked
-- NLB with NWT -- more born usually means more weaned
-- WEC with FEC -- both measure aspects of parasite resistance
+- NLB with NLW -- more born usually means more weaned
+- WFEC with PFEC -- both measure aspects of parasite resistance
 
 ### Antagonistic Relationships (Trade-offs)
 
 - BWT with ease of lambing -- heavier lambs are harder to deliver
 - NLB with individual lamb survival -- larger litters have higher per-lamb mortality
-- Lean growth (EMD) with fat coverage -- pushing for extreme leanness reduces fat cover
+- Lean growth (PEMD) with fat coverage -- pushing for extreme leanness reduces fat cover
 - Growth rate with mature size -- faster-growing animals tend to reach larger mature weights, increasing maintenance feed costs for breeding ewes
 
 ### Independent Traits
@@ -157,11 +157,11 @@ The appropriate traits to select depend on your production system and market:
 
 | Production System | Priority Traits | Secondary Traits | Recommended Index |
 |---|---|---|---|
-| Terminal sire (all lambs marketed) | WWT, PWWT, EMD, FAT | BWT (minimize) | USA Terminal Index |
-| Self-replacing hair flock | NWT, MWWT, WWT | BWT, WEC | USA MAT-HAIR Index |
-| Dual-purpose (meat + wool) | WWT, NWT, GFW, FD | EMD, FAT | -- |
-| Parasite-challenged environment | WEC/FEC, NWT | WWT, MWWT | -- |
-| Low-input/extensive | NWT, MWWT | BWT (minimize), WEC | USA MAT-HAIR Index |
+| Terminal sire (all lambs marketed) | WWT, PWWT, PEMD, PFAT | BWT (minimize) | USA Terminal Index |
+| Self-replacing hair flock | NLW, MWWT, WWT | BWT, WFEC | USA MAT-HAIR Index |
+| Dual-purpose (meat + wool) | WWT, NLW, YGFW, YFD | PEMD, PFAT | -- |
+| Parasite-challenged environment | WFEC/PFEC, NLW | WWT, MWWT | -- |
+| Low-input/extensive | NLW, MWWT | BWT (minimize), WFEC | USA MAT-HAIR Index |
 
 Published selection indexes combine these traits with appropriate economic weights. See [Understanding EBVs](EBV-EXPLAINED.md) for more on selection indexes.
 

@@ -71,7 +71,7 @@ nsip --version
 Before connecting to an AI client, verify that the MCP server starts correctly:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
 ```
 
 You should see a JSON response containing the server's capabilities (tools, resources, and prompts). Press Ctrl+C to stop.

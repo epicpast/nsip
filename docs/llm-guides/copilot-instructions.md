@@ -54,8 +54,8 @@ Full reference: `docs/MCP.md`
 
 - LPN IDs: strings (e.g., `430735-0032`)
 - Breed IDs: numeric (discover via `breed_groups`)
-- 13 EBV traits: BWT, WWT, PWWT, YWT, FAT, EMD, NLB, NWT, PWT, DAG, WGR, WEC, FEC
-- Lower-is-better: BWT, DAG, WEC, FEC (use negative weights in `rank`)
+- 16 EBV traits: BWT, WWT, PWWT, YWT, MWWT, NLB, NLW, PEMD, PFAT, YEMD, YFAT, WFEC, PFEC, YFD, YGFW, YSL
+- Lower-is-better: BWT, WFEC, PFEC (use negative weights in `rank`)
 - Status: `CURRENT`, `SOLD`, `DEAD`
 - Gender: `Male`, `Female`, `Both`
 - COI thresholds: Green (<6.25%), Yellow (6.25-12.5%), Red (>12.5%)

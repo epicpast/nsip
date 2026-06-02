@@ -290,7 +290,7 @@ nsip compare [OPTIONS] <LPN_IDS>...
 nsip compare 430735-0032 430735-0041
 
 # Compare three animals on specific traits
-nsip compare 430735-0032 430735-0041 430735-0058 --traits BWT,WWT,YWT,EMD
+nsip compare 430735-0032 430735-0041 430735-0058 --traits BWT,WWT,YWT,PEMD
 
 # JSON output
 nsip -J compare 430735-0032 430735-0041
@@ -449,15 +449,18 @@ These abbreviations are used with `--sort-by` and `--traits` options:
 | WWT | Weaning Weight | lbs |
 | PWWT | Post-Weaning Weight | lbs |
 | YWT | Yearling Weight | lbs |
-| FAT | Fat Depth | mm |
-| EMD | Eye Muscle Depth | mm |
+| MWWT | Maternal Weaning Weight | lbs |
 | NLB | Number of Lambs Born | lambs |
-| NWT | Number of Lambs Weaned | lambs |
-| PWT | Pounds Weaned | lbs |
-| DAG | Dag Score | score |
-| WGR | Wool Growth Rate | g/day |
-| WEC | Worm Egg Count | eggs/g |
-| FEC | Fecal Egg Count | eggs/g |
+| NLW | Number of Lambs Weaned | lambs |
+| PEMD | Post-Weaning Eye Muscle Depth | mm |
+| PFAT | Post-Weaning Fat | mm |
+| YEMD | Yearling Eye Muscle Depth | mm |
+| YFAT | Yearling Fat | mm |
+| WFEC | Weaning Fecal Egg Count | % |
+| PFEC | Post-Weaning Fecal Egg Count | % |
+| YFD | Yearling Fibre Diameter | micron |
+| YGFW | Yearling Greasy Fleece Weight | % |
+| YSL | Yearling Staple Length | mm |
 
 ---
 
