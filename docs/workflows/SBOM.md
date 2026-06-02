@@ -9,20 +9,22 @@ Automated generation of Software Bill of Materials in SPDX format for supply cha
 
 **Tool:** `cargo-sbom`  
 **Format:** SPDX 2.3 JSON  
-**Artifact filename:** `nsip-sbom-spdx.json`
+**Release artifact filename:** `nsip-<VERSION>-sbom-spdx.json` (e.g. `nsip-0.6.0-sbom-spdx.json`)
 
 ## SBOM Generation Paths
 
-An SBOM is produced through **two** distinct paths, with different
-provenance guarantees:
+An SBOM is produced through **two** distinct paths with different purposes:
 
-| Path | Workflow / Job | Trigger | Provenance attestation |
-|---|---|---|---|
-| Release pipeline | `release.yml` → `generate-sbom` job | Push of a `v*.*.*` tag | **Yes** — attested with `actions/attest-build-provenance`; uploads `nsip-sbom-spdx.json` **and** `nsip-sbom-spdx.json.sigstore.json` |
-| Standalone | `sbom.yml` | `release: published` (and manual `workflow_dispatch`) | **No** — generates and attaches `nsip-sbom-spdx.json` only, without an attestation bundle |
+| Path | Workflow / Job | Trigger | Attaches to release? | Provenance attestation |
+|---|---|---|---|---|
+| Release pipeline | `release.yml` → `generate-sbom` job | Push of a `v*.*.*` tag | **Yes** — uploads `nsip-<VERSION>-sbom-spdx.json` **and** `nsip-<VERSION>-sbom-spdx.json.sigstore.json` | **Yes** — attested with `actions/attest-build-provenance` |
+| On-demand | `sbom.yml` | Manual `workflow_dispatch` only | **No** — workflow run artifact only (90-day retention) | No |
 
-Both paths upload the same `nsip-sbom-spdx.json` to the GitHub Release.
-The release-pipeline path additionally signs it with a Sigstore attestation.
+The **release pipeline is the single authoritative source** of the SBOM on a
+GitHub Release, and it is signed. The standalone `sbom.yml` is for ad-hoc
+inspection (generate an SBOM for the current `main` without cutting a release);
+it does **not** attach to releases, so it cannot clobber or invalidate the
+attested release SBOM.
 
 ## What is an SBOM?
 
@@ -40,11 +42,12 @@ A machine-readable inventory of:
 
 ## How It Works
 
-On every release:
+On every release (the `release.yml` → `generate-sbom` job, on `v*.*.*` tag push):
 1. Generates SBOM from `Cargo.lock`
 2. Outputs SPDX 2.3 JSON format
-3. Uploads as build artifact (90 days)
-4. Attaches to GitHub release
+3. Attests build provenance (`actions/attest-build-provenance`)
+4. Uploads the SBOM and its `.sigstore.json` attestation to the GitHub release
+5. Also retains the SBOM as a workflow artifact (90 days)
 
 ## Usage
 
@@ -65,10 +68,10 @@ cat sbom.json | jq '.packages[] | {name, version, licenseConcluded}'
 
 ```bash
 # Download from GitHub release (replace vX.Y.Z with the release tag)
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-sbom-spdx.json
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-X.Y.Z-sbom-spdx.json
 
 # Analyze with SBOM tools
-sbom-tool validate nsip-sbom-spdx.json
+sbom-tool validate nsip-X.Y.Z-sbom-spdx.json
 ```
 
 ## Configuration
@@ -156,7 +159,7 @@ Validate SBOM:
 pip install spdx-tools
 
 # Validate
-spdx-tools validate nsip-sbom-spdx.json
+spdx-tools validate nsip-X.Y.Z-sbom-spdx.json
 ```
 
 ## Links

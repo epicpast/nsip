@@ -23,7 +23,7 @@ annotated with trigger conditions, required secrets, and activation status.
 | Security Audit | `security-audit.yml` | schedule (daily), push, manual | -- | Active |
 | Secrets Scan | `secrets-scan.yml` | manual | `GITLEAKS_LICENSE` | Opt-in |
 | Container Scan | `container-scan.yml` | manual | -- | Opt-in |
-| SBOM Generation | `sbom.yml` | release published, manual | -- | Active |
+| SBOM Generation | `sbom.yml` | manual (`workflow_dispatch`) | -- | Active |
 | Signed Releases | `signed-releases.yml` | workflow_run (after Release) | -- | Active |
 | SLSA Provenance | `slsa-provenance.yml` | release, manual | -- | Active |
 | Dependabot Auto-Merge | `dependabot-automerge.yml` | PR (dependabot actor) | -- | Active |

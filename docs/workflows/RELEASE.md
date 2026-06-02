@@ -37,7 +37,7 @@ tag v*.*.*
     │
     └─ (after the above)
             │
-            ├─ on: release.published ─→ sbom.yml, slsa-provenance.yml
+            ├─ on: release.published ─→ slsa-provenance.yml
             └─ on: workflow_run(Release completed) ─→ signed-releases.yml
 
 changelog.yml also runs on the tag and opens a CHANGELOG PR into develop.
@@ -147,7 +147,7 @@ each on its own trigger:
 | `publish.yml` | tag push `v*.*.*` | Publishes the crate to crates.io |
 | `back-merge.yml` | tag push `v*.*.*` | Back-merges `main` into `develop` to keep them in sync |
 | `changelog.yml` | tag push `v*.*.*` | Opens a PR to update `CHANGELOG.md` |
-| `sbom.yml` | `release` published | Attaches the SPDX SBOM to the release |
+| `sbom.yml` | manual (`workflow_dispatch`) | On-demand SBOM for inspection (workflow artifact only). The release SBOM is produced and attested by `release.yml`'s `generate-sbom` job, not here. |
 | `slsa-provenance.yml` | `release` published | Generates SLSA provenance attestations |
 | `signed-releases.yml` | `workflow_run` after Release | Signs release binaries with Sigstore/Cosign |
 
