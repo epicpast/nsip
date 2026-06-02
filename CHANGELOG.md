@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+
+- Update CHANGELOG.md for v0.6.0
+
+## [0.6.1] - 2026-06-02
+
+### Fixed
+
+- **docker**: Copy build.rs into the build stage
+
+### Miscellaneous
+
+- **release**: Bump version to 0.6.1
+
 ## [0.6.0] - 2026-06-02
 
 ### Added
@@ -322,6 +338,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump github/codeql-action from 3 to 4 (#6)
 - **deps**: Bump actions/github-script from 7.0.1 to 8.0.0 (#4)
 
+[unreleased]: https://github.com/zircote/nsip/compare/v0.6.1..HEAD
+[0.6.1]: https://github.com/zircote/nsip/compare/v0.6.0..v0.6.1
 [0.6.0]: https://github.com/zircote/nsip/compare/v0.5.1..v0.6.0
 [0.5.1]: https://github.com/zircote/nsip/compare/v0.5.0..v0.5.1
 [0.5.0]: https://github.com/zircote/nsip/compare/v0.4.0..v0.5.0
