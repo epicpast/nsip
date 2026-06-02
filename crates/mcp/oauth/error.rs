@@ -88,13 +88,27 @@ impl fmt::Display for OAuthError {
 
 impl std::error::Error for OAuthError {}
 
+/// Default `Retry-After` (seconds) advertised on a transient 503 so clients and
+/// agents back off instead of hammering the endpoint.
+const TEMPORARILY_UNAVAILABLE_RETRY_AFTER_SECS: &str = "5";
+
 impl IntoResponse for OAuthError {
     fn into_response(self) -> Response {
+        let status = self.status_code();
         let body = serde_json::json!({
             "error": self.error_code(),
             "error_description": self.description(),
         });
-        (self.status_code(), axum::Json(body)).into_response()
+        let mut response = (status, axum::Json(body)).into_response();
+        // Advertise a retry window on transient unavailability so agents back
+        // off rather than abandon the flow (RFC 7231 §7.1.3).
+        if matches!(self, Self::TemporarilyUnavailable(_)) {
+            response.headers_mut().insert(
+                axum::http::header::RETRY_AFTER,
+                axum::http::HeaderValue::from_static(TEMPORARILY_UNAVAILABLE_RETRY_AFTER_SECS),
+            );
+        }
+        response
     }
 }
 

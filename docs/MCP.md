@@ -6,7 +6,7 @@ diataxis_type: reference
 The `nsip` binary ships a built-in [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that exposes the full NSIP Search API surface -- plus analytics-powered breeding intelligence -- to any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.).
 
 **Capabilities:** 13 tools, 5 static resources, 4 resource templates, 7 guided prompts, elicitation, cursor-based pagination
-**Protocol version:** `2025-06-18` (MCP LATEST)
+**Protocol version:** `2025-11-25` (MCP LATEST)
 **Transports:** stdio, streamable HTTP (SSE)
 
 ---
@@ -43,19 +43,19 @@ cargo install --path .
 
 Pre-built binaries are available from [GitHub Releases](https://github.com/zircote/nsip/releases):
 
-| Platform       | Binary                    |
-|----------------|---------------------------|
-| Linux x86_64   | `nsip-linux-amd64`        |
-| Linux ARM64    | `nsip-linux-arm64`        |
-| macOS x86_64   | `nsip-macos-amd64`        |
-| macOS ARM64    | `nsip-macos-arm64`        |
-| Windows x86_64 | `nsip-windows-amd64.exe`  |
+| Platform       | Binary                            |
+|----------------|-----------------------------------|
+| Linux x86_64   | `nsip-<VERSION>-linux-amd64`       |
+| Linux ARM64    | `nsip-<VERSION>-linux-arm64`       |
+| macOS x86_64   | `nsip-<VERSION>-macos-amd64`       |
+| macOS ARM64    | `nsip-<VERSION>-macos-arm64`       |
+| Windows x86_64 | `nsip-<VERSION>-windows-amd64.exe` |
 
 ### MCP Bundle (Claude Desktop / Claude Code)
 
-Download the universal `nsip.mcpb` bundle from [GitHub Releases](https://github.com/zircote/nsip/releases). It contains all platforms in a single file.
+Download the universal `nsip-<VERSION>.mcpb` bundle from [GitHub Releases](https://github.com/zircote/nsip/releases). It contains all platforms in a single file.
 
-**Claude Desktop:** Drag `nsip.mcpb` into Settings > Extensions, or double-click it.
+**Claude Desktop:** Drag `nsip-<VERSION>.mcpb` into Settings > Extensions, or double-click it.
 
 **Claude Code:** Install via the extensions UI.
 
@@ -134,7 +134,7 @@ This serves a single MCP endpoint at `/mcp` supporting JSON-RPC over POST and SS
 After configuring, verify the server starts:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
 ```
 
 ### Tool Sets
@@ -189,7 +189,13 @@ Without the `telemetry` feature (the default), standard text-based tracing to st
 
 ## Tool Reference
 
-All tools return JSON results as text content. Errors use standard MCP error codes.
+All tools return JSON results as text content. Errors use standard MCP error
+codes and additionally carry an RFC 9457 `application/problem+json` envelope in
+the JSON-RPC error `data` field (`type`, `title`, `status`, `detail`,
+`instance`, `exit_code`, `suggested_fix`, `retry_after`, `docs_url`), so an
+agent consumer gets the same machine-readable contract as the CLI. See
+[`reference/ERROR-ENVELOPE.md`](reference/ERROR-ENVELOPE.md) and the
+[error catalog](reference/errors/).
 
 ### search
 
@@ -233,7 +239,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 
 | Parameter   | Type   | Required | Description                              |
 |-------------|--------|----------|------------------------------------------|
-| `animal_id` | string | yes      | LPN ID or registration number            |
+| `lpn_id` | string | yes      | LPN ID or registration number            |
 
 **Example:**
 
@@ -241,7 +247,7 @@ Get detailed EBV data, breed, contact info, and status for a specific animal by 
 {
   "tool": "details",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -254,7 +260,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 
 | Parameter   | Type   | Required | Description                   |
 |-------------|--------|----------|-------------------------------|
-| `animal_id` | string | yes      | LPN ID of the animal          |
+| `lpn_id` | string | yes      | LPN ID of the animal          |
 
 **Example:**
 
@@ -262,7 +268,7 @@ Get pedigree / ancestry tree for a specific animal including parents and grandpa
 {
   "tool": "lineage",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -275,7 +281,7 @@ Get paginated list of offspring for a specific animal.
 
 | Parameter   | Type    | Required | Default | Description                   |
 |-------------|---------|----------|---------|-------------------------------|
-| `animal_id` | string  | yes      |         | LPN ID of the animal          |
+| `lpn_id` | string  | yes      |         | LPN ID of the animal          |
 | `page`      | integer | no       | 0       | Page number (0-indexed)       |
 | `page_size` | integer | no       | 10      | Results per page              |
 
@@ -285,7 +291,7 @@ Get paginated list of offspring for a specific animal.
 {
   "tool": "progeny",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "page": 0,
     "page_size": 20
   }
@@ -300,7 +306,7 @@ Get complete profile for an animal: details, pedigree, and offspring in one call
 
 | Parameter   | Type   | Required | Description                   |
 |-------------|--------|----------|-------------------------------|
-| `animal_id` | string | yes      | LPN ID of the animal          |
+| `lpn_id` | string | yes      | LPN ID of the animal          |
 
 **Example:**
 
@@ -308,7 +314,7 @@ Get complete profile for an animal: details, pedigree, and offspring in one call
 {
   "tool": "profile",
   "arguments": {
-    "animal_id": "430735-0032"
+    "lpn_id": "430735-0032"
   }
 }
 ```
@@ -359,7 +365,7 @@ Compare 2-5 animals side-by-side on their EBV traits. Optionally filter to speci
 
 | Parameter    | Type            | Required | Description                                           |
 |--------------|-----------------|----------|-------------------------------------------------------|
-| `animal_ids` | array\<string\> | yes      | LPN IDs to compare (2-5 items)                        |
+| `lpn_ids` | array\<string\> | yes      | LPN IDs to compare (2-5 items)                        |
 | `traits`     | string          | no       | Comma-separated trait filter (e.g. `"BWT,WWT,YWT"`)   |
 
 **Example:**
@@ -368,8 +374,8 @@ Compare 2-5 animals side-by-side on their EBV traits. Optionally filter to speci
 {
   "tool": "compare",
   "arguments": {
-    "animal_ids": ["430735-0032", "430735-0041", "430735-0058"],
-    "traits": "BWT,WWT,YWT,EMD"
+    "lpn_ids": ["430735-0032", "430735-0041", "430735-0058"],
+    "traits": "BWT,WWT,YWT,PEMD"
   }
 }
 ```
@@ -399,7 +405,7 @@ Rank animals within a breed by weighted EBV traits. Specify trait weights to pri
       "BWT": -1.0,
       "WWT": 2.0,
       "YWT": 1.5,
-      "EMD": 1.0
+      "PEMD": 1.0
     },
     "gender": "Male",
     "status": "CURRENT",
@@ -417,8 +423,8 @@ Rank animals within a breed by weighted EBV traits. Specify trait weights to pri
     "breed_id": 486,
     "weights": {
       "NLB": 2.0,
-      "NWT": 2.0,
-      "PWT": 1.5,
+      "NLW": 2.0,
+      "MWWT": 1.5,
       "BWT": -0.5
     },
     "gender": "Male",
@@ -474,14 +480,14 @@ Find optimal mates for an animal: searches the breed for candidates, checks inbr
 
 | Parameter       | Type    | Required | Default | Description                                              |
 |-----------------|---------|----------|---------|----------------------------------------------------------|
-| `animal_id`     | string  | yes      |         | LPN ID of the animal to find mates for                   |
+| `lpn_id`     | string  | yes      |         | LPN ID of the animal to find mates for                   |
 | `breed_id`      | integer | yes      |         | Breed ID to search for potential mates                   |
 | `target_traits` | string  | no       |         | Traits to optimize (comma-separated, e.g. `"WWT,NLB"`)  |
 | `max_results`   | integer | no       | 5       | Maximum number of recommendations                        |
 
 When `target_traits` is omitted, defaults to `WWT` (weight 1.0), `BWT` (weight -0.5), and `NLB` (weight 0.5).
 
-Traits where lower is preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatically receive negative weights.
+Traits where lower is preferred (`BWT`, `WFEC`, `PFEC`, `YFD`) automatically receive negative weights.
 
 **Example:**
 
@@ -489,9 +495,9 @@ Traits where lower is preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatically recei
 {
   "tool": "mating_recommendations",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "breed_id": 486,
-    "target_traits": "WWT,EMD,NLB",
+    "target_traits": "WWT,PEMD,NLB",
     "max_results": 3
   }
 }
@@ -511,7 +517,7 @@ Traits where lower is preferred (`BWT`, `DAG`, `WEC`, `FEC`) automatically recei
     "predicted_offspring_ebvs": {
       "BWT": 0.15,
       "WWT": 11.3,
-      "EMD": 1.8,
+      "PEMD": 1.8,
       "NLB": 0.12
     }
   }
@@ -555,7 +561,7 @@ Summarize a flock's animals: count, gender breakdown, and average EBV traits.
     "WWT": 8.45,
     "YWT": 12.10,
     "NLB": 0.08,
-    "EMD": 0.95
+    "PEMD": 0.95
   }
 }
 ```
@@ -587,7 +593,7 @@ Resources provide static and dynamic data that MCP clients can read directly via
 
 | URI                        | Name              | MIME Type         | Description                                             |
 |----------------------------|-------------------|-------------------|---------------------------------------------------------|
-| `nsip://glossary`          | EBV Trait Glossary| text/markdown     | Definitions of all 13 NSIP EBV traits with units, interpretation, and selection direction |
+| `nsip://glossary`          | EBV Trait Glossary| text/markdown     | Definitions of all 16 NSIP EBV traits with units, interpretation, and selection direction |
 | `nsip://breeds`            | Breed Directory   | application/json  | Live directory of all breed groups and breeds            |
 | `nsip://guide/selection`   | Selection Guide   | text/markdown     | How to use EBVs for breeding decisions -- selection steps, objectives, trade-offs |
 | `nsip://guide/inbreeding`  | Inbreeding Guide  | text/markdown     | COI thresholds, inbreeding depression effects, avoidance strategies |
@@ -621,7 +627,7 @@ Prompts are guided workflows that fetch live data from the NSIP API and construc
 
 ### evaluate-ram
 
-Evaluate a ram's breeding value. Fetches the animal's EBVs and constructs a comprehensive assessment emphasizing growth traits (WWT, YWT, EMD) and carcass quality (FAT). Considers value as terminal sire vs. maternal sire.
+Evaluate a ram's breeding value. Fetches the animal's EBVs and constructs a comprehensive assessment emphasizing growth traits (WWT, YWT, PEMD) and carcass quality (PFAT). Considers value as terminal sire vs. maternal sire.
 
 | Argument | Required | Description                |
 |----------|----------|----------------------------|
@@ -631,7 +637,7 @@ Evaluate a ram's breeding value. Fetches the animal's EBVs and constructs a comp
 
 ### evaluate-ewe
 
-Evaluate a ewe's breeding value. Emphasizes maternal traits (NLB, NWT, PWT) and moderate birth weight (BWT). Considers prolificacy, lamb-rearing ability, and longevity potential.
+Evaluate a ewe's breeding value. Emphasizes maternal traits (NLB, NLW, MWWT) and moderate birth weight (BWT). Considers prolificacy, lamb-rearing ability, and longevity potential.
 
 | Argument | Required | Description                |
 |----------|----------|----------------------------|
@@ -645,7 +651,7 @@ Compare multiple animals side-by-side with trait-by-trait analysis. Fetches deta
 
 | Argument     | Required | Description                                         |
 |--------------|----------|-----------------------------------------------------|
-| `animal_ids` | yes      | Comma-separated LPN IDs of animals to compare (2-5) |
+| `lpn_ids` | yes      | Comma-separated LPN IDs of animals to compare (2-5) |
 
 ---
 
@@ -752,7 +758,7 @@ Only traits present in both sire and dam are included. This provides a first-ord
 
 ## EBV Trait Glossary
 
-Quick reference for all 13 NSIP Estimated Breeding Value traits.
+Quick reference for the NSIP Estimated Breeding Value traits returned by the Search API.
 
 | Abbreviation | Name                   | Unit    | Selection Direction                  | Description                                                              |
 |--------------|------------------------|---------|--------------------------------------|--------------------------------------------------------------------------|
@@ -760,19 +766,22 @@ Quick reference for all 13 NSIP Estimated Breeding Value traits.
 | WWT          | Weaning Weight         | lbs     | Higher is preferred                  | Predicted difference in weight at weaning (60 days).                     |
 | PWWT         | Post-Weaning Weight    | lbs     | Higher is preferred                  | Predicted difference in post-weaning weight.                             |
 | YWT          | Yearling Weight        | lbs     | Higher is preferred                  | Predicted difference in yearling weight (365 days).                      |
-| FAT          | Fat Depth              | mm      | Moderate preferred (breed-dependent) | Predicted difference in subcutaneous fat depth at 12th-13th rib.         |
-| EMD          | Eye Muscle Depth       | mm      | Higher is preferred                  | Predicted difference in loin eye muscle depth.                           |
+| MWWT         | Maternal Weaning Weight| lbs     | Higher is preferred                  | Predicted difference in lamb weaning weight from the dam's milk/mothering.|
 | NLB          | Number of Lambs Born   | lambs   | Higher is preferred (with caution)   | Predicted difference in lambs born per lambing.                          |
-| NWT          | Number of Lambs Weaned | lambs   | Higher is preferred                  | Predicted difference in lambs weaned per lambing.                        |
-| PWT          | Pounds Weaned          | lbs     | Higher is preferred                  | Total weight of lambs weaned per ewe lambing.                            |
-| DAG          | Dag Score              | score   | Lower is preferred                   | Predicted difference in fecal soiling of the breech.                     |
-| WGR          | Wool Growth Rate       | g/day   | Higher is preferred (wool breeds)    | Predicted difference in daily wool growth.                               |
-| WEC          | Worm Egg Count         | eggs/g  | Lower is preferred                   | Predicted difference in fecal worm egg count (parasite resistance).      |
-| FEC          | Fecal Egg Count        | eggs/g  | Lower is preferred                   | Predicted difference in fecal egg count (alternate parasite measure).    |
+| NLW          | Number of Lambs Weaned | lambs   | Higher is preferred                  | Predicted difference in lambs weaned per lambing.                        |
+| PEMD         | Post-Weaning Eye Muscle Depth | mm | Higher is preferred                | Ultrasound loin eye muscle depth measured post-weaning.                  |
+| PFAT         | Post-Weaning Fat       | mm      | Moderate preferred (breed-dependent) | Ultrasound subcutaneous fat depth measured post-weaning.                 |
+| YEMD         | Yearling Eye Muscle Depth | mm   | Higher is preferred                  | Ultrasound loin eye muscle depth measured at yearling age.               |
+| YFAT         | Yearling Fat           | mm      | Moderate preferred (breed-dependent) | Ultrasound subcutaneous fat depth measured at yearling age.              |
+| WFEC         | Weaning Fecal Egg Count| %       | Lower is preferred                   | Fecal worm egg count at weaning (parasite resistance).                   |
+| PFEC         | Post-Weaning Fecal Egg Count | % | Lower is preferred                  | Fecal worm egg count post-weaning (parasite resistance).                 |
+| YFD          | Yearling Fibre Diameter| micron  | Lower is generally preferred         | Wool fibre diameter at yearling age (finer is generally more valuable).  |
+| YGFW         | Yearling Greasy Fleece Weight | % | Higher is preferred (wool breeds)  | Greasy fleece weight at yearling age.                                    |
+| YSL          | Yearling Staple Length | mm      | Higher is preferred (wool breeds)    | Wool staple length at yearling age.                                      |
 
 ### Common Breeding Objectives
 
-- **Terminal sire:** Emphasize WWT, YWT, EMD, FAT (moderate). Use negative BWT weight.
-- **Maternal flock:** Emphasize NLB, NWT, PWT with moderate BWT.
-- **Dual purpose:** Balance growth (WWT, YWT) with maternal traits (NLB, NWT).
-- **Parasite resistance:** Emphasize WEC and FEC (lower is better).
+- **Terminal sire:** Emphasize WWT, YWT, PEMD, PFAT (moderate). Use negative BWT weight.
+- **Maternal flock:** Emphasize NLB, NLW, MWWT with moderate BWT.
+- **Dual purpose:** Balance growth (WWT, YWT) with maternal traits (NLB, NLW).
+- **Parasite resistance:** Emphasize WFEC and PFEC (lower is better).

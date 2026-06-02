@@ -37,19 +37,19 @@ cargo install nsip
 
 Download the binary for your platform from [GitHub Releases](https://github.com/zircote/nsip/releases):
 
-| Platform       | Binary                    |
-|----------------|---------------------------|
-| Linux x86_64   | `nsip-linux-amd64`        |
-| Linux ARM64    | `nsip-linux-arm64`        |
-| macOS x86_64   | `nsip-macos-amd64`        |
-| macOS ARM64    | `nsip-macos-arm64`        |
-| Windows x86_64 | `nsip-windows-amd64.exe`  |
+| Platform       | Binary                        |
+|----------------|-------------------------------|
+| Linux x86_64   | `nsip-0.6.0-linux-amd64`       |
+| Linux ARM64    | `nsip-0.6.0-linux-arm64`       |
+| macOS x86_64   | `nsip-0.6.0-macos-amd64`       |
+| macOS ARM64    | `nsip-0.6.0-macos-arm64`       |
+| Windows x86_64 | `nsip-0.6.0-windows-amd64.exe` |
 
 After downloading, make it executable and move it to your PATH:
 
 ```bash
-chmod +x nsip-macos-arm64
-sudo mv nsip-macos-arm64 /usr/local/bin/nsip
+chmod +x nsip-0.6.0-macos-arm64
+sudo mv nsip-0.6.0-macos-arm64 /usr/local/bin/nsip
 ```
 
 **Via Docker:**
@@ -71,7 +71,7 @@ nsip --version
 Before connecting to an AI client, verify that the MCP server starts correctly:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | nsip mcp
 ```
 
 You should see a JSON response containing the server's capabilities (tools, resources, and prompts). Press Ctrl+C to stop.

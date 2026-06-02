@@ -514,13 +514,16 @@ The release workflow (`.github/workflows/release.yml`) builds binaries for multi
 
 ### Adding a target
 
-Add a new entry to the `matrix.include` array in `release.yml`:
+Add a new entry to the `matrix.include` array in `release.yml`. Each entry sets
+`artifact_name` (the bare built binary, `nsip` or `nsip.exe`) and `platform`
+(the platform suffix). The workflow computes the versioned release-asset name as
+`nsip-${VERSION}-${platform}`, so do not hardcode a version into the matrix:
 
 ```yaml
 - os: ubuntu-latest
   target: x86_64-unknown-linux-musl
   artifact_name: nsip
-  asset_name: nsip-linux-musl-amd64
+  platform: linux-musl-amd64
 ```
 
 For musl targets, you will also need to install the musl toolchain:
@@ -542,7 +545,7 @@ Delete the corresponding entry from `matrix.include`. For example, to drop Windo
 - os: windows-latest
   target: x86_64-pc-windows-msvc
   artifact_name: nsip.exe
-  asset_name: nsip-windows-amd64.exe
+  platform: windows-amd64.exe
 ```
 
 Also remove the target from `deny.toml`'s `[graph].targets` list so supply chain checks stay aligned.

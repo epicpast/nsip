@@ -7,70 +7,32 @@ diataxis_type: reference
 
 Generate shell completions for enhanced command-line UX using [clap_complete](https://docs.rs/clap_complete).
 
-## Setup
+## Generating Completions
 
-### Add Dependencies
+nsip exposes a dedicated `completions` subcommand that writes a completion
+script to stdout. The shell is a positional argument
+(`bash`, `zsh`, `fish`, `powershell`, or `elvish`):
 
-```toml
-[dependencies]
-clap = { version = "4.5", features = ["derive"] }
-clap_complete = "4.5"
+```bash
+nsip completions <shell>
 ```
 
-### Implement Completions
-
-**src/cli.rs:**
+The CLI is defined in `crates/main.rs` (the source lives in `crates/`, not
+the standard `src/` directory) and the completion scripts are generated with
+[clap_complete](https://docs.rs/clap_complete). The relevant subcommand is:
 
 ```rust
-use clap::{Parser, CommandFactory};
-use clap_complete::{generate, Shell};
-use std::io;
-
-#[derive(Parser, Debug)]
-#[command(name = "nsip")]
-#[command(about = "Modern Rust project template")]
-#[command(version)]
-pub struct Cli {
-    /// Configuration file path
-    #[arg(short, long, value_name = "FILE")]
-    pub config: Option<String>,
-
-    /// Verbose output
-    #[arg(short, long)]
-    pub verbose: bool,
-
-    /// Generate shell completions
-    #[arg(long, value_name = "SHELL")]
-    pub completions: Option<Shell>,
-}
-
-impl Cli {
-    pub fn generate_completions(shell: Shell) {
-        let mut cmd = Self::command();
-        generate(shell, &mut cmd, "nsip", &mut io::stdout());
-    }
-}
+// crates/main.rs
+/// Generate shell completions for bash, zsh, fish, or powershell.
+Completions {
+    /// Shell to generate completions for.
+    shell: clap_complete::Shell,
+},
 ```
 
-**src/main.rs:**
-
-```rust
-use clap::Parser;
-use cli::Cli;
-
-fn main() {
-    let cli = Cli::parse();
-
-    // Handle completion generation
-    if let Some(shell) = cli.completions {
-        Cli::generate_completions(shell);
-        return;
-    }
-
-    // Normal application logic
-    run(cli);
-}
-```
+The release pipeline (`.github/workflows/release.yml`) uses the same
+subcommand to produce the `nsip-completions.tar.gz` archive, for example
+`nsip completions bash > completions/nsip.bash`.
 
 ## Installation
 
@@ -78,10 +40,10 @@ fn main() {
 
 ```bash
 # Generate completions
-nsip --completions bash > ~/.local/share/bash-completion/completions/nsip
+nsip completions bash > ~/.local/share/bash-completion/completions/nsip
 
 # Or system-wide
-sudo nsip --completions bash > /etc/bash_completion.d/nsip
+sudo nsip completions bash > /etc/bash_completion.d/nsip
 
 # Reload
 source ~/.bashrc
@@ -97,7 +59,7 @@ nsip --<TAB>
 
 ```bash
 # Generate completions
-nsip --completions zsh > ~/.zsh/completions/_nsip
+nsip completions zsh > ~/.zsh/completions/_nsip
 
 # Add to .zshrc if not already
 echo 'fpath=(~/.zsh/completions $fpath)' >> ~/.zshrc
@@ -117,7 +79,7 @@ nsip --<TAB>
 
 ```bash
 # Generate completions
-nsip --completions fish > ~/.config/fish/completions/nsip.fish
+nsip completions fish > ~/.config/fish/completions/nsip.fish
 
 # Reload (automatic in most cases)
 fish -c 'fish_update_completions'
@@ -133,7 +95,7 @@ nsip --<TAB>
 
 ```powershell
 # Generate completions
-nsip --completions powershell | Out-File -FilePath $PROFILE\..\nsip.ps1
+nsip completions powershell | Out-File -FilePath $PROFILE\..\nsip.ps1
 
 # Add to profile
 Add-Content $PROFILE '. "$PSScriptRoot\nsip.ps1"'
@@ -152,7 +114,7 @@ nsip --<TAB>
 
 ```bash
 # Generate completions
-nsip --completions elvish > ~/.elvish/lib/nsip.elv
+nsip completions elvish > ~/.elvish/lib/nsip.elv
 
 # Add to rc.elv
 echo 'use nsip' >> ~/.elvish/rc.elv
@@ -182,7 +144,7 @@ def install
   system "cargo", "install", *std_cargo_args
 
   # Generate at install time
-  generate_completions_from_executable(bin/"nsip", "--completions")
+  generate_completions_from_executable(bin/"nsip", "completions")
 end
 ```
 
@@ -200,29 +162,21 @@ assets = [
 ]
 ```
 
-### Build Script
+### Generating the Packaged Artifacts
 
-**build.rs:**
+nsip does not use a `build.rs` for completions. To produce the
+`completions/` files referenced above (for packaging), run the
+`completions` subcommand once per shell after building the release binary:
 
-```rust
-use clap::CommandFactory;
-use clap_complete::{generate_to, Shell};
-use std::env;
-use std::path::PathBuf;
-
-include!("src/cli.rs");
-
-fn main() {
-    let outdir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let mut cmd = Cli::command();
-
-    for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::PowerShell] {
-        generate_to(shell, &mut cmd, "nsip", &outdir).unwrap();
-    }
-
-    println!("cargo:rerun-if-changed=src/cli.rs");
-}
+```bash
+mkdir -p completions
+nsip completions bash > completions/nsip.bash
+nsip completions zsh  > completions/_nsip
+nsip completions fish > completions/nsip.fish
 ```
+
+This mirrors the `.github/workflows/release.yml` "Generate shell completions"
+step.
 
 ## Advanced Features
 

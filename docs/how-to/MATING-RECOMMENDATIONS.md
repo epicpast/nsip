@@ -10,7 +10,7 @@ diataxis_type: how-to
 
 - `nsip` CLI installed, or the NSIP MCP server configured in your AI assistant
 - LPN IDs for the animals you want to evaluate
-- Breed ID for your breed (use `nsip breeds` or the `breed_groups` MCP tool to look it up)
+- Breed ID for your breed (use `nsip breed-groups` or the `breed_groups` MCP tool to look it up)
 
 ---
 
@@ -29,10 +29,10 @@ nsip compare 430735-0032 430735-0041 --traits BWT,WWT,YWT
 Add more IDs to compare up to five animals at once:
 
 ```bash
-nsip compare 430735-0032 430735-0041 430735-0058 --traits BWT,WWT,YWT,EMD,NLB
+nsip compare 430735-0032 430735-0041 430735-0058 --traits BWT,WWT,YWT,PEMD,NLB
 ```
 
-Omit `--traits` to see all 13 EBV traits. Add `-J` for JSON output.
+Omit `--traits` to see all 16 EBV traits. Add `-J` for JSON output.
 
 ### MCP
 
@@ -42,7 +42,7 @@ Call the `compare` tool with an array of LPN IDs:
 {
   "tool": "compare",
   "arguments": {
-    "animal_ids": ["430735-0032", "430735-0041"],
+    "lpn_ids": ["430735-0032", "430735-0041"],
     "traits": "BWT,WWT,YWT"
   }
 }
@@ -71,7 +71,7 @@ Call the `rank` tool with your breed ID and a weights object:
       "BWT": -1.0,
       "WWT": 2.0,
       "YWT": 1.5,
-      "EMD": 1.0
+      "PEMD": 1.0
     },
     "gender": "Male",
     "status": "CURRENT",
@@ -86,10 +86,10 @@ This example finds the top 5 current rams for a terminal sire objective: penaliz
 
 | Objective | Suggested weights |
 |-----------|-------------------|
-| Terminal sire | `BWT: -1.0, WWT: 2.0, YWT: 1.5, EMD: 1.0` |
-| Maternal sire | `NLB: 2.0, NWT: 2.0, PWT: 1.5, BWT: -0.5` |
-| Dual purpose | `WWT: 1.5, YWT: 1.0, NLB: 1.0, NWT: 1.0, BWT: -0.5` |
-| Parasite resistance | `WEC: -2.0, FEC: -2.0, WWT: 1.0` |
+| Terminal sire | `BWT: -1.0, WWT: 2.0, YWT: 1.5, PEMD: 1.0` |
+| Maternal sire | `NLB: 2.0, NLW: 2.0, MWWT: 1.5, BWT: -0.5` |
+| Dual purpose | `WWT: 1.5, YWT: 1.0, NLB: 1.0, NLW: 1.0, BWT: -0.5` |
+| Parasite resistance | `WFEC: -2.0, PFEC: -2.0, WWT: 1.0` |
 
 Each animal's composite score is calculated as the sum of `(trait_value * weight * accuracy / 100)` across all weighted traits, so higher-accuracy animals naturally rank higher.
 
@@ -160,9 +160,9 @@ Call the `mating_recommendations` tool with the animal you want to find mates fo
 {
   "tool": "mating_recommendations",
   "arguments": {
-    "animal_id": "430735-0032",
+    "lpn_id": "430735-0032",
     "breed_id": 486,
-    "target_traits": "WWT,EMD,NLB",
+    "target_traits": "WWT,PEMD,NLB",
     "max_results": 3
   }
 }
@@ -172,12 +172,12 @@ Call the `mating_recommendations` tool with the animal you want to find mates fo
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
-| `animal_id` | yes | -- | LPN ID of the animal to find mates for |
+| `lpn_id` | yes | -- | LPN ID of the animal to find mates for |
 | `breed_id` | yes | -- | Breed to search within |
 | `target_traits` | no | `WWT,BWT,NLB` | Traits to optimize (comma-separated) |
 | `max_results` | no | 5 | Number of recommendations to return |
 
-When you omit `target_traits`, the tool defaults to weaning weight (positive), birth weight (negative), and number of lambs born (positive). Traits where lower is preferred -- BWT, DAG, WEC, FEC -- automatically receive negative weights.
+When you omit `target_traits`, the tool defaults to weaning weight (positive), birth weight (negative), and number of lambs born (positive). Traits where lower is preferred -- BWT, WFEC, PFEC, YFD -- automatically receive negative weights.
 
 **Example response:**
 
@@ -193,7 +193,7 @@ When you omit `target_traits`, the tool defaults to weaning weight (positive), b
     "predicted_offspring_ebvs": {
       "BWT": 0.15,
       "WWT": 11.3,
-      "EMD": 1.8,
+      "PEMD": 1.8,
       "NLB": 0.12
     }
   }
@@ -210,14 +210,14 @@ Each recommendation includes:
 
 ## Putting it all together
 
-A typical breeding decision workflow:
+Run a breeding decision in four steps:
 
 1. **Rank** your breed to identify the top candidates for your objective.
-2. **Compare** your shortlisted animals side-by-side, filtering to the traits you care about.
-3. **Check inbreeding** for each candidate pairing you are considering.
-4. **Get recommendations** to let the tool automate steps 1--3 and surface the best mates.
+2. **Compare** the shortlist side-by-side, filtered to the traits you care about.
+3. **Check inbreeding** for each pairing you are considering.
+4. **Get recommendations** to automate steps 1--3 and surface the best mates.
 
-You can use the MCP guided prompts for a more conversational workflow. Ask your AI assistant to use the `evaluate-ram`, `evaluate-ewe`, or `plan-mating` prompts for structured breeding assessments that incorporate all of these tools automatically.
+For a conversational workflow, invoke the `evaluate-ram`, `evaluate-ewe`, or `plan-mating` MCP prompts -- they chain these tools into a structured assessment automatically.
 
 ---
 

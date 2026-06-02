@@ -1,5 +1,5 @@
 ---
-diataxis_type: explanation
+diataxis_type: reference
 ---
 # Documentation Index
 
@@ -59,7 +59,7 @@ Understanding-oriented discussions of key concepts.
 | [Understanding EBVs](explanation/EBV-EXPLAINED.md) | What EBVs are, how they're calculated, accuracy, and selection indexes |
 | [NSIP Data Model](explanation/NSIP-DATA-MODEL.md) | Program structure: breed groups, breeds, flocks, animals, and their relationships |
 | [Genetic Evaluation](explanation/GENETIC-EVALUATION.md) | How BLUP works, pedigree and genomic data, and the evaluation pipeline |
-| [Breed Groups and Traits](explanation/BREED-GROUPS-AND-TRAITS.md) | Understanding breed group categories and the 13 EBV trait abbreviations |
+| [Breed Groups and Traits](explanation/BREED-GROUPS-AND-TRAITS.md) | Understanding breed group categories and the 16 EBV trait abbreviations |
 | [From Data to Decisions](explanation/DATA-TO-DECISIONS.md) | How NSIP API data connects to real-world breeding decisions |
 | [MCP Security](explanation/MCP-SECURITY.md) | OAuth 2.1, PKCE, GitHub PAT authentication, and DNS rebinding protection |
 | [Telemetry](explanation/TELEMETRY.md) | W3C trace context, distributed tracing, and the OpenTelemetry integration |
@@ -92,7 +92,6 @@ Guides for developers who just created a repository from this template.
 | [Getting Started](template/GETTING-STARTED.md) | "Use this template" to first `cargo build` to first CI pass |
 | [Configuration](template/CONFIGURATION.md) | Cargo.toml fields, placeholder replacement, feature flags, editor setup |
 | [CI Workflows](template/CI-WORKFLOWS.md) | Every included workflow: triggers, secrets, how to enable/disable |
-| [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents: CI Doctor, Daily QA, Issue Triage, Q optimizer, Update Docs, Daily Documentation Review, Daily Repository Status |
 | [Customization](template/CUSTOMIZATION.md) | Add modules, remove examples, adjust lints, modify release targets |
 | [GitHub Template Features](template/GITHUB-TEMPLATE-FEATURES.md) | What copies when using a template -- and what doesn't |
 | [Copilot Jumpstart](template/COPILOT-JUMPSTART.md) | Prompts for automatic project scaffolding with GitHub Copilot |
@@ -120,33 +119,15 @@ Detailed reference material organized by topic.
 | [Release](workflows/RELEASE.md) | Multi-platform binary builds, changelog generation, and release creation |
 | [Publish](workflows/PUBLISH.md) | Publish the `nsip` crate to crates.io |
 | [Security Audit](workflows/SECURITY-AUDIT.md) | Daily `cargo audit` vulnerability scanning against the RustSec database |
-| [ADR Workflows](workflows/ADR-WORKFLOWS.md) | ADR format validation and HTML viewer generation |
-| [Agentic Workflows](workflows/AGENTIC-WORKFLOWS.md) | Autonomous AI agents for CI/CD (CI Doctor, Daily QA, Issue Triage, Q optimizer, Update Docs, Daily Documentation Review, Daily Repository Status) |
-| [Coverage](workflows/COVERAGE.md) | Code coverage configuration and reporting |
-| [Test Matrix](workflows/TEST-MATRIX.md) | Multi-platform and multi-version test matrix |
-| [Benchmark](workflows/BENCHMARK.md) | Run benchmarks on every push/PR |
-| [Benchmark Regression](workflows/BENCHMARK-REGRESSION.md) | Performance regression detection |
-| [Mutation Testing](workflows/MUTATION-TESTING.md) | Mutation testing with cargo-mutants |
-| [Fuzz Testing](workflows/FUZZ-TESTING.md) | Fuzz testing with cargo-fuzz |
-| [Code Quality](workflows/CODE-QUALITY.md) | Code quality metrics and analysis |
-| [Spell Check](workflows/SPELL-CHECK.md) | Spell checking configuration |
 | [SBOM](workflows/SBOM.md) | Software Bill of Materials generation |
 | [Secrets Scan](workflows/SECRETS-SCAN.md) | Secret scanning with Gitleaks |
 | [Container Scan](workflows/CONTAINER-SCAN.md) | Container image vulnerability scanning |
-| [Nightly Builds](workflows/NIGHTLY.md) | Rolling nightly pre-release from latest `main` |
 | [Changelog](workflows/CHANGELOG.md) | Auto-generate `CHANGELOG.md` on version tag |
 | [Stale](workflows/STALE.md) | Stale issue and PR management |
 | [Dependabot Auto-Merge](workflows/DEPENDABOT-AUTOMERGE.md) | Automatically merge patch and minor Dependabot updates |
-| [Contributors](workflows/CONTRIBUTORS.MD) | Generate `CONTRIBUTORS.md` from commit history |
+| [Contributors](workflows/CONTRIBUTORS.md) | Generate `CONTRIBUTORS.md` from commit history |
 | [Copilot Setup Steps](workflows/COPILOT-SETUP-STEPS.md) | Bootstrap environment for GitHub Copilot coding agents |
-| [Template Init](workflows/TEMPLATE-INIT.md) | One-time initialisation for repositories created from the template |
 | [Docker](workflows/DOCKER.md) | Build and push Docker image to GHCR |
-| [Docker Hub](workflows/DOCKER-HUB.md) | Multi-registry Docker publishing (Docker Hub + GHCR) |
-| [Docs Deploy](workflows/DOCS-DEPLOY.md) | Deploy Rustdoc and mdBook to GitHub Pages |
-| [Package: Homebrew](workflows/PACKAGE-HOMEBREW.md) | Update Homebrew tap formulae on release |
-| [Package: Linux](workflows/PACKAGE-LINUX.md) | Build `.deb` and `.rpm` packages on release |
-| [Package: Snap](workflows/PACKAGE-SNAP.md) | Build and publish Snap package |
-| [Package: Windows](workflows/PACKAGE-WINDOWS.md) | Build Windows MSI installer on release |
 | [Signed Releases](workflows/SIGNED-RELEASES.md) | Sign release assets with Cosign and generate checksums |
 | [SLSA Provenance](workflows/SLSA-PROVENANCE.md) | SLSA Level 3 provenance attestations for release binaries |
 
@@ -196,5 +177,7 @@ Detailed reference material organized by topic.
 | [ADR-0001](adr/0001-use-architectural-decision-records.md) | Use Architectural Decision Records |
 | [ADR-0002](adr/0002-documentation-directory-structure.md) | Documentation Directory Structure |
 | [ADR-0003](adr/0003-adopt-diataxis-documentation-framework.md) | Adopt Diataxis Documentation Framework |
+| [ADR-0004](adr/0004-dual-consumer-error-envelope.md) | Dual-Consumer Error Envelope (RFC 9457) |
+| [ADR-0005](adr/0005-error-type-uri-policy.md) | Error type URI Policy |
 
 See [docs/adr/README.md](adr/README.md) for the full ADR process and workflow.

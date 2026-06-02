@@ -89,7 +89,8 @@ fn format_row(cells: &[String], widths: &[usize]) -> String {
 
 /// Canonical ordering for traits in tables.
 const TRAIT_ORDER: &[&str] = &[
-    "BWT", "WWT", "PWWT", "YWT", "FAT", "EMD", "NLB", "NWT", "PWT", "DAG", "WGR", "WEC", "FEC",
+    "BWT", "WWT", "PWWT", "YWT", "MWWT", "NLB", "NLW", "PEMD", "PFAT", "YEMD", "YFAT", "WFEC",
+    "PFEC", "YFD", "YGFW", "YSL",
 ];
 
 /// Compare two trait names by canonical position.
@@ -805,7 +806,7 @@ mod tests {
     fn trait_sort_key_known() {
         assert_eq!(trait_sort_key("BWT"), 0);
         assert_eq!(trait_sort_key("WWT"), 1);
-        assert_eq!(trait_sort_key("FEC"), 12);
+        assert_eq!(trait_sort_key("PFEC"), 12);
     }
 
     #[test]
@@ -1412,7 +1413,7 @@ mod tests {
     fn fmt_progeny_trait_truncation() {
         // More than 5 traits should be truncated
         let mut trait_map = HashMap::new();
-        for name in &["BWT", "WWT", "PWWT", "YWT", "FAT", "EMD", "NLB"] {
+        for name in &["BWT", "WWT", "PWWT", "YWT", "MWWT", "NLB", "NLW"] {
             trait_map.insert((*name).to_string(), 1.0);
         }
         let progeny = Progeny {
@@ -1430,11 +1431,11 @@ mod tests {
         // Should show at most 5 trait columns
         // Line 0 = "Progeny for ...", line 1 = separator, line 2 = header row
         let header_line = output.lines().nth(2).unwrap();
-        // Count "BWT", "WWT", "PWWT", "YWT", "FAT" — "EMD" and "NLB" should be cut
+        // Top 5 by TRAIT_ORDER (BWT, WWT, PWWT, YWT, MWWT) shown; NLB/NLW cut.
         assert!(header_line.contains("BWT"));
-        assert!(header_line.contains("FAT"));
-        assert!(!header_line.contains("EMD"));
+        assert!(header_line.contains("MWWT"));
         assert!(!header_line.contains("NLB"));
+        assert!(!header_line.contains("NLW"));
     }
 
     // -----------------------------------------------------------------------
@@ -1677,10 +1678,10 @@ mod tests {
     #[test]
     fn fmt_trait_ranges_array_pascal_case_keys() {
         let data = serde_json::json!([
-            {"TraitName": "EMD", "MinValue": 0.5, "MaxValue": 3.0}
+            {"TraitName": "PEMD", "MinValue": 0.5, "MaxValue": 3.0}
         ]);
         let output = fmt_trait_ranges(&data);
-        assert!(output.contains("EMD"));
+        assert!(output.contains("PEMD"));
         assert!(output.contains("0.500"));
         assert!(output.contains("3.000"));
     }
@@ -1751,9 +1752,9 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
-    fn trait_order_has_thirteen_entries() {
-        assert_eq!(TRAIT_ORDER.len(), 13);
+    fn trait_order_has_sixteen_entries() {
+        assert_eq!(TRAIT_ORDER.len(), 16);
         assert_eq!(TRAIT_ORDER[0], "BWT");
-        assert_eq!(TRAIT_ORDER[12], "FEC");
+        assert_eq!(TRAIT_ORDER[15], "YSL");
     }
 }

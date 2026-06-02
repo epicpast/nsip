@@ -17,12 +17,13 @@ Each ADR file must:
   - `status` (proposed, accepted, deprecated, superseded)
   - `created`, `updated` (ISO 8601 dates)
   - `author`, `project`
-- Include the following body sections:
+- Include the following required body sections:
   - Context (background, current limitations)
-  - Decision Drivers (primary, secondary)
-  - Considered Options (with risk assessments)
   - Decision
   - Consequences (positive, negative, neutral)
+- May optionally include (recommended for decisions with non-trivial trade-offs):
+  - Decision Drivers (primary, secondary)
+  - Considered Options (with risk assessments)
 
 ## Workflow
 
@@ -52,15 +53,18 @@ If a decision is no longer relevant but hasn't been superseded:
 
 ## Viewing ADRs
 
-ADRs are automatically validated and compiled into an HTML viewer on every push to main:
+ADRs are plain Markdown files in `docs/adr/` and can be read directly in the
+repository or any Markdown viewer. They are validated and rendered locally with
+[adrscope](https://github.com/zircote/adrscope).
 
-- **Validation**: `.github/workflows/adr-validation.yml` validates ADR format
-- **HTML Viewer**: `.github/workflows/adr-viewer.yml` generates browsable HTML documentation
-
-The HTML viewer is uploaded as a build artifact and can be downloaded from the Actions tab.
+> The automated ADR validation/viewer workflows are not currently included in
+> this repository; run adrscope locally if you need format validation or an
+> HTML viewer.
 
 ## ADR Index
 
 - [ADR-0001](0001-use-architectural-decision-records.md) - Use Architectural Decision Records
 - [ADR-0002](0002-documentation-directory-structure.md) - Documentation Directory Structure
 - [ADR-0003](0003-adopt-diataxis-documentation-framework.md) - Adopt Diátaxis Documentation Framework
+- [ADR-0004](0004-dual-consumer-error-envelope.md) - Dual-Consumer Error Envelope (RFC 9457)
+- [ADR-0005](0005-error-type-uri-policy.md) - Error type URI Policy

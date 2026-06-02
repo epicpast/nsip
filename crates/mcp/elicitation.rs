@@ -282,9 +282,9 @@ mod tests {
 
     #[test]
     fn compare_preferences_deserialize_with_traits() {
-        let json = r#"{"traits":"EMD,FAT"}"#;
+        let json = r#"{"traits":"PEMD,PFAT"}"#;
         let cp: ComparePreferences = serde_json::from_str(json).unwrap();
-        assert_eq!(cp.traits.as_deref(), Some("EMD,FAT"));
+        assert_eq!(cp.traits.as_deref(), Some("PEMD,PFAT"));
     }
 
     #[test]
@@ -303,12 +303,12 @@ mod tests {
     fn selection_criteria_round_trip() {
         let sc = SelectionCriteria {
             min_accuracy: Some(70),
-            priority_traits: Some("WWT,EMD".to_string()),
+            priority_traits: Some("WWT,PEMD".to_string()),
         };
         let json = serde_json::to_string(&sc).unwrap();
         let sc2: SelectionCriteria = serde_json::from_str(&json).unwrap();
         assert_eq!(sc2.min_accuracy, Some(70));
-        assert_eq!(sc2.priority_traits.as_deref(), Some("WWT,EMD"));
+        assert_eq!(sc2.priority_traits.as_deref(), Some("WWT,PEMD"));
     }
 
     #[tokio::test]

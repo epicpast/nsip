@@ -38,7 +38,7 @@ Update version in `Cargo.toml`:
 
 ```toml
 [package]
-version = "0.4.0"  # Update this
+version = "0.6.0"  # Update this
 ```
 
 Run checks locally:
@@ -50,20 +50,36 @@ cargo test --all-features
 cargo deny check
 ```
 
-### 2. Create and Push Tag
+### 2. Open and Merge the Release PR
+
+`develop` is the active development branch and `main` is the stable/release
+branch. Never tag from `develop`. Promote the release through `main` first.
 
 ```bash
-# Commit version bump
+# Commit the version bump on develop
 git add Cargo.toml
-git commit -m "chore: bump version to 0.3.0"
-git push
-
-# Create annotated tag
-git tag -a v0.3.0 -m "Release v0.3.0"
-git push origin v0.3.0
+git commit -m "chore: bump version to 0.6.0"
+git push origin develop
 ```
 
-### 3. Automated Workflows
+Open a release PR from `develop` into `main` (the `release-pr.yml` workflow can
+open or update it via `workflow_dispatch`), let CI pass, then merge it.
+
+### 3. Tag the Release on `main`
+
+Tag the `main` merge commit and push the tag. The tag — not a branch push —
+triggers the release automation.
+
+```bash
+git checkout main
+git pull origin main
+
+# Create the annotated tag on the main merge commit
+git tag -a v0.6.0 -m "Release v0.6.0"
+git push origin v0.6.0
+```
+
+### 4. Automated Workflows
 
 Pushing the tag automatically triggers:
 
@@ -90,20 +106,20 @@ Pushing the tag automatically triggers:
 
 **Access:** https://github.com/zircote/nsip/releases
 
-**Artifacts:**
-- `nsip-linux-amd64` - Linux x86_64
-- `nsip-linux-arm64` - Linux ARM64
-- `nsip-macos-amd64` - macOS x86_64
-- `nsip-macos-arm64` - macOS ARM64 (Apple Silicon)
-- `nsip-windows-amd64.exe` - Windows x86_64
+**Artifacts** (release-asset names carry the version; `<VERSION>` = tag minus the `v`):
+- `nsip-<VERSION>-linux-amd64` - Linux x86_64
+- `nsip-<VERSION>-linux-arm64` - Linux ARM64
+- `nsip-<VERSION>-macos-amd64` - macOS x86_64
+- `nsip-<VERSION>-macos-arm64` - macOS ARM64 (Apple Silicon)
+- `nsip-<VERSION>-windows-amd64.exe` - Windows x86_64
 
 **Download Example:**
 
 ```bash
 # Linux
-wget https://github.com/zircote/nsip/releases/download/v0.1.0/nsip-linux-amd64
-chmod +x nsip-linux-amd64
-./nsip-linux-amd64 --version
+wget https://github.com/zircote/nsip/releases/download/v0.6.0/nsip-0.6.0-linux-amd64
+chmod +x nsip-0.6.0-linux-amd64
+./nsip-0.6.0-linux-amd64 --version
 ```
 
 ### Docker (GitHub Container Registry)
@@ -122,8 +138,8 @@ docker pull ghcr.io/zircote/nsip:latest
 docker run --rm ghcr.io/zircote/nsip:latest --version
 
 # Specific version
-docker pull ghcr.io/zircote/nsip:v0.1.0
-docker run --rm ghcr.io/zircote/nsip:v0.1.0 --version
+docker pull ghcr.io/zircote/nsip:v0.6.0
+docker run --rm ghcr.io/zircote/nsip:v0.6.0 --version
 
 # With volumes
 docker run --rm -v $(pwd):/data ghcr.io/zircote/nsip:latest
@@ -146,7 +162,7 @@ docker run --rm -v $(pwd):/data ghcr.io/zircote/nsip:latest
 cargo install nsip
 
 # Specific version
-cargo install nsip@0.1.0
+cargo install nsip@0.6.0
 
 # From source
 cargo install --git https://github.com/zircote/nsip
@@ -156,7 +172,7 @@ cargo install --git https://github.com/zircote/nsip
 
 ```toml
 [dependencies]
-nsip = "0.1"
+nsip = "0.6"
 ```
 
 ## Versioning
@@ -193,13 +209,13 @@ Delete the release and tag:
 
 ```bash
 # Delete remote tag
-git push --delete origin v0.3.0
+git push --delete origin v0.6.0
 
 # Delete local tag
-git tag -d v0.3.0
+git tag -d v0.6.0
 
 # Delete release via GitHub UI or gh CLI
-gh release delete v0.3.0
+gh release delete v0.6.0
 ```
 
 ### Docker
@@ -207,7 +223,7 @@ gh release delete v0.3.0
 Images are immutable; use previous version tags:
 
 ```bash
-docker pull ghcr.io/zircote/nsip:v0.1.0
+docker pull ghcr.io/zircote/nsip:v0.6.0
 ```
 
 ### crates.io
@@ -216,7 +232,7 @@ docker pull ghcr.io/zircote/nsip:v0.1.0
 
 1. Yank the version (prevents new projects from using it):
    ```bash
-   cargo yank --vers 0.3.0
+   cargo yank --vers 0.6.0
    ```
 
 2. Publish a patch version with fixes:
@@ -295,8 +311,11 @@ Dependabot automatically opens PRs for:
 
 3. **Version Bump in Separate Commit**
    ```bash
-   git commit -m "chore: bump version to 0.3.0"
-   git tag -a v0.3.0 -m "Release v0.3.0"
+   git commit -m "chore: bump version to 0.6.0"
+   ```
+   Tag only after the `develop` → `main` release PR merges (see steps 2-3):
+   ```bash
+   git tag -a v0.6.0 -m "Release v0.6.0"
    ```
 
 4. **Monitor Release Progress**

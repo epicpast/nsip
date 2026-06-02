@@ -5,11 +5,16 @@ diataxis_type: reference
 
 ## Overview
 
-Automated Docker image publication to multiple container registries.
+Docker image publication to container registries.
 
-**Workflow:** `.github/workflows/docker-hub.yml`
-**Registries:** Docker Hub, GitHub Container Registry (ghcr.io)
+**Active workflow:** `.github/workflows/docker.yml` — publishes to GitHub
+Container Registry (ghcr.io).
 **Platforms:** linux/amd64, linux/arm64
+
+> The multi-registry Docker Hub workflow (`docker-hub.yml`) is **not currently
+> included** in this repository. The registry-specific recipes below (Docker
+> Hub, AWS ECR, Google Artifact Registry, Azure ACR, Quay.io) are reference
+> guidance for extending `docker.yml` if you need to publish beyond ghcr.io.
 
 ## Supported Registries
 
@@ -17,16 +22,20 @@ Automated Docker image publication to multiple container registries.
 
 **Default public registry**
 
+> `nsip` is **not** published to Docker Hub — official images live at
+> `ghcr.io/zircote/nsip`. The commands below are generic Docker Hub usage;
+> substitute your own `<user>/<image>`.
+
 ```bash
 # Pull image
-docker pull username/nsip:latest
-docker pull username/nsip:0.1.0
+docker pull <user>/<image>:latest
+docker pull <user>/<image>:<version>
 
 # Run container
-docker run -it username/nsip:latest
+docker run -it <user>/<image>:latest
 ```
 
-**URL:** https://hub.docker.com/r/username/nsip
+**URL:** `https://hub.docker.com/r/<user>/<image>`
 
 ### 2. GitHub Container Registry (ghcr.io)
 
@@ -238,7 +247,7 @@ Automatically added via `docker/metadata-action`:
 
 ```dockerfile
 LABEL org.opencontainers.image.source="https://github.com/USER/REPO"
-LABEL org.opencontainers.image.description="Modern Rust template"
+LABEL org.opencontainers.image.description="NSIP Search API client for nsipsearch.nsip.org/api"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.version="0.1.0"
 ```

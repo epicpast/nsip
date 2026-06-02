@@ -25,8 +25,8 @@ In CI pipelines, install from crates.io or download a pre-built binary:
 # From crates.io
 cargo install nsip
 
-# Or download a release binary (Linux x86_64 example)
-curl -L -o nsip https://github.com/zircote/nsip/releases/latest/download/nsip-linux-amd64
+# Or download a release binary (Linux x86_64 example; release assets are versioned)
+curl -L -o nsip https://github.com/zircote/nsip/releases/download/v0.6.0/nsip-0.6.0-linux-amd64
 chmod +x nsip
 ```
 

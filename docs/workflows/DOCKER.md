@@ -16,17 +16,14 @@ attestation to the image for supply-chain transparency.
 **Permissions:** `contents: read`, `packages: write`, `id-token: write`,
 `attestations: write`
 
-> For publishing to Docker Hub in addition to GHCR, see the
-> [Docker Hub workflow](DOCKER-HUB.md).
-
 ## Image Tags
 
 Docker metadata is extracted automatically with the following tag patterns:
 
 | Pattern | Example |
 |---------|---------|
-| Full semver | `ghcr.io/zircote/nsip:0.4.0` |
-| Major.minor | `ghcr.io/zircote/nsip:0.4` |
+| Full semver | `ghcr.io/zircote/nsip:0.6.0` |
+| Major.minor | `ghcr.io/zircote/nsip:0.6` |
 | Major only | `ghcr.io/zircote/nsip:0` |
 | Short SHA | `ghcr.io/zircote/nsip:sha-a1b2c3d` |
 
@@ -49,7 +46,7 @@ image.
 Verify the attestation:
 
 ```bash
-gh attestation verify oci://ghcr.io/zircote/nsip:0.4.0 \
+gh attestation verify oci://ghcr.io/zircote/nsip:0.6.0 \
   --repo zircote/nsip
 ```
 
@@ -60,10 +57,10 @@ gh attestation verify oci://ghcr.io/zircote/nsip:0.4.0 \
 docker pull ghcr.io/zircote/nsip:latest
 
 # Pull a specific version
-docker pull ghcr.io/zircote/nsip:0.4.0
+docker pull ghcr.io/zircote/nsip:0.6.0
 
 # Run nsip via Docker
-docker run --rm ghcr.io/zircote/nsip:0.4.0 search --breed-id 640
+docker run --rm ghcr.io/zircote/nsip:0.6.0 search --breed-id 640
 ```
 
 ## Concurrency
@@ -74,9 +71,12 @@ manifests in the registry.
 
 ## Relationship to Release Pipeline
 
-The [Release workflow](RELEASE.md) triggers `docker.yml` indirectly: when the
-release is created with `HOMEBREW_TAP_TOKEN` (instead of `GITHUB_TOKEN`), the
-`release` event propagates to this workflow.
+`docker.yml` and the [Release workflow](RELEASE.md) (`release.yml`) both
+trigger **directly** on the same `push` of a `v*.*.*` tag — there is no
+trigger dependency between them. When you push a release tag, both
+workflows start independently and run in parallel. `docker.yml` builds and
+pushes the container image; `release.yml` builds binaries, SBOM, and the
+GitHub Release. Neither waits on or fires the other.
 
 ## Troubleshooting
 

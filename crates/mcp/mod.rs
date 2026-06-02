@@ -35,6 +35,43 @@ use crate::NsipClient;
 /// Default page size for cursor-based pagination of list endpoints.
 const DEFAULT_PAGE_SIZE: usize = 25;
 
+/// Slugify a human operation label into an `instance`-URN command token, e.g.
+/// `"Search failed"` -> `"search-failed"`.
+fn slugify(label: &str) -> String {
+    let mut out = String::with_capacity(label.len());
+    let mut prev_dash = false;
+    for c in label.chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c.to_ascii_lowercase());
+            prev_dash = false;
+        } else if !out.is_empty() && !prev_dash {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    out.trim_end_matches('-').to_owned()
+}
+
+/// Build an MCP error from a [`crate::Error`], attaching the RFC 9457
+/// problem+json envelope as the `data` payload and selecting the JSON-RPC error
+/// code by class. The class is derived from the single `exit_code` table
+/// ([`crate::Error::exit_code`]): caller errors (exit `1` — validation,
+/// not-found, and non-429 4xx upstream rejections) map to `invalid_params`;
+/// transient and environment errors (429/5xx, timeout, connection, upstream
+/// parse) map to `internal_error`. Sourcing the class from `exit_code` keeps it
+/// consistent with the CLI envelope and exhaustive across future variants. The
+/// `context` labels the operation (also slugified into the envelope `instance`).
+pub(crate) fn problem_error(context: &str, err: &crate::Error) -> McpError {
+    let pd = err.to_problem_details(&slugify(context));
+    let data = serde_json::to_value(pd).ok();
+    let message = format!("{context}: {err}");
+    if err.exit_code() == 1 {
+        McpError::invalid_params(message, data)
+    } else {
+        McpError::internal_error(message, data)
+    }
+}
+
 /// Paginate a slice with opaque cursor-based pagination.
 ///
 /// Returns the current page and an optional cursor for the next page.
@@ -48,13 +85,19 @@ fn paginate<T: Clone>(
     page_size: usize,
 ) -> Result<(Vec<T>, Option<String>), McpError> {
     let offset = match cursor {
-        Some(c) => c
-            .parse::<usize>()
-            .map_err(|_| McpError::invalid_params("Invalid pagination cursor", None))?,
+        Some(c) => c.parse::<usize>().map_err(|_| {
+            problem_error(
+                "paginate",
+                &crate::Error::invalid_cursor("invalid pagination cursor"),
+            )
+        })?,
         None => 0,
     };
     if offset > items.len() {
-        return Err(McpError::invalid_params("Cursor out of range", None));
+        return Err(problem_error(
+            "paginate",
+            &crate::Error::invalid_cursor("cursor out of range"),
+        ));
     }
     let end = (offset + page_size).min(items.len());
     let page = items[offset..end].to_vec();
@@ -231,12 +274,12 @@ pub async fn serve_stdio(sets: tool_sets::EnabledToolSets) -> crate::Result<()> 
     let service = NsipServer::with_tool_sets(sets)
         .serve(stdio())
         .await
-        .map_err(|e| crate::Error::Connection(format!("MCP server failed to start: {e}")))?;
+        .map_err(|e| crate::Error::connection(format!("MCP server failed to start: {e}")))?;
 
     service
         .waiting()
         .await
-        .map_err(|e| crate::Error::Connection(format!("MCP server error: {e}")))?;
+        .map_err(|e| crate::Error::connection(format!("MCP server error: {e}")))?;
 
     Ok(())
 }
@@ -244,6 +287,53 @@ pub async fn serve_stdio(sets: tool_sets::EnabledToolSets) -> crate::Result<()> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn slugify_operation_labels() {
+        assert_eq!(slugify("Search failed"), "search-failed");
+        assert_eq!(
+            slugify("Failed to fetch details"),
+            "failed-to-fetch-details"
+        );
+        assert_eq!(slugify("compare"), "compare");
+        assert_eq!(slugify("  weird --- spacing!! "), "weird-spacing");
+    }
+
+    #[test]
+    fn problem_error_selects_code_and_envelope_by_class() {
+        // Validation -> invalid_params (-32602), enveloped, tool in instance.
+        let v = problem_error("compare", &crate::Error::compare_arity("need 2-5"));
+        let vj = serde_json::to_value(&v).expect("serialize");
+        assert_eq!(vj["code"], -32602);
+        assert_eq!(
+            vj["data"]["type"],
+            "https://github.com/zircote/nsip/blob/main/docs/reference/errors/cli/compare-arity.md"
+        );
+        assert!(
+            vj["data"]["instance"]
+                .as_str()
+                .is_some_and(|s| s.starts_with("urn:nsip:compare:"))
+        );
+
+        // Transient upstream (429/5xx) -> internal_error (-32603), enveloped.
+        let t = problem_error("search", &crate::Error::api(503, "down"));
+        let tj = serde_json::to_value(&t).expect("serialize");
+        assert_eq!(tj["code"], -32603);
+        assert_eq!(tj["data"]["status"], 503);
+
+        // A non-429 4xx upstream rejection is a CALLER error (exit 1), so it
+        // maps to invalid_params (-32602), not internal_error — the agent must
+        // see it correct its request, not retry a server fault.
+        let bad = problem_error("details", &crate::Error::api(400, "bad request"));
+        let bj = serde_json::to_value(&bad).expect("serialize");
+        assert_eq!(bj["code"], -32602);
+        assert_eq!(bj["data"]["status"], 400);
+
+        // not-found is also a caller error -> invalid_params.
+        let nf = problem_error("details", &crate::Error::not_found("LPN 999"));
+        let nj = serde_json::to_value(&nf).expect("serialize");
+        assert_eq!(nj["code"], -32602);
+    }
 
     #[test]
     fn server_creation() {

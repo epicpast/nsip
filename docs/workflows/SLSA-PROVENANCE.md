@@ -44,7 +44,9 @@ The hash is passed to the `provenance` job as a workflow output.
 
 Calls the reusable workflow
 `slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0`
-with the base64-encoded subject hashes. The generator:
+(see the
+[SLSA GitHub Generator releases](https://github.com/slsa-framework/slsa-github-generator/releases)
+for available versions) with the base64-encoded subject hashes. The generator:
 
 1. Verifies it is running in a trusted GitHub Actions environment
 2. Signs the provenance with Sigstore keyless signing
@@ -57,14 +59,14 @@ with the base64-encoded subject hashes. The generator:
 go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@latest
 
 # Download the release binary and provenance
-gh release download v0.4.0 --repo zircote/nsip --pattern '*'
+gh release download v0.6.0 --repo zircote/nsip --pattern '*'
 
-# Verify
+# Verify (assets are bare, versioned binaries — no .tar.gz)
 slsa-verifier verify-artifact \
   --provenance-path multiple.intoto.jsonl \
   --source-uri github.com/zircote/nsip \
-  --source-tag v0.4.0 \
-  nsip-linux-amd64.tar.gz
+  --source-tag v0.6.0 \
+  nsip-0.6.0-linux-amd64
 ```
 
 ## Relationship to Other Attestation Mechanisms

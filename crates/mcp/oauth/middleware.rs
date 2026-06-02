@@ -105,9 +105,13 @@ pub async fn bearer_auth(
         // Cache miss -- validate via GitHub API
         match oauth_state.github.get_user(token).await {
             Ok(user) => {
-                // Cache the validated PAT
+                // Cache the validated PAT. A poisoned lock is not fatal — the
+                // request still proceeds on the fresh validation — but log it
+                // so the degraded (uncached) state is observable to operators.
                 if let Ok(mut cache) = oauth_state.pat_cache.write() {
                     cache.insert(token.to_owned(), (user.login.clone(), Instant::now()));
+                } else {
+                    tracing::warn!("PAT cache lock poisoned; skipping cache insert");
                 }
                 let claims = pat_claims(&user.login);
                 req.extensions_mut().insert(claims);

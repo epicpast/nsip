@@ -1,0 +1,64 @@
+---
+name: Back-merge
+
+# After a release tag is pushed, main is ahead of develop by the release merge
+# commit. This workflow automatically opens (and merges) a PR back-merging main
+# into develop so the branches stay in sync without manual intervention.
+"on":
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  back-merge:
+    name: Back-merge main into develop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Open and merge back-merge PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          # Nothing to do if develop already contains main.
+          if git merge-base --is-ancestor origin/main origin/develop; then
+            echo "develop already contains main; nothing to back-merge."
+            exit 0
+          fi
+
+          TITLE="chore: back-merge main into develop (${TAG_NAME})"
+          BODY="Automated back-merge of the ${TAG_NAME} release commit from main into develop so the branches stay in sync. No code changes."
+
+          # Reuse an existing open main -> develop PR if present; otherwise create one.
+          PR_NUMBER="$(gh pr list --base develop --head main --state open --json number --jq '.[0].number // empty' || true)"
+
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "Creating back-merge PR."
+            gh pr create \
+              --title "${TITLE}" \
+              --body "${BODY}" \
+              --base develop \
+              --head main \
+              >/dev/null
+            PR_NUMBER="$(gh pr list --base develop --head main --state open --json number --jq '.[0].number // empty')"
+          else
+            echo "Back-merge PR #${PR_NUMBER} already exists."
+          fi
+
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "Failed to determine back-merge PR number."
+            exit 1
+          fi
+
+          # Enable auto-merge so it lands once required checks pass.
+          gh pr merge "${PR_NUMBER}" --merge --auto

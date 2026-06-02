@@ -442,7 +442,9 @@ ping registry.company.com
 cargo package --list | wc -l
 
 # Exclude unnecessary files
-# .cargo/config.toml
+# NOTE: the `[package]` stanza below belongs in Cargo.toml,
+# NOT in .cargo/config.toml. `exclude` is a package manifest key.
+# Cargo.toml
 [package]
 exclude = [
     "tests/fixtures/*",

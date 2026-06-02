@@ -53,20 +53,19 @@ Carcass traits are standardized to a reference body weight of 55 kg (121 lbs) to
 
 | Abbreviation | Trait | Unit | Selection Direction |
 |---|---|---|---|
-| PFAT (CF) | Post-Weaning Fat Depth | mm | Lower preferred (less fat) |
-| PEMD (EMD) | Post-Weaning Eye Muscle Depth | mm | Higher preferred |
+| PFAT | Post-Weaning Fat | mm | Moderate preferred (breed-dependent) |
+| PEMD | Post-Weaning Eye Muscle Depth | mm | Higher preferred |
 
-Eye muscle depth measures the loin muscle cross-section and correlates with lean meat yield. Fat depth is measured as subcutaneous fat thickness via ultrasound -- lower values indicate leaner carcasses. NSIP also provides a **Carcass Plus** composite that combines EMD, FAT, and PWWT into a single carcass merit value.
+Eye muscle depth measures the loin muscle cross-section and correlates with lean meat yield. Fat depth is measured as subcutaneous fat thickness via ultrasound -- lower values indicate leaner carcasses, though the preferred direction is breed- and market-dependent (terminal programmes often weight PFAT negatively, while some markets reward finish). NSIP also provides a **Carcass Plus** composite that combines PEMD, PFAT, and PWWT into a single carcass merit value.
 
 ### Reproduction Traits
 
 | Abbreviation | Trait | Unit | Selection Direction |
 |---|---|---|---|
-| NLB | Number of Lambs Born | % above breed avg | Higher (with caution) |
-| NLW | Number of Lambs Weaned | % above breed avg | Higher preferred |
-| SC | Scrotal Circumference | mm | Higher preferred (fertility indicator) |
+| NLB | Number of Lambs Born | lambs | Higher (with caution) |
+| NLW | Number of Lambs Weaned | lambs | Higher preferred |
 
-NLB drives prolificacy but must be balanced against lamb survival -- triplets and quads have higher mortality. NLW captures the combined effect of prolificacy and lamb survival, making it a more practical selection target than NLB alone. SC (Scrotal Circumference) is a male fertility indicator -- higher values correlate with improved fertility in both the ram and his daughters.
+NLB drives prolificacy but must be balanced against lamb survival -- triplets and quads have higher mortality. NLW captures the combined effect of prolificacy and lamb survival, making it a more practical selection target than NLB alone. NSIP also evaluates scrotal circumference (a male fertility indicator) for some breeds, but it is not among the EBVs returned by the Search API.
 
 ### Parasite Resistance Traits
 
@@ -79,7 +78,7 @@ WFEC and PFEC measure parasite resistance as a percentage relative to the breed 
 
 ### Wool Traits (Wool Breeds Only)
 
-For wool-producing breeds, additional traits may be evaluated including GFW (Greasy Fleece Weight), CFW (Clean Fleece Weight), FD (Fiber Diameter), SL (Staple Length), SS (Staple Strength), FDCV (Fiber Diameter CV), and CURV (Fiber Curvature). These traits are not relevant for hair sheep breeds.
+For wool-producing breeds, the Search API returns yearling wool EBVs: **YGFW** (Yearling Greasy Fleece Weight), **YFD** (Yearling Fibre Diameter), and **YSL** (Yearling Staple Length). NSIP evaluates additional wool traits (e.g. clean fleece weight, staple strength, fibre-diameter CV, curvature) that are not exposed via the Search API. Wool traits are not relevant for hair sheep breeds.
 
 ---
 
@@ -148,31 +147,9 @@ Accuracy measures the reliability of an EBV estimate -- how likely the EBV is to
 - **Proven sires have high accuracy.** Rams with many progeny across multiple flocks accumulate accuracy quickly.
 - **Accuracy increases over time.** As an animal accumulates its own records and progeny data, its accuracy rises.
 
-### Accessing Accuracy via the CLI
+### Where Accuracy Appears in the Data
 
-```bash
-# View an animal's details including trait accuracies
-nsip details 6400012006BWR107
-
-# JSON output includes accuracy as integer percentage
-nsip details 6400012006BWR107 --json
-```
-
-### Accessing Accuracy via the Library
-
-```rust
-let details = client.animal_details("6400012006BWR107").await?;
-
-if let Some(bwt) = details.traits.get("BWT") {
-    println!("BWT EBV: {:.2} lbs", bwt.value);
-    if let Some(acc) = bwt.accuracy {
-        println!("Accuracy: {}%", acc);
-        if acc < 60 {
-            println!("Warning: low accuracy, treat with caution");
-        }
-    }
-}
-```
+Every trait the API returns carries its accuracy alongside its value, so accuracy is never something you have to compute or infer — it is reported per trait. In the `nsip` library, an animal fetched via `animal_details` exposes each trait through its `traits` map, and a trait's `accuracy` is an optional integer percentage; a missing accuracy simply means the API did not supply one for that trait. The practical reading is the one described above: treat a low-accuracy figure as a screening signal rather than a settled fact. For the commands and code that retrieve an animal's details and inspect trait accuracies, see [How to Compare Animals](../how-to/COMPARE-ANIMALS.md).
 
 ---
 
@@ -182,15 +159,7 @@ EBV values are relative to a breed base that may shift over time as the breed av
 
 - **An EBV of +5 today is not the same as +5 ten years ago.** If the breed has improved, the base has shifted upward, and today's +5 represents a higher absolute genetic level.
 - **Always compare animals from the same evaluation run.** The NSIP database is periodically re-evaluated, and all EBVs are recalculated together.
-- **Check the database date** to confirm you are working with current evaluations:
-
-```bash
-nsip date-updated
-```
-
-```rust
-let date_info = client.date_last_updated().await?;
-```
+- **Check the database date** to confirm you are working with current evaluations. The NSIP API exposes the last-updated date of the evaluation run, and the `nsip` tooling surfaces it so you can confirm which run your numbers come from before drawing conclusions from them.
 
 ---
 
@@ -205,7 +174,7 @@ Selecting on individual traits one at a time is inefficient and can cause proble
 An index assigns economic weights to each trait based on its impact on profitability. For example, a simplified terminal sire index might look like:
 
 ```
-Index = (w1 x WWT) + (w2 x PWWT) + (w3 x EMD) - (w4 x FAT) - (w5 x BWT)
+Index = (w1 x WWT) + (w2 x PWWT) + (w3 x PEMD) - (w4 x PFAT) - (w5 x BWT)
 ```
 
 The weights (w1 through w5) are derived from economic modeling and genetic parameters (heritabilities and correlations). Negative weight on BWT means the index penalizes animals that increase birth weight.
@@ -242,32 +211,14 @@ EBV comparisons are only meaningful under specific conditions:
 2. **Same evaluation run.** EBVs from different evaluation dates may use different base adjustments.
 3. **Consider accuracy.** When two animals have similar EBVs but different accuracies, the higher-accuracy animal is the safer choice.
 
-The `nsip` CLI provides a dedicated comparison command:
-
-```bash
-nsip compare ANIMAL_ID_1 ANIMAL_ID_2 --traits BWT,WWT,PEMD
-```
-
-And the library supports fetching multiple animals for programmatic comparison:
-
-```rust
-let profile_a = client.search_by_lpn("ANIMAL_ID_1").await?;
-let profile_b = client.search_by_lpn("ANIMAL_ID_2").await?;
-
-// Compare specific traits
-for trait_name in &["BWT", "WWT", "PEMD"] {
-    let val_a = profile_a.details.traits.get(*trait_name).map(|t| t.value);
-    let val_b = profile_b.details.traits.get(*trait_name).map(|t| t.value);
-    println!("{}: A={:?}, B={:?}", trait_name, val_a, val_b);
-}
-```
+These conditions are what make comparison meaningful rather than misleading: hold breed, evaluation run, and accuracy in mind, and the differences between animals reflect genetics rather than artifacts of the data. For the dedicated comparison command and the library calls that fetch multiple animals for side-by-side analysis, see [How to Compare Animals](../how-to/COMPARE-ANIMALS.md).
 
 ---
 
 ## Common Misconceptions
 
 **"A higher EBV is always better."**
-Not true. For BWT, lower is preferred. For PFAT, lower is preferred (less fat). For WFEC and PFEC, lower/negative values are preferred (indicating greater parasite resistance). Always check the selection direction for each trait.
+Not true. For BWT, lower is generally preferred. For PFAT, the preferred direction is breed- and market-dependent (moderate cover). For WFEC and PFEC, lower/negative values are preferred (indicating greater parasite resistance). Always check the selection direction for each trait.
 
 **"EBVs predict an animal's own performance."**
 EBVs predict genetic contribution to offspring, not the animal's own phenotype. A ewe with a high WWT EBV may have been a light lamb herself if she was raised in poor conditions.

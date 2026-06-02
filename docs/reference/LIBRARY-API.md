@@ -16,10 +16,18 @@ pub use models::{
     DateLastUpdated, Lineage, LineageAnimal, Progeny, ProgenyAnimal,
     SearchCriteria, SearchResults, Trait, TraitRange, TraitRangeFilter,
 };
+pub use problem::{CodeAction, ProblemDetails, RetryAfter};
 pub mod mcp;
+pub mod problem;
 pub enum Error { /* ... */ }
+pub enum ValidationKind { /* ... */ } // re-exported at the crate root
 pub type Result<T> = std::result::Result<T, Error>;
 ```
+
+The error envelope types are re-exported at the crate root for a flat public
+path: [`ValidationKind`](ERROR-HANDLING.md#validation-kinds) classifies an
+`Error::Validation`, and `ProblemDetails`, `CodeAction`, and `RetryAfter` make
+up the RFC 9457 envelope (see [ERROR-ENVELOPE.md](ERROR-ENVELOPE.md)).
 
 ---
 
@@ -394,6 +402,36 @@ Detailed information about a single animal including EBV traits, breed, and cont
 | `genotyped` | `Option<String>` | Genotyped status |
 | `traits` | `HashMap<String, Trait>` | EBV traits keyed by abbreviation (e.g. `"BWT"`, `"WWT"`) |
 | `contact_info` | `Option<ContactInfo>` | Owner/flock contact information |
+
+#### `AnimalDetails::from_api_response(data: &serde_json::Value) -> Result<AnimalDetails>`
+
+Parse an `AnimalDetails` from a raw JSON value returned by the API. Useful for
+turning the raw `serde_json::Value` rows in `SearchResults::results` into typed
+records. It auto-detects the response shape:
+
+- **Nested format** — `{ "success": true, "data": { … "searchResultViewModel": { … } } }` (the `details` endpoint)
+- **Search-result row** — a flat `camelCase` object with an `lpnId` string and inline trait values
+- **Legacy flat format** — a flat `PascalCase` object with an `LpnId` string
+
+**Errors:** Returns `Error::Parse` when the value has no recognized identity
+field (`data`, `lpnId`, or `LpnId` present as a non-empty string) — for example
+a 200 body that is not an animal record.
+
+```rust
+use nsip::{AnimalDetails, NsipClient, SearchCriteria};
+
+# async fn example() -> nsip::Result<()> {
+let client = NsipClient::new();
+let criteria = SearchCriteria::new().with_breed_id(486);
+let search = client.search_animals(0, 50, Some(486), None, None, Some(&criteria)).await?;
+
+let animals: Vec<AnimalDetails> = search.results
+    .iter()
+    .filter_map(|r| AnimalDetails::from_api_response(r).ok())
+    .collect();
+# Ok(())
+# }
+```
 
 ---
 
@@ -792,7 +830,7 @@ for ancestor in shared {
 
 **`ebv_glossary() -> Vec<TraitDefinition>`**
 
-Returns complete glossary of all 13 NSIP EBV traits with metadata for each trait.
+Returns complete glossary of all 16 NSIP EBV traits with metadata for each trait.
 
 ```rust
 use nsip::mcp::analytics::ebv_glossary;

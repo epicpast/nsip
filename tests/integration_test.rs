@@ -59,16 +59,13 @@ fn test_search_criteria_default() {
 #[test]
 fn test_error_types() {
     // Test Validation error
-    let err = Error::Validation("bad input".to_string());
+    let err = Error::validation("bad input");
     let display = format!("{err}");
     assert!(display.contains("validation error"));
     assert!(display.contains("bad input"));
 
     // Test Api error
-    let err = Error::Api {
-        status: 500,
-        message: "server error".to_string(),
-    };
+    let err = Error::api(500, "server error");
     let display = format!("{err}");
     assert!(display.contains("500"));
     assert!(display.contains("server error"));
@@ -79,17 +76,17 @@ fn test_error_types() {
     assert!(display.contains("not found"));
 
     // Test Timeout error
-    let err = Error::Timeout("30s exceeded".to_string());
+    let err = Error::timeout("30s exceeded");
     let display = format!("{err}");
     assert!(display.contains("timed out"));
 
     // Test Connection error
-    let err = Error::Connection("refused".to_string());
+    let err = Error::connection("refused");
     let display = format!("{err}");
     assert!(display.contains("connection error"));
 
     // Test Parse error
-    let err = Error::Parse("invalid json".to_string());
+    let err = Error::parse("invalid json");
     let display = format!("{err}");
     assert!(display.contains("parse error"));
 }
@@ -227,7 +224,7 @@ fn test_search_results_response() {
 }
 
 mod property_tests {
-    use nsip::SearchCriteria;
+    use nsip::{Error, SearchCriteria};
     use proptest::prelude::*;
 
     proptest! {
@@ -252,6 +249,23 @@ mod property_tests {
             prop_assert_eq!(criteria.breed_id, breed_id);
             prop_assert_eq!(criteria.status, status);
             prop_assert_eq!(criteria.gender, gender);
+        }
+
+        /// For any HTTP status, an `Api` error produces a complete RFC 9457
+        /// envelope: mandatory members present, status mirrored, exit code in
+        /// the committed set, and a compact (<1 KB) JSON payload.
+        #[test]
+        fn api_envelope_complete_for_any_status(status in 400u16..600, msg in ".{0,64}") {
+            let pd = Error::api(status, msg).to_problem_details("prop");
+            prop_assert_eq!(pd.status, status);
+            prop_assert!(!pd.title.is_empty());
+            prop_assert!(!pd.detail.is_empty());
+            prop_assert!(pd.instance.starts_with("urn:nsip:prop:"));
+            prop_assert_eq!(&pd.type_uri[pd.type_uri.len() - 3..], ".md");
+            prop_assert_eq!(&pd.docs_url, &pd.type_uri);
+            prop_assert!(matches!(pd.exit_code, 1 | 75));
+            let json = serde_json::to_string(&pd).expect("serialize");
+            prop_assert!(json.len() <= 1024, "payload {} bytes", json.len());
         }
     }
 }

@@ -18,18 +18,30 @@ Full reference: `docs/MCP.md`
 ## Tools
 
 - `search` -- Find animals (params: `breed_id`, `gender`, `status`, `sort_by`, `page`, `page_size`)
-- `details` -- Full EBV data (params: `animal_id`)
-- `lineage` -- Pedigree tree (params: `animal_id`)
-- `progeny` -- Offspring list (params: `animal_id`, `page`, `page_size`)
-- `profile` -- Details+lineage+progeny combined (params: `animal_id`)
+- `details` -- Full EBV data (params: `lpn_id`)
+- `lineage` -- Pedigree tree (params: `lpn_id`)
+- `progeny` -- Offspring list (params: `lpn_id`, `page`, `page_size`)
+- `profile` -- Details+lineage+progeny combined (params: `lpn_id`)
 - `breed_groups` -- List all breeds (no params)
 - `trait_ranges` -- Min/max EBVs for a breed (params: `breed_id`)
-- `compare` -- Side-by-side comparison (params: `animal_ids` 2-5, `traits`)
+- `compare` -- Side-by-side comparison (params: `lpn_ids` 2-5, `traits`)
 - `rank` -- Weighted multi-trait ranking (params: `breed_id`, `weights`, `gender`, `top_n`)
 - `inbreeding_check` -- COI calculation (params: `sire_id`, `dam_id`)
-- `mating_recommendations` -- Optimal mates (params: `animal_id`, `breed_id`, `target_traits`)
+- `mating_recommendations` -- Optimal mates (params: `lpn_id`, `breed_id`, `target_traits`)
 - `flock_summary` -- Flock statistics (params: `flock_id`, `breed_id`)
 - `database_status` -- DB freshness (no params)
+
+## Guided Prompts
+
+| Prompt | Purpose | Arguments |
+|---|---|---|
+| `evaluate-ram` | Assess a ram's breeding value | `lpn_id` |
+| `evaluate-ewe` | Assess a ewe's breeding value | `lpn_id` |
+| `compare-breeding-stock` | Side-by-side animal comparison | `lpn_ids` (comma-separated) |
+| `plan-mating` | Mating assessment with COI check | `sire_id`, `dam_id` |
+| `flock-improvement` | Trait gap analysis | `breed_id`, `flock_id` (optional) |
+| `select-replacement` | Find top replacement candidates | `breed_id`, `gender`, `target_trait` |
+| `interpret-ebvs` | Farmer-friendly EBV explanation | `lpn_id` |
 
 ## Workflows
 
@@ -42,8 +54,8 @@ Full reference: `docs/MCP.md`
 
 - LPN IDs: strings (e.g., `430735-0032`)
 - Breed IDs: numeric (discover via `breed_groups`)
-- 13 EBV traits: BWT, WWT, PWWT, YWT, FAT, EMD, NLB, NWT, PWT, DAG, WGR, WEC, FEC
-- Lower-is-better: BWT, DAG, WEC, FEC (use negative weights in `rank`)
+- 16 EBV traits: BWT, WWT, PWWT, YWT, MWWT, NLB, NLW, PEMD, PFAT, YEMD, YFAT, WFEC, PFEC, YFD, YGFW, YSL
+- Lower-is-better: BWT, WFEC, PFEC (use negative weights in `rank`)
 - Status: `CURRENT`, `SOLD`, `DEAD`
 - Gender: `Male`, `Female`, `Both`
 - COI thresholds: Green (<6.25%), Yellow (6.25-12.5%), Red (>12.5%)

@@ -101,7 +101,7 @@ git push origin vX.Y.Z
 This single push triggers all release automation. Tag immediately after merging the
 release PR so changelog diffs stay clean.
 
-### 3. Triggered Workflows
+### 4. Triggered Workflows
 
 Pushing a `v*.*.*` tag triggers these workflows in parallel:
 
@@ -112,6 +112,7 @@ Pushing a `v*.*.*` tag triggers these workflows in parallel:
 | **Docker** | `docker.yml` | Builds multi-platform images (linux/amd64, linux/arm64), pushes to `ghcr.io/zircote/nsip` with version + `latest` tags |
 | **Publish** | `publish.yml` | Runs pre-publish checks and publishes to crates.io (if enabled and tag-triggered) |
 | **Signed Releases** | `signed-releases.yml` | Signs all release assets with Sigstore Cosign, generates SHA256/SHA512 checksums |
+| **Back-merge** | `back-merge.yml` | Automatically opens and auto-merges a `main -> develop` PR so the branches stay in sync after the release (no manual step) |
 
 ---
 
@@ -155,13 +156,18 @@ Run through this after all workflows complete.
   ```bash
   gh release view vX.Y.Z
   ```
-- [ ] **All 5 binary assets** are attached:
-  - `nsip-linux-amd64`
-  - `nsip-linux-arm64`
-  - `nsip-macos-amd64`
-  - `nsip-macos-arm64`
-  - `nsip-windows-amd64.exe`
+- [ ] **All 5 binary assets** are attached (release-asset names carry the version, `X.Y.Z` = tag minus `v`):
+  - `nsip-X.Y.Z-linux-amd64`
+  - `nsip-X.Y.Z-linux-arm64`
+  - `nsip-X.Y.Z-macos-amd64`
+  - `nsip-X.Y.Z-macos-arm64`
+  - `nsip-X.Y.Z-windows-amd64.exe`
 - [ ] **Checksums and signatures** are attached (`SHA256SUMS`, `SHA512SUMS`, `*.sig` files)
+- [ ] **Supplementary artifacts** are attached (produced by `release.yml`):
+  - `nsip-X.Y.Z-sbom-spdx.json` + `nsip-X.Y.Z-sbom-spdx.json.sigstore.json` (SBOM, attested)
+  - `nsip-X.Y.Z-completions.tar.gz` + `.sigstore.json` (shell completions: bash, zsh, fish, powershell)
+  - `nsip-X.Y.Z-man-pages.tar.gz` + `.sigstore.json` (man pages)
+  - the MCPB bundle (`nsip-X.Y.Z.mcpb`) + its `.sigstore.json`
 - [ ] **Release notes** are generated correctly from conventional commits
 - [ ] **Docker image** is available:
   ```bash
@@ -173,7 +179,7 @@ Run through this after all workflows complete.
   docker pull ghcr.io/zircote/nsip:latest
   docker run --rm ghcr.io/zircote/nsip:latest --version
   ```
-- [ ] **crates.io** package updated (if publishing is enabled):
+- [ ] **crates.io** package updated:
   ```bash
   cargo install nsip@X.Y.Z
   # Or check: https://crates.io/crates/nsip
@@ -181,9 +187,9 @@ Run through this after all workflows complete.
 - [ ] **CHANGELOG.md** PR into `develop` opened by the changelog workflow
 - [ ] Download and test a binary on at least one platform:
   ```bash
-  wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-linux-amd64
-  chmod +x nsip-linux-amd64
-  ./nsip-linux-amd64 --version
+  wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-X.Y.Z-linux-amd64
+  chmod +x nsip-X.Y.Z-linux-amd64
+  ./nsip-X.Y.Z-linux-amd64 --version
   ```
 
 ---
@@ -330,14 +336,14 @@ Changelogs are generated automatically by [git-cliff](https://git-cliff.org/) fr
 ### crates.io
 
 - **Package:** https://crates.io/crates/nsip
-- **Note:** Publishing is disabled by default in the template. Enable by uncommenting the tag trigger in `publish.yml` and setting `CARGO_REGISTRY_TOKEN`.
+- **Note:** `publish.yml` is active and runs automatically on every `v*.*.*` tag push. It runs pre-publish checks and publishes to crates.io using the `CARGO_REGISTRY_TOKEN` secret. Ensure that secret is configured before tagging.
 
 ### Install Methods
 
 ```bash
 # From GitHub release (Linux)
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-linux-amd64
-chmod +x nsip-linux-amd64
+wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-X.Y.Z-linux-amd64
+chmod +x nsip-X.Y.Z-linux-amd64
 
 # From Docker
 docker pull ghcr.io/zircote/nsip:vX.Y.Z

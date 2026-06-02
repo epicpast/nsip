@@ -9,8 +9,8 @@ default:
 
 # === Core Development ===
 
-# Full CI check: fmt, clippy, test, doc, deny, coverage
-check: fmt-check lint test doc-build deny coverage-gate
+# Full CI check: fmt, clippy, test, doc, doc-examples, deny, coverage
+check: fmt-check lint test doc-build check-doc-examples deny coverage-gate
 
 # Build in debug mode
 build:
@@ -43,6 +43,13 @@ doc:
 # Build documentation without opening
 doc-build:
     cargo doc --no-deps --all-features
+
+# Compile-check the canonical doc examples (examples/ mirror the complete,
+# runnable programs in docs/). `cargo test --doc` does NOT compile fenced
+# ```rust blocks in .md files, so these guard against doc-example regressions.
+# Compile only — never run; the examples issue live API calls.
+check-doc-examples:
+    cargo build --examples
 
 # Watch for changes and re-run tests
 watch:

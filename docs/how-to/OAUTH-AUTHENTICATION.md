@@ -32,10 +32,12 @@ diataxis_type: how-to
 
    The `--auth` flag only applies to the HTTP transport. It has no effect on stdio transport.
 
-3. Verify the server is enforcing authentication by sending an unauthenticated request:
+3. Verify the server is enforcing authentication by sending an unauthenticated JSON-RPC request to the `/mcp` endpoint:
 
    ```bash
-   curl -s http://localhost:8080/mcp/v1/tools
+   curl -s -X POST http://localhost:8080/mcp \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
    ```
 
    You should receive a `401 Unauthorized` response with a `WWW-Authenticate` header.
@@ -68,11 +70,13 @@ diataxis_type: how-to
 
 If you already have a GitHub Personal Access Token, you can skip the full OAuth flow entirely.
 
-1. Pass the token in the `Authorization` header:
+1. Pass the token in the `Authorization` header on a JSON-RPC POST to `/mcp`:
 
    ```bash
-   curl -H "Authorization: Bearer ghp_yourTokenHere" \
-     http://localhost:8080/mcp/v1/tools
+   curl -X POST http://localhost:8080/mcp \
+     -H "Authorization: Bearer ghp_yourTokenHere" \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
    ```
 
 2. The server auto-detects PAT tokens by their prefix (`ghp_`, `gho_`, or `github_pat_`) and validates them against the GitHub API.
@@ -169,11 +173,13 @@ The response contains your access and refresh tokens:
 
 ### Step 5: Use the access token
 
-Include it in the `Authorization` header for all subsequent requests:
+Include it in the `Authorization` header on JSON-RPC POSTs to `/mcp`:
 
 ```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  http://localhost:8080/mcp/v1/tools
+curl -X POST http://localhost:8080/mcp \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
 ---

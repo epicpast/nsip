@@ -56,22 +56,7 @@ pub struct Breed {
 }
 ```
 
-Breed group IDs and breed IDs are numeric identifiers assigned by the NSIP system. They are used as parameters when searching for animals or querying trait ranges. The 23 participating breeds include: Katahdin, Suffolk, Polypay, Targhee, Dorper, White Suffolk, Dorset, Hampshire, Rambouillet, Columbia, Texel, Romney, Coopworth, Finnsheep, Border Leicester, Southdown, Cheviot, Clun Forest, Shropshire, SAMM (South African Meat Merino), Tunis, Black Welsh Mountain, and various Composite/Commercial/Terminal entries.
-
-```bash
-# List all breed groups and their breeds
-nsip breed-groups
-```
-
-```rust
-let groups = client.breed_groups().await?;
-for group in &groups {
-    println!("Group: {} (ID: {})", group.name, group.id);
-    for breed in &group.breeds {
-        println!("  Breed: {} (ID: {})", breed.name, breed.id);
-    }
-}
-```
+Both `id` fields are typed `i64`, matching the signed integers the NSIP API emits for these identifiers; the crate does not narrow them, so any value the API returns round-trips faithfully. The names are owned `String`s rather than borrowed slices because a `BreedGroup` is a self-contained value handed back from a parse, with no source buffer to borrow from. Breed group IDs and breed IDs are the numeric identifiers assigned by the NSIP system and used as parameters when searching for animals or querying trait ranges. The 23 participating breeds include: Katahdin, Suffolk, Polypay, Targhee, Dorper, White Suffolk, Dorset, Hampshire, Rambouillet, Columbia, Texel, Romney, Coopworth, Finnsheep, Border Leicester, Southdown, Cheviot, Clun Forest, Shropshire, SAMM (South African Meat Merino), Tunis, Black Welsh Mountain, and various Composite/Commercial/Terminal entries.
 
 The grouping matters because traits are evaluated within breed groups. NSIP uses four primary group categories: **USA Hair** (Katahdin, Dorper, St. Croix), **USA Terminal** (Suffolk, Hampshire, Texel, Dorset, White Suffolk, Southdown), **USA Maternal** (Polypay, Finnsheep, Coopworth, Border Leicester), and **USA Range** (Targhee, Rambouillet, Columbia, SAMM). Not all traits are evaluated for all breeds -- for example, wool traits are only meaningful for wool breeds, and parasite resistance traits (WFEC, PFEC) depend on breed-specific data collection.
 
@@ -144,11 +129,7 @@ The `status` field indicates an animal's current standing in the flock:
 | SOLD | Transferred to another flock |
 | DEAD | Deceased |
 
-Query the available statuses dynamically:
-
-```bash
-nsip statuses
-```
+The `status` field is itself `Option<String>` rather than a closed enum, a deliberate choice: the NSIP API may add or rename statuses over time, and an open string keeps the model tolerant of values the crate has not seen rather than failing to parse them. The set of statuses an evaluation currently uses can be queried dynamically from the API rather than assumed from this table.
 
 ---
 
@@ -179,26 +160,11 @@ pub struct LineageAnimal {
 
 ### Generations Structure
 
-The `generations` field is a vector of vectors. Index 0 contains grandparents, index 1 contains great-grandparents, and so on. Within each generation, animals appear in pedigree order (sire's sire, sire's dam, dam's sire, dam's dam for the grandparent generation).
-
-```rust
-let lineage = client.lineage("6400012006BWR107").await?;
-
-if let Some(sire) = &lineage.sire {
-    println!("Sire: {} ({})", sire.lpn_id, sire.farm_name.as_deref().unwrap_or("unknown"));
-}
-
-// Grandparents
-if let Some(grandparents) = lineage.generations.first() {
-    for gp in grandparents {
-        println!("Grandparent: {}", gp.lpn_id);
-    }
-}
-```
+The design choice that shapes this type is the split between named parents and an open-ended `generations` vector. The `subject`, `sire`, and `dam` fields are each `Option<LineageAnimal>` because the immediate family is what callers reach for most often, and naming them makes the common case direct and self-documenting. Beyond parents, ancestry is modelled as a vector of vectors rather than a fixed set of named grandparent fields: index 0 holds grandparents, index 1 great-grandparents, and so on, growing only as deep as the pedigree the API actually returns. Within each generation, animals appear in pedigree order — sire's sire, sire's dam, dam's sire, dam's dam for the grandparent generation — so position carries meaning. This open-ended shape avoids hardcoding a maximum pedigree depth while keeping the structure traversable by simple indexing.
 
 ### Index Values in Lineage
 
-Lineage nodes include selection index values (`us_index`, `src_index`) that are not present in the main `AnimalDetails` struct. These indexes combine multiple EBVs into a single ranking score and are particularly useful for quick pedigree-level comparisons.
+`LineageAnimal` carries selection index values (`us_index`, `src_index`) as `Option<f64>` that are not present in the main `AnimalDetails` struct. They are optional because not every node in a pedigree has a published index, and they live on the lineage node rather than on `AnimalDetails` because the API delivers them embedded in the lineage tree's HTML content — the crate parses them out where they actually arrive. These indexes combine multiple EBVs into a single ranking score and are useful for quick pedigree-level comparisons.
 
 ---
 
@@ -222,20 +188,11 @@ pub struct ProgenyAnimal {
 }
 ```
 
-Note that progeny trait values are `f64` (not the full `Trait` struct). Accuracy is not included in progeny records -- only the EBV values themselves.
+The fields encode several deliberate design decisions. Progeny trait values are a bare `HashMap<String, f64>` rather than the full `Trait` struct used on `AnimalDetails`, because the progeny endpoint returns EBV values only — accuracy is not part of a progeny record, so modelling it as `Option<i32>` would imply data that never arrives. The `sex` and `date_of_birth` fields are `Option<String>` to tolerate the API omitting them for individual offspring, while `lpn_id` is a required `String` because an offspring with no identifier could not be looked up or distinguished.
 
-```bash
-nsip progeny 6400012006BWR107
-```
+### A Note on the Pagination Types
 
-```rust
-let progeny = client.progeny("6400012006BWR107", 0, 25).await?;
-println!("Total offspring: {}", progeny.total_count);
-for animal in &progeny.animals {
-    let wwt = animal.traits.get("WWT").copied().unwrap_or(0.0);
-    println!("  {} - WWT: {:.2}", animal.lpn_id, wwt);
-}
-```
+The pagination fields expose a small but deliberate type asymmetry: `page` and `page_size` are `u32`, while `total_count` is `i64`. The page and page size are caller-supplied request parameters that can never sensibly be negative, so an unsigned type encodes that invariant directly and matches the validation the client performs (page size must be 1–100). The total count, by contrast, originates from the API rather than the caller, and the crate types it as `i64` to round-trip whatever signed integer the upstream JSON provides without narrowing or risking a conversion failure on an unexpected value. The asymmetry is intentional: request-side fields adopt the type that expresses their constraints, response-side fields adopt the type that faithfully mirrors the source. The same pattern appears on `SearchResults`, which shares the `total_count: i64` / `page: u32` / `page_size: u32` layout for the same reasons.
 
 ---
 
@@ -270,17 +227,7 @@ pub struct TraitRangeFilter {
 }
 ```
 
-Before setting trait range filters, query the valid ranges for a breed:
-
-```bash
-nsip trait-ranges 640
-```
-
-```rust
-let ranges = client.trait_ranges(640).await?;
-```
-
-This returns `TraitRange` values showing the observed min/max for each trait within that breed, preventing you from constructing filters that would return zero results.
+Both bounds are plain `f64` and inclusive; there is no separate "unset" state because a `TraitRangeFilter` only exists once a caller has decided to constrain a trait. The companion `TraitRange` type (returned when querying a breed's observed ranges) reports the actual min and max values present for each trait within a breed, which is what lets a caller set a filter inside the achievable range rather than one that would match no animals.
 
 ### Search Results
 
@@ -301,7 +248,7 @@ The `results` are `serde_json::Value` because search result rows use a different
 
 ## Animal Profile (Combined View)
 
-The `AnimalProfile` struct aggregates details, lineage, and progeny into a single response. The `search_by_lpn` method fetches all three concurrently:
+The `AnimalProfile` struct aggregates details, lineage, and progeny into a single response.
 
 ```rust
 pub struct AnimalProfile {
@@ -311,12 +258,7 @@ pub struct AnimalProfile {
 }
 ```
 
-```rust
-let profile = client.search_by_lpn("6400012006BWR107").await?;
-// profile.details, profile.lineage, and profile.progeny are all populated
-```
-
-This is the most efficient way to get a complete picture of an animal, as it issues the three API calls concurrently rather than sequentially.
+All three fields are owned (non-`Option`) composite values rather than optionals, which reflects the construction contract: a profile is built only after its three constituent requests have each succeeded, so the type can guarantee all three parts are present rather than forcing callers to unwrap them. The design rationale for the aggregate is efficiency — the three underlying endpoints (details, lineage, progeny) are independent, so they are fetched concurrently and assembled into one value, giving a complete picture of an animal without serial round-trips.
 
 ---
 

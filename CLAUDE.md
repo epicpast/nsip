@@ -58,7 +58,8 @@ cargo fmt -- --check && cargo clippy --all-targets --all-features -- -D warnings
 
 ### Key Patterns
 
-- **Error handling**: `thiserror` for error types, `Result<T>` alias, `?` propagation. Never `unwrap`/`expect`/`panic!` in library code.
+- **Error handling**: `thiserror` + `miette::Diagnostic` for error types, `Result<T>` alias, `?` propagation. Fallible-API variants carry `#[source]` (cause chain) and `retry_after`. Never `unwrap`/`expect`/`panic!` in library code.
+- **Dual-consumer error envelope (RFC 9457)**: every `Error` maps to a `ProblemDetails` (`crates/problem.rs`) via `to_problem_details(command)`. The binary renders errors as a `miette` diagnostic on a TTY and `application/problem+json` on stderr for non-TTY / `--format json` / `-J` (`crates/render.rs`). MCP tool errors carry the same envelope in the JSON-RPC `data` field. Exit codes are `sysexits`-aligned (1 caller, 3 upstream-parse, 75 transient). `type` URIs are stable repo-docs URLs (no version path) resolving to `docs/reference/errors/`. Input failures are typed per-operation via `Error::Validation { kind: ValidationKind, .. }` (each kind → its own `type`/title/`suggested_fix`); MCP validation paths route through `crate::mcp::problem_error`, which envelopes them and picks the JSON-RPC code by class. See `docs/reference/ERROR-ENVELOPE.md` and ADR-0004/0005. Adding an error variant **or `ValidationKind`** requires a catalog page under `docs/reference/errors/`.
 - **Builder pattern**: `SearchCriteria::new().with_breed_id(640).with_status("CURRENT")` using `const fn` and `#[must_use]`
 - **Binary structure**: `main()` returns `ExitCode`, delegates to `run()` which returns `Result`. Binary code allows `#[allow(clippy::print_stdout, clippy::print_stderr)]`.
 

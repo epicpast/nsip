@@ -24,18 +24,32 @@ Add to your MCP configuration (`.mcp.json` or equivalent):
 | Tool | Purpose | Key Parameters |
 |---|---|---|
 | `search` | Find animals with filters | `breed_id`, `gender`, `status`, `sort_by` |
-| `details` | Full EBV data for one animal | `animal_id` |
-| `lineage` | Pedigree / ancestry tree | `animal_id` |
-| `progeny` | Offspring list | `animal_id`, `page`, `page_size` |
-| `profile` | Combined details+lineage+progeny | `animal_id` |
+| `details` | Full EBV data for one animal | `lpn_id` |
+| `lineage` | Pedigree / ancestry tree | `lpn_id` |
+| `progeny` | Offspring list | `lpn_id`, `page`, `page_size` |
+| `profile` | Combined details+lineage+progeny | `lpn_id` |
 | `breed_groups` | List all breeds | _(none)_ |
 | `trait_ranges` | Min/max EBVs for a breed | `breed_id` |
-| `compare` | Side-by-side EBV comparison | `animal_ids` (2-5), `traits` |
+| `compare` | Side-by-side EBV comparison | `lpn_ids` (2-5), `traits` |
 | `rank` | Weighted multi-trait ranking | `breed_id`, `weights`, `gender`, `top_n` |
 | `inbreeding_check` | COI for a potential mating | `sire_id`, `dam_id` |
-| `mating_recommendations` | Find optimal mates | `animal_id`, `breed_id`, `target_traits` |
+| `mating_recommendations` | Find optimal mates | `lpn_id`, `breed_id`, `target_traits` |
 | `flock_summary` | Flock-level statistics | `flock_id`, `breed_id` |
 | `database_status` | DB freshness and statuses | _(none)_ |
+
+## Guided Prompts
+
+Use these MCP prompts for structured breeding workflows:
+
+| Prompt | Purpose | Arguments |
+|---|---|---|
+| `evaluate-ram` | Assess a ram's breeding value | `lpn_id` |
+| `evaluate-ewe` | Assess a ewe's breeding value | `lpn_id` |
+| `compare-breeding-stock` | Side-by-side animal comparison | `lpn_ids` (comma-separated) |
+| `plan-mating` | Mating assessment with COI check | `sire_id`, `dam_id` |
+| `flock-improvement` | Trait gap analysis | `breed_id`, `flock_id` (optional) |
+| `select-replacement` | Find top replacement candidates | `breed_id`, `gender`, `target_trait` |
+| `interpret-ebvs` | Farmer-friendly EBV explanation | `lpn_id` |
 
 ## Common Workflows
 
@@ -55,7 +69,7 @@ Add to your MCP configuration (`.mcp.json` or equivalent):
 ### 3. Rank a Flock or Breed
 
 1. Call `breed_groups` to discover the breed ID (if unknown)
-2. Call `rank` with trait weights -- use negative weights for lower-is-better traits (BWT, DAG, WEC, FEC)
+2. Call `rank` with trait weights -- use negative weights for lower-is-better traits (BWT, WFEC, PFEC)
 3. Call `compare` on the top-ranked candidates for a side-by-side view
 
 ### 4. Flock Improvement
@@ -68,8 +82,8 @@ Add to your MCP configuration (`.mcp.json` or equivalent):
 
 - **LPN IDs**: String identifiers (e.g., `6401492025FLE029`, `430735-0032`)
 - **Breed IDs**: Numeric -- use `breed_groups` to discover valid IDs
-- **13 EBV traits**: BWT, WWT, PWWT, YWT, FAT, EMD, NLB, NWT, PWT, DAG, WGR, WEC, FEC
-- **Lower-is-better traits**: BWT, DAG, WEC, FEC -- use negative weights in `rank`
+- **16 EBV traits**: BWT, WWT, PWWT, YWT, MWWT, NLB, NLW, PEMD, PFAT, YEMD, YFAT, WFEC, PFEC, YFD, YGFW, YSL
+- **Lower-is-better traits**: BWT, WFEC, PFEC -- use negative weights in `rank`
 - **Status values**: `CURRENT`, `SOLD`, `DEAD`
 - **Gender values**: `Male`, `Female`, `Both`
 

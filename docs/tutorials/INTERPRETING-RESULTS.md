@@ -67,10 +67,10 @@ Traits for 400001:
     Accuracy: 65%
     Units: lbs
 
-  NLB (Number Lambs Born)
+  NLB (Number of Lambs Born)
     Value: 0.12
     Accuracy: 45%
-    Units: %
+    Units: lambs
 ```
 
 **What do these numbers mean?**
@@ -79,45 +79,21 @@ An EBV (Estimated Breeding Value) is not the animal's own weight or measurement.
 
 - **BWT = 0.35 lbs** means this animal's offspring are expected to be 0.35 lbs heavier at birth than the breed average. A small positive BWT is typical; very high BWT can indicate lambing difficulty.
 - **WWT = 4.20 lbs** means offspring are expected to weigh 4.20 lbs more at weaning (60 days) than average. Higher is generally better for growth traits.
-- **NLB = 0.12** means this animal's genetics predict 0.12% more lambs born per lambing than the breed average. This is a reproductive trait expressed as a percentage.
+- **NLB = 0.12 lambs** means this animal's genetics predict 0.12 more lambs born per lambing than the breed average. This is a reproductive trait expressed in lambs.
 
-The common EBV traits in the NSIP system are:
+NSIP reports the same prediction pattern across several families of traits:
 
-**Growth traits:**
+- **Growth** -- `BWT` (Birth Weight), `WWT` (Weaning Weight), `PWWT` (Post-Weaning Weight), and `YWT` (Yearling Weight), all in lbs. Higher generally means faster growth; for `BWT`, lower is usually preferred to reduce lambing difficulty.
+- **Carcass** -- `PEMD` (Post-Weaning Eye Muscle Depth) and `PFAT` (Post-Weaning Fat), both in mm. Higher `PEMD` means more muscle; `PFAT` is breed-dependent (moderate is often the goal).
+- **Reproduction** -- `NLB` (Number of Lambs Born), `NLW` (Number of Lambs Weaned), and `MWWT` (Maternal Weaning Weight). `NLB` and `NLW` are measured in lambs; `MWWT` in lbs.
+- **Parasite resistance** -- `WFEC` (Weaning Fecal Egg Count) and `PFEC` (Post-Weaning Fecal Egg Count), in %. For these, **lower** values are desirable -- they indicate genetic resistance to internal parasites. A ram with a strongly negative `WFEC` EBV passes lower worm burden to his lambs (each parent contributes about half the EBV).
 
-| Abbreviation | Trait | Units | Higher means... |
-|-------------|-------|-------|-----------------|
-| BWT | Birth Weight | lbs | Heavier lambs at birth |
-| WWT | Weaning Weight (60 days) | lbs | Faster early growth |
-| MWWT | Maternal Weaning Weight | lbs | Better mothering ability |
-| PWWT | Post-Weaning Weight | lbs | Faster later growth |
-| YWT | Yearling Weight | lbs | Heavier at one year |
+For two quick teaching examples:
 
-**Carcass traits** (standardized to 55 kg / 121 lbs body weight):
+- `BWT = 0.35 lbs` -- offspring expected 0.35 lbs heavier at birth than breed average (a small positive value is typical).
+- `WWT = 4.20 lbs` -- offspring expected 4.20 lbs heavier at weaning than average (higher is better for growth).
 
-| Abbreviation | Trait | Units | Higher means... |
-|-------------|-------|-------|-----------------|
-| PEMD (EMD) | Eye Muscle Depth | mm | More muscle |
-| PFAT (CF) | Fat Depth | mm | More fat cover |
-
-**Reproduction traits:**
-
-| Abbreviation | Trait | Units | Higher means... |
-|-------------|-------|-------|-----------------|
-| NLB | Number Lambs Born | % | More prolific |
-| NLW | Number Lambs Weaned | % | Better lamb survival |
-| SC | Scrotal Circumference | mm | Higher fertility (rams) |
-
-**Parasite resistance traits:**
-
-| Abbreviation | Trait | Units | Higher means... |
-|-------------|-------|-------|-----------------|
-| WFEC | Weaning Fecal Egg Count | % | More worm eggs (undesirable) |
-| PFEC | Post-Weaning Fecal Egg Count | % | More parasites (undesirable) |
-
-For parasite traits (WFEC, PFEC), **negative** values are desirable -- they indicate genetic resistance to internal parasites. For example, a ram with a WFEC EBV of -90% would be expected to reduce worm burden in his lambs by approximately 45% (half the EBV, since each parent contributes half).
-
-Wool breeds may also have additional traits such as GFW (Greasy Fleece Weight), CFW (Clean Fleece Weight), FD (Fibre Diameter), SL (Staple Length), SS (Staple Strength), FDCV (Fibre Diameter CV), and CURV (Curvature).
+For the complete, authoritative list of all 16 traits with units, selection direction, and definitions, see the [EBV Trait Glossary](../MCP.md#ebv-trait-glossary) (or read the live `nsip://glossary` MCP resource). Wool breeds report additional fleece traits not covered here.
 
 ---
 

@@ -12,9 +12,11 @@ use crate::NsipClient;
 
 use super::analytics::ebv_glossary;
 
-/// Map a crate-level error into an MCP internal error with context.
-fn resource_err(context: &str, e: impl std::fmt::Display) -> rmcp::ErrorData {
-    rmcp::ErrorData::internal_error(format!("{context}: {e}"), None)
+/// Map a crate-level [`crate::Error`] into an MCP error with the RFC 9457
+/// problem+json envelope in `data` and a class-appropriate JSON-RPC code.
+/// See [`crate::mcp::problem_error`].
+fn resource_err(context: &str, err: &crate::Error) -> rmcp::ErrorData {
+    super::problem_error(context, err)
 }
 
 // ---------------------------------------------------------------------------
@@ -116,10 +118,10 @@ fn selection_guide_content() -> String {
          4. Rank candidates using weighted trait scores.\n\
          5. Check inbreeding (COI) before finalizing matings.\n\n\
          ### Common Breeding Objectives\n\n\
-         - **Terminal sire:** Emphasize WWT, YWT, EMD, FAT.\n\
-         - **Maternal flock:** Emphasize NLB, NWT, PWT, and moderate BWT.\n\
-         - **Dual purpose:** Balance growth (WWT, YWT) with maternal traits (NLB, NWT).\n\
-         - **Parasite resistance:** Emphasize WEC/FEC (lower is better).\n",
+         - **Terminal sire:** Emphasize WWT, YWT, PEMD, PFAT.\n\
+         - **Maternal flock:** Emphasize NLB, NLW, MWWT, and moderate BWT.\n\
+         - **Dual purpose:** Balance growth (WWT, YWT) with maternal traits (NLB, NLW).\n\
+         - **Parasite resistance:** Emphasize WFEC/PFEC (lower is better).\n",
     )
 }
 
@@ -170,7 +172,7 @@ pub fn list_resources() -> ListResourcesResult {
             name: "EBV Trait Glossary".to_string(),
             title: Some("EBV Trait Glossary".to_string()),
             description: Some(
-                "Definitions of all 13 NSIP EBV traits with units, interpretation, and selection direction"
+                "Definitions of all 16 NSIP EBV traits with units, interpretation, and selection direction"
                     .to_string(),
             ),
             mime_type: Some("text/markdown".to_string()),
@@ -299,14 +301,24 @@ pub fn list_resource_templates() -> ListResourceTemplatesResult {
 }
 
 /// Helper to create a JSON text resource content entry.
-fn json_resource_content(uri: &str, value: &impl serde::Serialize) -> ResourceContents {
-    let json = serde_json::to_string_pretty(value).unwrap_or_default();
-    ResourceContents::TextResourceContents {
+///
+/// # Errors
+///
+/// Returns an MCP internal error if `value` cannot be serialized (e.g. a
+/// non-finite float), rather than silently emitting empty content.
+fn json_resource_content(
+    uri: &str,
+    value: &impl serde::Serialize,
+) -> Result<ResourceContents, rmcp::ErrorData> {
+    let json = serde_json::to_string_pretty(value).map_err(|e| {
+        rmcp::ErrorData::internal_error(format!("Failed to serialize resource: {e}"), None)
+    })?;
+    Ok(ResourceContents::TextResourceContents {
         uri: uri.to_string(),
         mime_type: Some("application/json".to_string()),
         text: json,
         meta: None,
-    }
+    })
 }
 
 /// Helper to create a markdown text resource content entry.
@@ -350,21 +362,21 @@ pub async fn read_resource(
             let groups = client
                 .breed_groups()
                 .await
-                .map_err(|e| resource_err("Failed to fetch breeds", e))?;
+                .map_err(|e| resource_err("Failed to fetch breeds", &e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &groups,
-            )]))
+            )?]))
         },
 
         NsipUri::Status => {
             let updated = client
                 .date_last_updated()
                 .await
-                .map_err(|e| resource_err("Failed to fetch status", e))?;
+                .map_err(|e| resource_err("Failed to fetch status", &e))?;
             let statuses = client
                 .statuses()
                 .await
-                .map_err(|e| resource_err("Failed to fetch statuses", e))?;
+                .map_err(|e| resource_err("Failed to fetch statuses", &e))?;
             let status_obj = serde_json::json!({
                 "last_updated": updated.data,
                 "statuses": statuses,
@@ -372,56 +384,66 @@ pub async fn read_resource(
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri,
                 &status_obj,
-            )]))
+            )?]))
         },
 
         NsipUri::Animal { lpn_id } => {
             let profile = client
                 .search_by_lpn(&lpn_id)
                 .await
-                .map_err(|e| resource_err("Failed to fetch animal", e))?;
+                .map_err(|e| resource_err("Failed to fetch animal", &e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &profile,
-            )]))
+            )?]))
         },
 
         NsipUri::AnimalPedigree { lpn_id } => {
             let lineage = client
                 .lineage(&lpn_id)
                 .await
-                .map_err(|e| resource_err("Failed to fetch lineage", e))?;
+                .map_err(|e| resource_err("Failed to fetch lineage", &e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &lineage,
-            )]))
+            )?]))
         },
 
         NsipUri::AnimalProgeny { lpn_id } => {
             let progeny = client
                 .progeny(&lpn_id, 0, 25)
                 .await
-                .map_err(|e| resource_err("Failed to fetch progeny", e))?;
+                .map_err(|e| resource_err("Failed to fetch progeny", &e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &progeny,
-            )]))
+            )?]))
         },
 
         NsipUri::BreedRanges { breed_id } => {
             let id: i64 = breed_id.parse().map_err(|_| {
-                rmcp::ErrorData::invalid_params(format!("Invalid breed_id: {breed_id}"), None)
+                resource_err(
+                    "breed-id",
+                    &crate::Error::invalid_breed_id(format!("Invalid breed_id: {breed_id}")),
+                )
             })?;
             let ranges = client
                 .trait_ranges(id)
                 .await
-                .map_err(|e| resource_err("Failed to fetch ranges", e))?;
+                .map_err(|e| resource_err("Failed to fetch ranges", &e))?;
             Ok(ReadResourceResult::new(vec![json_resource_content(
                 uri, &ranges,
-            )]))
+            )?]))
         },
 
-        NsipUri::Unknown => Err(rmcp::ErrorData::resource_not_found(
-            format!("Unknown resource URI: {uri}"),
-            None,
-        )),
+        NsipUri::Unknown => {
+            // Keep the MCP `resource_not_found` code (clients expect it for an
+            // unknown resource read) but attach the RFC 9457 envelope so agents
+            // still get the structured contract.
+            let err = crate::Error::unknown_resource(format!("Unknown resource URI: {uri}"));
+            let data = serde_json::to_value(err.to_problem_details("read-resource")).ok();
+            Err(rmcp::ErrorData::resource_not_found(
+                format!("Unknown resource URI: {uri}"),
+                data,
+            ))
+        },
     }
 }
 
@@ -698,7 +720,7 @@ mod tests {
         let content = glossary_content();
         assert!(content.contains("BWT"));
         assert!(content.contains("WWT"));
-        assert!(content.contains("FEC"));
+        assert!(content.contains("PFEC"));
         assert!(content.contains("Birth Weight"));
     }
 
@@ -709,11 +731,11 @@ mod tests {
     }
 
     #[test]
-    fn glossary_content_has_all_thirteen_traits() {
+    fn glossary_content_has_all_sixteen_traits() {
         let content = glossary_content();
         let abbreviations = [
-            "BWT", "WWT", "PWWT", "YWT", "FAT", "EMD", "NLB", "NWT", "PWT", "DAG", "WGR", "WEC",
-            "FEC",
+            "BWT", "WWT", "PWWT", "YWT", "MWWT", "NLB", "NLW", "PEMD", "PFAT", "YEMD", "YFAT",
+            "WFEC", "PFEC", "YFD", "YGFW", "YSL",
         ];
         for abbrev in &abbreviations {
             assert!(content.contains(abbrev), "Glossary missing trait: {abbrev}");
@@ -802,7 +824,7 @@ mod tests {
     #[test]
     fn json_resource_content_produces_json_mime_type() {
         let data = serde_json::json!({"key": "value"});
-        let content = json_resource_content("nsip://test", &data);
+        let content = json_resource_content("nsip://test", &data).expect("serialize");
         let (uri, mime, text) = extract_text_content(&content);
         assert_eq!(uri, "nsip://test");
         assert_eq!(mime, Some("application/json"));
@@ -813,7 +835,7 @@ mod tests {
     #[test]
     fn json_resource_content_pretty_printed() {
         let data = serde_json::json!({"a": 1, "b": 2});
-        let content = json_resource_content("nsip://test", &data);
+        let content = json_resource_content("nsip://test", &data).expect("serialize");
         let (_, _, text) = extract_text_content(&content);
         assert!(text.contains('\n'), "JSON should be pretty-printed");
     }

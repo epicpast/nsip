@@ -3,11 +3,14 @@
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
 mod format;
+mod render;
 
 use std::process::ExitCode;
 
 use clap::{CommandFactory, Parser, Subcommand};
 use nsip::{NsipClient, SearchCriteria};
+
+use crate::render::Format;
 
 /// NSIP Search API client CLI.
 #[derive(Parser, Debug)]
@@ -15,9 +18,14 @@ use nsip::{NsipClient, SearchCriteria};
 #[command(about = "NSIP Search API client for nsipsearch.nsip.org/api", long_about = None)]
 #[command(version)]
 struct Cli {
-    /// Output raw JSON instead of human-readable format.
+    /// Output raw JSON instead of human-readable format (alias for `--format json`).
     #[arg(long, short = 'J', global = true)]
     json: bool,
+
+    /// Error output format: `pretty` (human) or `json` (RFC 9457). Also controls
+    /// success output. Defaults to TTY detection for errors.
+    #[arg(long, value_enum, global = true)]
+    format: Option<Format>,
 
     /// Subcommand to execute.
     #[command(subcommand)]
@@ -184,12 +192,12 @@ fn generate_man_pages(out_dir: Option<String>) -> Result<(), nsip::Error> {
         let man = clap_mangen::Man::new(cmd);
         return man
             .render(&mut std::io::stdout())
-            .map_err(|e| nsip::Error::Parse(format!("man page render error: {e}")));
+            .map_err(|e| nsip::Error::parse(format!("man page render error: {e}")));
     };
 
     let path = std::path::Path::new(&dir);
     std::fs::create_dir_all(path)
-        .map_err(|e| nsip::Error::Validation(format!("cannot create directory {dir}: {e}")))?;
+        .map_err(|e| nsip::Error::validation(format!("cannot create directory {dir}: {e}")))?;
 
     render_man_page(&cmd, path, "nsip")?;
 
@@ -212,10 +220,10 @@ fn render_man_page(
     let man = clap_mangen::Man::new(cmd.clone());
     let mut buf: Vec<u8> = Vec::new();
     man.render(&mut buf)
-        .map_err(|e| nsip::Error::Parse(format!("man page render error: {e}")))?;
+        .map_err(|e| nsip::Error::parse(format!("man page render error: {e}")))?;
     let filename = format!("{name}.1");
     std::fs::write(dir.join(&filename), buf)
-        .map_err(|e| nsip::Error::Validation(format!("cannot write {filename}: {e}")))
+        .map_err(|e| nsip::Error::validation(format!("cannot write {filename}: {e}")))
 }
 
 /// Initialise the tracing subscriber.
@@ -255,24 +263,48 @@ fn init_tracing_inner() {
         .init();
 }
 
+/// Human-readable rendering of the database last-updated value.
+///
+/// The upstream endpoint returns a bare JSON date string; render its inner
+/// text without surrounding quotes, falling back to the raw value for any
+/// non-string shape.
+fn fmt_date_updated(data: &serde_json::Value) -> String {
+    data.as_str().map_or_else(
+        || format!("Database last updated: {data}"),
+        |s| format!("Database last updated: {s}"),
+    )
+}
+
+/// Renders the `date-updated` output for the resolved output mode: pretty JSON
+/// when `json` is set, otherwise the human-readable line from
+/// [`fmt_date_updated`].
+fn render_date_updated(data: &serde_json::Value, json: bool) -> String {
+    if json {
+        serde_json::to_string_pretty(data).unwrap_or_default()
+    } else {
+        fmt_date_updated(data)
+    }
+}
+
 /// Runs the application logic.
+///
+/// Success output is JSON when `-J/--json` or `--format json` is given,
+/// otherwise human-readable. Error rendering (format selection, exit code) is
+/// owned by [`main`] via [`render`].
 #[allow(clippy::too_many_lines)]
-async fn run() -> Result<(), nsip::Error> {
-    let cli = Cli::parse();
+async fn run(cli: Cli) -> Result<(), nsip::Error> {
     let client = NsipClient::new();
+    let success_json = cli.json || cli.format == Some(Format::Json);
 
     match cli.command {
         Commands::DateUpdated => {
             let updated = client.date_last_updated().await?;
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&updated.data).unwrap_or_default()
-            );
+            println!("{}", render_date_updated(&updated.data, success_json));
         },
 
         Commands::BreedGroups => {
             let groups = client.breed_groups().await?;
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&groups).unwrap_or_default()
@@ -284,7 +316,7 @@ async fn run() -> Result<(), nsip::Error> {
 
         Commands::Statuses => {
             let statuses = client.statuses().await?;
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&statuses).unwrap_or_default()
@@ -299,7 +331,7 @@ async fn run() -> Result<(), nsip::Error> {
 
         Commands::TraitRanges { breed_id } => {
             let ranges = client.trait_ranges(breed_id).await?;
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&ranges).unwrap_or_default()
@@ -363,7 +395,7 @@ async fn run() -> Result<(), nsip::Error> {
                 )
                 .await?;
 
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&results).unwrap_or_default()
@@ -375,7 +407,7 @@ async fn run() -> Result<(), nsip::Error> {
 
         Commands::Details { search_string } => {
             let details = client.animal_details(&search_string).await?;
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&details).unwrap_or_default()
@@ -387,7 +419,7 @@ async fn run() -> Result<(), nsip::Error> {
 
         Commands::Lineage { lpn_id } => {
             let lineage = client.lineage(&lpn_id).await?;
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&lineage).unwrap_or_default()
@@ -403,7 +435,7 @@ async fn run() -> Result<(), nsip::Error> {
             page_size,
         } => {
             let progeny = client.progeny(&lpn_id, page, page_size).await?;
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&progeny).unwrap_or_default()
@@ -415,7 +447,7 @@ async fn run() -> Result<(), nsip::Error> {
 
         Commands::Profile { lpn_id } => {
             let profile = client.search_by_lpn(&lpn_id).await?;
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&profile).unwrap_or_default()
@@ -434,14 +466,14 @@ async fn run() -> Result<(), nsip::Error> {
 
             let mut animals = Vec::new();
             while let Some(result) = join_set.join_next().await {
-                let details = result.map_err(|e| nsip::Error::Parse(format!("join error: {e}")))?;
+                let details = result.map_err(|e| nsip::Error::parse(format!("join error: {e}")))?;
                 animals.push(details?);
             }
 
             let trait_filter: Option<Vec<String>> =
                 traits.map(|t| t.split(',').map(|s| s.trim().to_string()).collect());
 
-            if cli.json {
+            if success_json {
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&animals).unwrap_or_default()
@@ -477,15 +509,17 @@ async fn run() -> Result<(), nsip::Error> {
             let oauth_state = if auth {
                 let config =
                     nsip::mcp::oauth::config::OAuthConfig::try_from_env().ok_or_else(|| {
-                        nsip::Error::Validation(
+                        nsip::Error::validation(
                             "--auth requires NSIP_GITHUB_CLIENT_ID, NSIP_GITHUB_CLIENT_SECRET, \
-                         NSIP_AUTH_SECRET, and NSIP_AUTH_BASE_URL environment variables"
-                                .into(),
+                         NSIP_AUTH_SECRET, and NSIP_AUTH_BASE_URL environment variables",
                         )
                     })?;
                 let store = std::sync::Arc::new(nsip::mcp::oauth::store::InMemoryOAuthStore::new())
                     as std::sync::Arc<dyn nsip::mcp::oauth::store::OAuthStoreBackend>;
-                Some(nsip::mcp::oauth::OAuthState::new(config, store))
+                Some(
+                    nsip::mcp::oauth::OAuthState::new(config, store)
+                        .map_err(|e| nsip::Error::validation(format!("OAuth setup failed: {e}")))?,
+                )
             } else {
                 None
             };
@@ -498,7 +532,7 @@ async fn run() -> Result<(), nsip::Error> {
                 },
                 "http" => nsip::mcp::serve_http(&host, port, sets, oauth_state).await?,
                 other => {
-                    return Err(nsip::Error::Validation(format!(
+                    return Err(nsip::Error::unknown_transport(format!(
                         "unknown transport: {other}, expected 'stdio' or 'http'"
                     )));
                 },
@@ -510,13 +544,71 @@ async fn run() -> Result<(), nsip::Error> {
 }
 
 /// Main entry point.
+///
+/// Parses arguments, resolves the error-output format, dispatches to [`run`],
+/// and renders any error as either a `miette` diagnostic (human) or an RFC 9457
+/// `application/problem+json` envelope (agent), returning the variant's exit
+/// code. Argument-parse failures are rendered through the same envelope so an
+/// orchestrating agent always receives structured output.
 #[tokio::main]
 async fn main() -> ExitCode {
-    match run().await {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("Error: {e}");
-            ExitCode::FAILURE
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        // Help / version: print clap's output to stdout and exit success.
+        Err(e) if render::is_clap_display(&e) => {
+            let _ = e.print();
+            return ExitCode::SUCCESS;
         },
+        // Genuine parse error: render as a validation problem in the requested
+        // format (argv-scanned, since no `Cli` exists yet).
+        Err(e) => {
+            let err = nsip::Error::validation(render::clap_error_message(&e));
+            return render::render_and_exit(err, "nsip", render::detect_format_from_argv());
+        },
+    };
+
+    let format = render::resolve_format(cli.format, cli.json);
+    let command = render::command_name(&cli.command);
+
+    match run(cli).await {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => render::render_and_exit(e, command, format),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_date_updated_renders_string_without_quotes() {
+        let data = serde_json::json!("2024-12-15");
+        assert_eq!(fmt_date_updated(&data), "Database last updated: 2024-12-15");
+    }
+
+    #[test]
+    fn fmt_date_updated_falls_back_for_non_string() {
+        let data = serde_json::json!({ "date": "2024-12-15" });
+        let out = fmt_date_updated(&data);
+        assert!(out.starts_with("Database last updated: "));
+        assert!(out.contains("2024-12-15"));
+    }
+
+    #[test]
+    fn render_date_updated_human_mode() {
+        let data = serde_json::json!("2024-12-15");
+        assert_eq!(
+            render_date_updated(&data, false),
+            "Database last updated: 2024-12-15"
+        );
+    }
+
+    #[test]
+    fn render_date_updated_json_mode() {
+        let data = serde_json::json!("2024-12-15");
+        let out = render_date_updated(&data, true);
+        assert_eq!(out, "\"2024-12-15\"");
+        // JSON mode emits valid JSON, not the human-readable prefix.
+        assert!(!out.contains("Database last updated"));
     }
 }
