@@ -11,3 +11,4 @@ coverage:
 
 ignore:
   - "crates/mcp/telemetry.rs"  # feature-gated, requires OTel runtime
+  - "examples/**"              # doc examples are compile-checked, not executed

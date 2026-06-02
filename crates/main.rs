@@ -275,6 +275,17 @@ fn fmt_date_updated(data: &serde_json::Value) -> String {
     )
 }
 
+/// Renders the `date-updated` output for the resolved output mode: pretty JSON
+/// when `json` is set, otherwise the human-readable line from
+/// [`fmt_date_updated`].
+fn render_date_updated(data: &serde_json::Value, json: bool) -> String {
+    if json {
+        serde_json::to_string_pretty(data).unwrap_or_default()
+    } else {
+        fmt_date_updated(data)
+    }
+}
+
 /// Runs the application logic.
 ///
 /// Success output is JSON when `-J/--json` or `--format json` is given,
@@ -288,14 +299,7 @@ async fn run(cli: Cli) -> Result<(), nsip::Error> {
     match cli.command {
         Commands::DateUpdated => {
             let updated = client.date_last_updated().await?;
-            if success_json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&updated.data).unwrap_or_default()
-                );
-            } else {
-                println!("{}", fmt_date_updated(&updated.data));
-            }
+            println!("{}", render_date_updated(&updated.data, success_json));
         },
 
         Commands::BreedGroups => {
@@ -588,5 +592,23 @@ mod tests {
         let out = fmt_date_updated(&data);
         assert!(out.starts_with("Database last updated: "));
         assert!(out.contains("2024-12-15"));
+    }
+
+    #[test]
+    fn render_date_updated_human_mode() {
+        let data = serde_json::json!("2024-12-15");
+        assert_eq!(
+            render_date_updated(&data, false),
+            "Database last updated: 2024-12-15"
+        );
+    }
+
+    #[test]
+    fn render_date_updated_json_mode() {
+        let data = serde_json::json!("2024-12-15");
+        let out = render_date_updated(&data, true);
+        assert_eq!(out, "\"2024-12-15\"");
+        // JSON mode emits valid JSON, not the human-readable prefix.
+        assert!(!out.contains("Database last updated"));
     }
 }
