@@ -16,7 +16,11 @@ RUN cargo build --release && \
     rm -rf crates/
 
 # Copy actual source code and files referenced by include_str!
+# build.rs lives at the repo root and emits NSIP_ERROR_TYPE_URI_BASE via
+# cargo:rustc-env, which crates/lib.rs reads with env!(); it MUST be present
+# or the real build fails with "environment variable ... not defined".
 COPY README.md ./
+COPY build.rs ./
 COPY crates/ ./crates/
 
 # Invalidate cargo fingerprints so real source is compiled
