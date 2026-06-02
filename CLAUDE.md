@@ -96,8 +96,13 @@ Release workflow triggers on version tags (`v*`): builds multi-platform binaries
 
 - **`develop`** is the default branch and the home of all active development. Branch features from `develop` and open PRs **into `develop`**. CI gates every PR here.
 - **`main`** is the stable/release branch. Never commit or open feature PRs directly against `main`.
-- **Releasing**: open a release PR from `develop` into `main` (the `release-pr.yml` workflow can open/update it via `workflow_dispatch`), merge it, then tag the `main` merge commit `vX.Y.Z` and push the tag. The tag — not a branch push — triggers `release.yml`, `publish.yml`, `docker.yml`, `sbom.yml`, and `slsa-provenance.yml`. Tag immediately after merging so changelog diffs stay clean.
+- **Releasing** (follow exactly — do NOT hand-roll these steps):
+  1. **Bump the version** in `Cargo.toml` on `develop` (sync `Cargo.lock`).
+  2. **Open the release PR via the `Release PR` workflow** — `gh workflow run "Release PR" -f version=X.Y.Z` (or Actions → Release PR). Do **NOT** open it with a manual `gh pr create` — the workflow exists for this and produces the standardized PR; hand-rolling bypasses it and lets it bit-rot.
+  3. **Get the release PR reviewed**, then merge it into `main`.
+  4. **Tag the `main` merge commit** `vX.Y.Z` and push the tag. The tag — not a branch push — triggers `release.yml`, `publish.yml` (NOTE: crates.io publish is intentionally disabled/gated; absent crates.io publish is expected, not a failure), `docker.yml`, `sbom.yml`, and `slsa-provenance.yml`. Tag immediately after merging so changelog diffs stay clean.
 - **Hotfixes**: branch from `main`, PR into `main`, tag the release, then merge `main` back into `develop`.
+- **Do not reinvent provided automation.** The repo ships workflows for release steps (`release-pr.yml`, `changelog.yml`, `back-merge.yml`, etc.) — use them rather than equivalent manual `gh`/`git` commands, so the documented flow stays exercised and honest.
 
 ## Code Style Rules
 
