@@ -14,18 +14,17 @@ annotated with trigger conditions, required secrets, and activation status.
 | Workflow | File | Trigger | Required Secrets | Status |
 |---|---|---|---|---|
 | CI | `ci.yml` | push, PR (`develop`/`main`), manual | `CODECOV_TOKEN` | Active |
-| Release | `release.yml` | tag `v*.*.*`, manual | -- | Active |
+| Release | `release.yml` | tag `v*.*.*`, manual (dry run) | `HOMEBREW_TAP_TOKEN` | Active |
 | Release PR | `release-pr.yml` | manual | -- | Active |
 | Back-merge | `back-merge.yml` | tag `v*.*.*`, manual | -- | Active |
 | Changelog | `changelog.yml` | tag `v*.*.*`, manual | -- | Active |
 | Docker (GHCR) | `docker.yml` | tag `v*.*.*`, manual | -- | Active |
-| Publish to crates.io | `publish.yml` | tag `v*.*.*`, manual | `CARGO_REGISTRY_TOKEN` | Opt-in |
+| Publish to crates.io | `publish.yml` | tag `v*.*.*`, manual | -- (Trusted Publishing OIDC) | Active |
+| Homebrew Package | `package-homebrew.yml` | workflow_run (after Release), release, manual | `HOMEBREW_TAP_TOKEN` | Active |
 | Security Audit | `security-audit.yml` | schedule (daily), push, manual | -- | Active |
 | Secrets Scan | `secrets-scan.yml` | manual | `GITLEAKS_LICENSE` | Opt-in |
 | Container Scan | `container-scan.yml` | manual | -- | Opt-in |
 | SBOM Generation | `sbom.yml` | manual (`workflow_dispatch`) | -- | Active |
-| Signed Releases | `signed-releases.yml` | workflow_run (after Release) | -- | Active |
-| SLSA Provenance | `slsa-provenance.yml` | release, manual | -- | Active |
 | Dependabot Auto-Merge | `dependabot-automerge.yml` | PR (dependabot actor) | -- | Active |
 | Stale Issue Management | `stale.yml` | manual | -- | Opt-in |
 | Contributor Recognition | `contributors.yml` | manual | -- | Opt-in |
@@ -45,8 +44,10 @@ annotated with trigger conditions, required secrets, and activation status.
 
 **What it does:** The primary quality gate for every change. Runs formatting,
 linting, tests on three operating systems, documentation build, dependency
-license/advisory checks (cargo-deny), MSRV verification, and code coverage
-upload. A final `all-checks-pass` job gates merge readiness.
+license/advisory checks (cargo-deny), MSRV verification, code coverage
+upload, and a `pin-check` (central reusable workflow asserting every
+`uses:` is pinned to a full commit SHA). A final `all-checks-pass` job gates
+merge readiness.
 
 **Trigger:** Push to `develop`/`main`, pull request to `develop`/`main`, manual.
 
@@ -102,42 +103,16 @@ and/or `schedule` triggers to activate automatic runs.
 
 ### sbom.yml
 
-**What it does:** Generates a Software Bill of Materials in SPDX 2.3 JSON
-format using `cargo-sbom`. On a published release, the SBOM is attached as a
-release asset.
+**What it does:** Generates an on-demand Software Bill of Materials in SPDX
+2.3 JSON format using `cargo-sbom` (workflow artifact only). The
+authoritative release SBOM is the attested CycloneDX SBOM produced by
+`release.yml`.
 
-**Trigger:** Release published, manual.
+**Trigger:** Manual (`workflow_dispatch`).
 
 **Required secrets:** None.
 
-**How to enable/disable:** Active by default on releases.
-
-### signed-releases.yml
-
-**What it does:** Downloads all assets from a published GitHub release, signs
-each with Sigstore Cosign (keyless OIDC), generates SHA-256 and SHA-512
-checksum files, signs the checksums, and uploads everything back to the
-release. Appends verification instructions to the release notes.
-
-**Trigger:** `workflow_run` -- runs automatically after the **Release**
-workflow completes.
-
-**Required secrets:** None (uses GitHub OIDC for keyless signing).
-
-**How to enable/disable:** Active by default. Remove the file to disable
-signing.
-
-### slsa-provenance.yml
-
-**What it does:** Builds the release binary, generates SLSA Level 3 provenance
-attestation using the official `slsa-framework/slsa-github-generator`, and
-uploads the provenance to the release.
-
-**Trigger:** Release published, manual.
-
-**Required secrets:** None (uses GitHub OIDC).
-
-**How to enable/disable:** Active by default on releases.
+**How to enable/disable:** Active by default (manual trigger only).
 
 ---
 
@@ -150,18 +125,23 @@ happens on `develop`, releases are promoted to `main` via a release PR, and the
 
 ### release.yml
 
-**What it does:** Creates a GitHub Release with an auto-generated changelog
-(via git-cliff), then builds release binaries for five targets: Linux
-x86_64, Linux aarch64, macOS x86_64, macOS aarch64, and Windows x86_64.
-Binaries are stripped, renamed with platform suffixes, and uploaded as release
-assets.
+**What it does:** Attested delivery. Builds release binaries for five
+targets (Linux x86_64/aarch64, macOS x86_64/aarch64, Windows x86_64), shell
+completions, man pages, and the MCPB bundle; attests every artifact with
+SLSA build provenance; binds them all to a CycloneDX SBOM attestation; then
+fail-closed verifies every attestation before creating the GitHub Release
+with an auto-generated changelog (git-cliff) and a SHA-256 checksums file.
+The release job is tag-gated, so a `workflow_dispatch` run is a publish-free
+dry run of the whole chain.
 
-**Trigger:** Push tag matching `v*.*.*`, manual.
+**Trigger:** Push tag matching `v*.*.*`, manual (dry run).
 
-**Required secrets:** None (uses built-in `GITHUB_TOKEN`).
+**Required secrets:** `HOMEBREW_TAP_TOKEN` (PAT, so the release event
+propagates to downstream workflows).
 
 **How to enable/disable:** Active by default. Adjust the `matrix.include`
-block to add or remove build targets.
+block to add or remove build targets (and update the artifact count in the
+`verify` job).
 
 ### release-pr.yml
 
@@ -204,17 +184,40 @@ configuration file in the repository root.
 
 ### publish.yml
 
-**What it does:** Publishes the crate to crates.io. Runs pre-publish checks
-(format, clippy, tests, docs, cargo-deny) and a dry-run publish before the
-actual publish step.
+**What it does:** Publishes the crate to crates.io via Trusted Publishing
+(OIDC -- no long-lived registry token). Runs pre-publish checks (format,
+clippy, tests, docs, cargo-deny) and a dry-run publish first; after
+publishing, downloads the `.crate` the registry serves, asserts it is
+byte-identical to the locally packaged crate, and attaches SLSA build
+provenance to it.
 
-**Trigger:** Push tag matching `v*.*.*`, manual.
+**Trigger:** Push tag matching `v*.*.*`, manual (publish steps are
+tag-gated).
 
-**Required secrets:** `CARGO_REGISTRY_TOKEN`.
+**Required secrets:** None -- Trusted Publishing is configured on crates.io
+(crate Settings → Trusted Publishing → repo `zircote/nsip`, workflow
+`publish.yml`, environment `copilot`).
 
-**How to enable/disable:** Opt-in -- disabled at the repository level by
-default. Enable the workflow in **Actions** and configure
-`CARGO_REGISTRY_TOKEN` to publish on tag push.
+**How to enable/disable:** Active by default.
+
+### package-homebrew.yml
+
+**What it does:** Regenerates both Homebrew formulae in
+`zircote/homebrew-tap` after a release publishes: `nsip.rb` (pre-built
+binaries for macOS arm64/x86_64 and Linux x86_64, with completions and man
+pages) and `nsip-source.rb` (build from the source tarball). Computes
+SHA-256 digests from the published release assets and pushes the updated
+formulae to the tap. Idempotent -- a second firing for the same version is
+a no-op.
+
+**Trigger:** `workflow_run` after the **Release** workflow completes
+(successful tag runs only), `release` published, manual
+(`workflow_dispatch` with a `dry_run` input that prints the formulae
+without pushing).
+
+**Required secrets:** `HOMEBREW_TAP_TOKEN` (PAT scoped to the tap repo).
+
+**How to enable/disable:** Active by default.
 
 ---
 
@@ -367,8 +370,10 @@ configuration.
 |---|---|---|---|
 | `GITHUB_TOKEN` | multiple | GitHub API access (releases, PRs, packages) | Built-in |
 | `CODECOV_TOKEN` | `ci.yml` | Upload coverage reports to Codecov | Optional |
-| `CARGO_REGISTRY_TOKEN` | `publish.yml` | Authenticate with crates.io for publishing | Yes (if publishing) |
+| `HOMEBREW_TAP_TOKEN` | `release.yml`, `package-homebrew.yml` | Create the release with a PAT (event propagation) and push tap formulae | Yes |
 | `GITLEAKS_LICENSE` | `secrets-scan.yml` | Gitleaks commercial license key | Optional |
+
+crates.io publishing uses Trusted Publishing (OIDC) and needs no secret.
 
 Configure secrets at **Settings > Secrets and variables > Actions > New
 repository secret** in the GitHub repository settings.

@@ -19,9 +19,9 @@ The project includes automated deployment workflows for:
 
 Configure these secrets in GitHub repository settings (Settings → Secrets and variables → Actions):
 
-1. **CARGO_REGISTRY_TOKEN** - For crates.io publishing
-   - Generate at: https://crates.io/settings/tokens
-   - Scope: "publish-update"
+1. **crates.io Trusted Publishing** - publishing uses OIDC, not a stored token
+   - Configure at: crates.io → crate Settings → Trusted Publishing
+   - Repo `zircote/nsip`, workflow `publish.yml`, environment `copilot`
 
 2. **GITHUB_TOKEN** - Automatically provided by GitHub Actions (no setup needed)
 
@@ -287,9 +287,8 @@ Dependabot automatically opens PRs for:
 
 ### Publish to crates.io Fails
 
-**Token Issue:**
-- Verify CARGO_REGISTRY_TOKEN secret is set
-- Token scope must include "publish-update"
+**Auth Issue:**
+- Verify the Trusted Publishing config on crates.io matches repo `zircote/nsip`, workflow `publish.yml`, environment `copilot`
 
 **Pre-publish Checks:**
 - All tests must pass

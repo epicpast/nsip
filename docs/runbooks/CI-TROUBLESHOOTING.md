@@ -365,7 +365,8 @@ gh secret list
 ```
 
 Secrets needed:
-- `CARGO_REGISTRY_TOKEN` for crates.io publishing
+- crates.io publishing uses Trusted Publishing (OIDC) — no secret; check the crates.io Trusted Publishing config instead
+- `HOMEBREW_TAP_TOKEN` (environment `copilot`) for release creation and the Homebrew tap
 - `GITHUB_TOKEN` is automatic
 
 ---

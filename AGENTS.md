@@ -40,7 +40,7 @@ cargo deny check                               # Supply chain audit
 
 - **`develop`** is the default branch and where all development happens. Branch from `develop` and open PRs **into `develop`** — CI gates every PR here.
 - **`main`** is the stable/release branch. Never commit or open feature PRs directly against `main`.
-- **Releasing**: open a release PR `develop → main` (the `release-pr.yml` workflow can open/update it), merge it, then tag the `main` merge commit `vX.Y.Z` and push the tag. The tag triggers all release automation (`release`, `publish`, `docker`, `sbom`, `slsa-provenance`).
+- **Releasing**: open a release PR `develop → main` (the `release-pr.yml` workflow can open/update it), merge it, then tag the `main` merge commit `vX.Y.Z` and push the tag. The tag triggers all release automation (`release` — attested + fail-closed verified, `publish` — crates.io Trusted Publishing, `docker`, `back-merge`; the published release triggers `package-homebrew`).
 - **Hotfixes**: branch from `main`, PR into `main`, tag, then merge `main` back into `develop`.
 
 ## Code Rules

@@ -128,14 +128,12 @@ Detailed reference material organized by topic.
 | [Contributors](workflows/CONTRIBUTORS.md) | Generate `CONTRIBUTORS.md` from commit history |
 | [Copilot Setup Steps](workflows/COPILOT-SETUP-STEPS.md) | Bootstrap environment for GitHub Copilot coding agents |
 | [Docker](workflows/DOCKER.md) | Build and push Docker image to GHCR |
-| [Signed Releases](workflows/SIGNED-RELEASES.md) | Sign release assets with Cosign and generate checksums |
-| [SLSA Provenance](workflows/SLSA-PROVENANCE.md) | SLSA Level 3 provenance attestations for release binaries |
 
 ### Security
 
 | Document | Description |
 |----------|-------------|
-| [Signed Releases](security/SIGNED-RELEASES.md) | Release signing and verification |
+| [Release Attestations](security/SIGNED-RELEASES.md) | Artifact attestation and verification (SLSA provenance + SBOM) |
 
 ### Distribution
 
