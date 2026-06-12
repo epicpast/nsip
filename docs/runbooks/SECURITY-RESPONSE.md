@@ -188,11 +188,11 @@ git tag -a vX.Y.(Z+1) -m "Security release vX.Y.(Z+1)"
 git push origin vX.Y.(Z+1)
 ```
 
-This triggers the standard release pipeline (release.yml, docker.yml, changelog.yml, publish.yml, signed-releases.yml).
+This triggers the standard release pipeline (release.yml, docker.yml, changelog.yml, publish.yml, package-homebrew.yml).
 
 ### 4. Verify Deployment
 
-- [ ] GitHub Release created with binaries and signatures
+- [ ] GitHub Release created with binaries and attestations verified
 - [ ] Docker image pushed to `ghcr.io/zircote/nsip`
 - [ ] crates.io package updated (if enabled)
 - [ ] All binaries pass smoke tests

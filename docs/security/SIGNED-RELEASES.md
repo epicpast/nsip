@@ -1,362 +1,114 @@
 ---
 diataxis_type: reference
 ---
-# Signed Releases & SLSA Provenance
+# Release Attestations & Verification
 
 ## Overview
 
-Cryptographically sign release artifacts and generate SLSA provenance for supply chain security.
+Every release artifact carries GitHub Artifact Attestations — SLSA build
+provenance plus a CycloneDX SBOM attestation — created during the build and
+**fail-closed verified before the GitHub Release is published**. A tag
+publishes nothing unattested.
 
-**Workflows:**
-- `.github/workflows/signed-releases.yml` - Cosign signatures
-- `.github/workflows/slsa-provenance.yml` - SLSA Level 3 provenance
+**Workflow:** `.github/workflows/release.yml` (build → attest → verify →
+publish). The published crate is additionally attested by
+`.github/workflows/publish.yml`.
 
-> **See also:** [Signed Releases Workflow](../workflows/SIGNED-RELEASES.md) documents
-> the actual `signed-releases.yml` pipeline and is the **authoritative** reference for
-> the exact `--certificate-identity` and `--certificate-oidc-issuer` values used here.
+## What Is Attested
 
-## Why Sign Releases?
+| Artifact | Provenance | SBOM attestation |
+|----------|-----------|------------------|
+| `nsip-{version}-{platform}` (5 platform binaries) | Yes | Yes |
+| `nsip-{version}-completions.tar.gz` | Yes | Yes |
+| `nsip-{version}-man-pages.tar.gz` | Yes | Yes |
+| `nsip-{version}.mcpb` (MCPB bundle) | Yes | Yes |
+| `nsip-{version}-sbom.cdx.json` (CycloneDX SBOM) | — (it is the SBOM) | — |
+| `nsip-{version}.crate` (crates.io, via `publish.yml`) | Yes | No |
 
-- **Authenticity**: Verify artifacts come from you
-- **Integrity**: Detect tampering or corruption
-- **Non-repudiation**: Prove you created the release
-- **Compliance**: Meet supply chain security requirements
+A `nsip-{version}-checksums.txt` (SHA-256) file is generated for all assets
+at publish time.
 
-## Cosign Signatures
+## Verifying Release Artifacts
 
-### How It Works
+Verification needs only the [GitHub CLI](https://cli.github.com/) (`gh`),
+which validates the Sigstore bundle, the certificate identity, and the
+subject digest against GitHub's attestation API.
 
-1. **Release published** - Workflow triggers
-2. **Download assets** - Get all release files
-3. **Sign with Cosign** - Keyless signing via Sigstore
-4. **Upload signatures** - Attach `.sig` files to release
-5. **Generate checksums** - SHA256/SHA512 sums
-6. **Sign checksums** - Verify integrity chain
-
-### Verifying Signatures
-
-**Install Cosign:**
 ```bash
-# Homebrew
-brew install cosign
+# Download an asset (replace X.Y.Z with the release version)
+gh release download vX.Y.Z --repo zircote/nsip \
+  --pattern 'nsip-X.Y.Z-linux-amd64'
 
-# Download binary
-wget https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64
-chmod +x cosign-linux-amd64
-sudo mv cosign-linux-amd64 /usr/local/bin/cosign
+# Verify SLSA build provenance
+gh attestation verify nsip-X.Y.Z-linux-amd64 --repo zircote/nsip
+
+# Verify the SBOM attestation binding the artifact to its CycloneDX SBOM
+gh attestation verify nsip-X.Y.Z-linux-amd64 --repo zircote/nsip \
+  --predicate-type https://cyclonedx.org/bom
 ```
 
-**Verify Asset:**
+Successful output names the source repository, the workflow that built the
+artifact, and the commit it was built from.
+
+### Verify checksums
+
 ```bash
-# Download release and signature (replace vX.Y.Z with the release tag)
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip.sig
-
-# Verify signature against the exact signing workflow identity
-cosign verify-blob \
-  --signature nsip.sig \
-  --certificate-identity \
-    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  nsip
+gh release download vX.Y.Z --repo zircote/nsip \
+  --pattern 'nsip-X.Y.Z-checksums.txt'
+sha256sum --check --ignore-missing nsip-X.Y.Z-checksums.txt
 ```
 
-**Verify Checksums:**
+### Verify the published crate
+
+`publish.yml` downloads the `.crate` file that crates.io actually serves,
+asserts it is byte-identical to the locally packaged crate, and attaches
+build provenance to it:
+
 ```bash
-# Download checksums (replace vX.Y.Z with the release tag)
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/SHA256SUMS
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/SHA256SUMS.sig
-
-# Verify checksum signature against the exact signing workflow identity
-cosign verify-blob \
-  --signature SHA256SUMS.sig \
-  --certificate-identity \
-    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  SHA256SUMS
-
-# Verify file against checksum
-sha256sum --check SHA256SUMS
+curl -fsSLO https://static.crates.io/crates/nsip/nsip-X.Y.Z.crate
+gh attestation verify nsip-X.Y.Z.crate --repo zircote/nsip
 ```
 
-### Keyless Signing
+crates.io publishing uses [Trusted Publishing](https://crates.io/docs/trusted-publishing)
+(OIDC) — there is no long-lived registry token to leak.
 
-Cosign uses **keyless signing** via Sigstore:
-- No private keys to manage
-- Uses OIDC identity (GitHub Actions)
-- Transparency log (Rekor) for auditability
-- Certificate from Fulcio CA
+## How It Works
 
-**Benefits:**
-- No key rotation needed
-- No key compromise risk
-- Publicly verifiable
-- Auditable via transparency log
+1. **Build** — each platform binary, the completions/man-page archives, and
+   the MCPB bundle are built in isolated jobs and attested with
+   [`actions/attest-build-provenance`](https://github.com/actions/attest-build-provenance)
+   (keyless Sigstore signing: Fulcio certificate, Rekor transparency log,
+   GitHub OIDC identity).
+2. **SBOM** — a CycloneDX SBOM is generated from the source tree (Syft) and
+   bound to every artifact with
+   [`actions/attest-sbom`](https://github.com/actions/attest-sbom).
+3. **Verify (fail-closed)** — a dedicated job downloads every artifact and
+   runs `gh attestation verify` for both predicates on each one. It also
+   asserts the artifact count, so a partial set can never publish.
+4. **Publish** — the GitHub Release is created only after verification
+   succeeds (`needs: [verify, test, audit]`), and only on a tag ref.
+   A `workflow_dispatch` run exercises the same chain as a dry run without
+   publishing.
 
-## SLSA Provenance
+Keyless signing properties:
 
-### What is SLSA?
-
-**SLSA** (Supply chain Levels for Software Artifacts) is a framework for ensuring software supply chain integrity.
-
-**Levels:**
-- **SLSA 1**: Documentation of build process
-- **SLSA 2**: Version control + build service
-- **SLSA 3**: Hardened builds (non-falsifiable provenance)
-- **SLSA 4**: Hermetic, reproducible builds
-
-### Generate Provenance
-
-The workflow automatically generates **SLSA Level 3** provenance:
-
-```json
-{
-  "_type": "https://in-toto.io/Statement/v0.1",
-  "subject": [
-    {
-      "name": "nsip",
-      "digest": {
-        "sha256": "abc123..."
-      }
-    }
-  ],
-  "predicateType": "https://slsa.dev/provenance/v0.2",
-  "predicate": {
-    "builder": {
-      "id": "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0"
-    },
-    "buildType": "https://github.com/slsa-framework/slsa-github-generator/generic@v1",
-    "invocation": {
-      "configSource": {
-        "uri": "git+https://github.com/zircote/nsip@refs/tags/v0.1.0",
-        "digest": {
-          "sha1": "def456..."
-        }
-      }
-    },
-    "metadata": {
-      "buildStartedOn": "2026-01-01T00:00:00Z",
-      "buildFinishedOn": "2026-01-01T00:05:00Z"
-    },
-    "materials": [
-      {
-        "uri": "git+https://github.com/zircote/nsip@refs/tags/v0.1.0",
-        "digest": {
-          "sha1": "def456..."
-        }
-      }
-    ]
-  }
-}
-```
-
-### Verify Provenance
-
-**Install SLSA Verifier:**
-```bash
-wget https://github.com/slsa-framework/slsa-verifier/releases/download/v2.5.1/slsa-verifier-linux-amd64
-chmod +x slsa-verifier-linux-amd64
-sudo mv slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier
-```
-
-**Verify Artifact:**
-```bash
-# Download binary and provenance (replace vX.Y.Z with the release tag)
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip
-wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip.intoto.jsonl
-
-# Verify provenance
-slsa-verifier verify-artifact \
-  --provenance-path nsip.intoto.jsonl \
-  --source-uri github.com/zircote/nsip \
-  nsip
-```
-
-**Output:**
-```
-✓ Verified SLSA provenance
-  Source: github.com/zircote/nsip
-  Builder: https://github.com/slsa-framework/slsa-github-generator
-  Build Level: SLSA 3
-```
-
-## Integration with Package Managers
-
-### Homebrew
-
-```ruby
-def install
-  system "cargo", "install", *std_cargo_args
-
-  # Download and verify signature
-  signature_url = "#{url}.sig"
-  resource("signature").stage do
-    system "cosign", "verify-blob",
-           "--signature", "nsip.sig",
-           "--certificate-identity",
-           "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/#{version}",
-           "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
-           bin/"nsip"
-  end
-end
-```
-
-### Docker
-
-```dockerfile
-# Verify binary before adding to image (replace vX.Y.Z with the release tag)
-RUN wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip && \
-    wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip.sig && \
-    cosign verify-blob \
-      --signature nsip.sig \
-      --certificate-identity \
-        "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
-      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-      nsip
-```
-
-## Advanced Configuration
-
-### Custom Signing Keys
-
-For organizations with existing PKI:
-
-```yaml
-- name: Import GPG key
-  run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import
-
-- name: Sign with GPG
-  run: |
-    for file in *; do
-      gpg --detach-sign --armor "$file"
-    done
-```
-
-**Verify GPG:**
-```bash
-gpg --verify nsip.asc nsip
-```
-
-### Multiple Signatures
-
-```yaml
-- name: Sign with multiple methods
-  run: |
-    # Cosign (keyless)
-    cosign sign-blob --yes nsip > nsip.cosign.sig
-
-    # GPG (traditional)
-    gpg --detach-sign --armor nsip
-
-    # Minisign (simple)
-    minisign -Sm nsip
-```
-
-## Security Best Practices
-
-### 1. Minimize Attack Surface
-
-- **Use official actions** with commit SHA pinning
-- **Limit permissions** to minimum required
-- **Avoid secrets** in logs or artifacts
-
-### 2. Verify Everything
-
-- **Verify dependencies** before building
-- **Verify build environment** is expected
-- **Verify artifacts** match source
-
-### 3. Audit Trail
-
-- **Enable Rekor** transparency log
-- **Archive provenance** long-term
-- **Monitor certificates** for unexpected issuance
-
-### 4. User Education
-
-- **Document verification** in README
-- **Provide examples** of verification
-- **Link to tools** (cosign, slsa-verifier)
+- No private keys to manage, rotate, or leak
+- Identity is the GitHub Actions workflow (OIDC)
+- Every signature is logged in the [Rekor](https://github.com/sigstore/rekor)
+  transparency log — search at <https://search.sigstore.dev/>
 
 ## Troubleshooting
 
-### Cosign Verification Fails
-
-```bash
-# Check certificate details (replace vX.Y.Z with the release tag)
-cosign verify-blob \
-  --signature nsip.sig \
-  --certificate-identity \
-    "https://github.com/zircote/nsip/.github/workflows/signed-releases.yml@refs/tags/vX.Y.Z" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --debug \
-  nsip
-```
-
-**Common issues:**
-- Expired certificate (valid for 10 minutes during signing)
-- Wrong issuer (should be `https://token.actions.githubusercontent.com`)
-- Identity mismatch (should match workflow identity)
-
-### SLSA Verification Fails
-
-```bash
-# Verbose verification
-slsa-verifier verify-artifact \
-  --provenance-path nsip.intoto.jsonl \
-  --source-uri github.com/zircote/nsip \
-  --print-provenance \
-  nsip
-```
-
-**Common issues:**
-- Source URI mismatch
-- Builder version mismatch
-- Artifact hash mismatch
-
-## Monitoring & Compliance
-
-### Rekor Transparency Log
-
-All Cosign signatures logged to Rekor:
-
-```bash
-# Search Rekor for signatures
-rekor-cli search --artifact nsip
-
-# Get entry details
-rekor-cli get --uuid <uuid>
-```
-
-**URL:** https://search.sigstore.dev/
-
-### Provenance Inspection
-
-```bash
-# Extract provenance fields
-cat nsip.intoto.jsonl | jq '.predicate.builder.id'
-cat nsip.intoto.jsonl | jq '.predicate.metadata.buildStartedOn'
-cat nsip.intoto.jsonl | jq '.predicate.materials[0].uri'
-```
-
-### Compliance Reports
-
-Generate reports for audits:
-
-```bash
-# List all signed releases
-gh release list --repo zircote/nsip | while read line; do
-  tag=$(echo $line | awk '{print $1}')
-  echo "Release: $tag"
-  gh release view $tag --json assets | jq -r '.assets[].name' | grep '\.sig$'
-done
-```
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| `gh attestation verify` fails | Asset re-uploaded or modified after attestation | Re-download; if it still fails, treat the asset as untrusted |
+| No attestation found | Artifact predates this pipeline (≤ v0.6.x used Cosign `.sig` / `.sigstore.json` bundles) | Verify old releases with the instructions in that release's notes |
+| Checksum mismatch | Partial download or tampering | Re-download; verify attestation before use |
 
 ## Links
 
-- [Sigstore Cosign](https://github.com/sigstore/cosign)
+- [GitHub Artifact Attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)
 - [SLSA Framework](https://slsa.dev/)
-- [SLSA GitHub Generator](https://github.com/slsa-framework/slsa-github-generator)
-- [SLSA Verifier](https://github.com/slsa-framework/slsa-verifier)
-- [Rekor Transparency Log](https://github.com/sigstore/rekor)
-- [Supply Chain Security Guide](https://slsa.dev/spec/v1.0/)
+- [Sigstore](https://www.sigstore.dev/)
+- [crates.io Trusted Publishing](https://crates.io/docs/trusted-publishing)
+- [Release workflow reference](../workflows/RELEASE.md)

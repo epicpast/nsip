@@ -1,0 +1,243 @@
+---
+name: Homebrew Package
+
+"on":
+  # The Release workflow creates the release with the HOMEBREW_TAP_TOKEN
+  # PAT, so the `release: published` event normally fires. workflow_run is
+  # kept as a reliable fallback: if release creation ever reverts to the
+  # bot-authored GITHUB_TOKEN, bot-authored release events do not trigger
+  # workflows. The commit step is idempotent, so double-firing is safe.
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to package'
+        required: true
+      dry_run:
+        description: 'Dry run (do not push)'
+        type: boolean
+        default: true
+
+# The tap checkout/push uses HOMEBREW_TAP_TOKEN; the repository
+# GITHUB_TOKEN performs no writes here.
+permissions:
+  contents: read
+
+jobs:
+  homebrew:
+    name: Update Homebrew Formulae
+    runs-on: macos-latest
+    timeout-minutes: 15
+    environment: copilot
+    # workflow_run fires for every Release completion, including branch
+    # dry-runs — only proceed for successful tag runs (head_branch is the
+    # tag name for tag-triggered runs).
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
+
+    steps:
+      - name: Checkout homebrew tap
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          repository: ${{ github.repository_owner }}/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Get release info
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RUN_TAG: ${{ github.event.workflow_run.head_branch }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "release" ]; then
+            VERSION="$RELEASE_TAG"
+            VERSION="${VERSION#v}"
+          elif [ "$EVENT_NAME" = "workflow_run" ]; then
+            VERSION="${RUN_TAG#v}"
+          else
+            VERSION="$INPUT_VERSION"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          asset_sha() {
+            curl -fsSL \
+              "https://github.com/${REPO}/releases/download/v${VERSION}/$1" \
+              | shasum -a 256 | awk '{print $1}'
+          }
+
+          # Source tarball
+          SRC_URL="https://github.com/${REPO}"
+          SRC_URL="${SRC_URL}/archive/refs/tags/v${VERSION}.tar.gz"
+          SRC_SHA=$(curl -fsSL "$SRC_URL" | shasum -a 256 | awk '{print $1}')
+
+          {
+            echo "src_url=$SRC_URL"
+            echo "src_sha=$SRC_SHA"
+            echo "sha_macos_arm=$(asset_sha "nsip-${VERSION}-macos-arm64")"
+            echo "sha_macos_amd=$(asset_sha "nsip-${VERSION}-macos-amd64")"
+            echo "sha_linux_amd=$(asset_sha "nsip-${VERSION}-linux-amd64")"
+            # yamllint disable-line rule:line-length
+            echo "sha_completions=$(asset_sha "nsip-${VERSION}-completions.tar.gz")"
+            echo "sha_man=$(asset_sha "nsip-${VERSION}-man-pages.tar.gz")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate binary formula
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          REPO: ${{ github.repository }}
+          SHA_MACOS_ARM: ${{ steps.release.outputs.sha_macos_arm }}
+          SHA_MACOS_AMD: ${{ steps.release.outputs.sha_macos_amd }}
+          SHA_LINUX_AMD: ${{ steps.release.outputs.sha_linux_amd }}
+          SHA_COMPLETIONS: ${{ steps.release.outputs.sha_completions }}
+          SHA_MAN: ${{ steps.release.outputs.sha_man }}
+        run: |
+          DL="https://github.com/${REPO}/releases/download/v${VERSION}"
+          cat > homebrew-tap/Formula/nsip.rb << FORMULA
+          class Nsip < Formula
+            desc "Sheep genetic evaluation CLI"
+            homepage "https://github.com/${REPO}"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "${DL}/nsip-${VERSION}-macos-arm64"
+                sha256 "${SHA_MACOS_ARM}"
+              else
+                url "${DL}/nsip-${VERSION}-macos-amd64"
+                sha256 "${SHA_MACOS_AMD}"
+              end
+            end
+
+            on_linux do
+              url "${DL}/nsip-${VERSION}-linux-amd64"
+              sha256 "${SHA_LINUX_AMD}"
+            end
+
+            resource "completions" do
+              url "${DL}/nsip-${VERSION}-completions.tar.gz"
+              sha256 "${SHA_COMPLETIONS}"
+            end
+
+            resource "man-pages" do
+              url "${DL}/nsip-${VERSION}-man-pages.tar.gz"
+              sha256 "${SHA_MAN}"
+            end
+
+            def install
+              if OS.mac?
+                if Hardware::CPU.arm?
+                  bin.install "nsip-${VERSION}-macos-arm64" => "nsip"
+                else
+                  bin.install "nsip-${VERSION}-macos-amd64" => "nsip"
+                end
+              elsif OS.linux?
+                bin.install "nsip-${VERSION}-linux-amd64" => "nsip"
+              end
+
+              resource("completions").stage do
+                bash_completion.install "nsip.bash" => "nsip"
+                zsh_completion.install "_nsip"
+                fish_completion.install "nsip.fish"
+              end
+
+              resource("man-pages").stage do
+                man1.install Dir["*.1"]
+              end
+            end
+
+            test do
+              assert_match version.to_s,
+                shell_output("#{bin}/nsip --version")
+            end
+          end
+          FORMULA
+
+      - name: Generate source formula
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          REPO: ${{ github.repository }}
+          SRC_URL: ${{ steps.release.outputs.src_url }}
+          SRC_SHA: ${{ steps.release.outputs.src_sha }}
+        run: |
+          cat > homebrew-tap/Formula/nsip-source.rb << FORMULA
+          class NsipSource < Formula
+            desc "Sheep genetic evaluation CLI (source)"
+            homepage "https://github.com/${REPO}"
+            url "${SRC_URL}"
+            sha256 "${SRC_SHA}"
+            version "${VERSION}"
+            license "MIT"
+            head "https://github.com/${REPO}.git", branch: "develop"
+
+            depends_on "rust" => :build
+
+            def install
+              system "cargo", "install", *std_cargo_args
+
+              # Generate completions
+              out = Utils.safe_popen_read(
+                bin/"nsip", "completions", "bash"
+              )
+              (bash_completion/"nsip").write out
+
+              out = Utils.safe_popen_read(
+                bin/"nsip", "completions", "zsh"
+              )
+              (zsh_completion/"_nsip").write out
+
+              out = Utils.safe_popen_read(
+                bin/"nsip", "completions", "fish"
+              )
+              (fish_completion/"nsip.fish").write out
+
+              # Generate man pages
+              system bin/"nsip", "man-pages",
+                "--out-dir", man1
+            end
+
+            test do
+              assert_match version.to_s,
+                shell_output("#{bin}/nsip --version")
+            end
+          end
+          FORMULA
+
+      - name: Commit and push formulae
+        if: github.event.inputs.dry_run != 'true'
+        working-directory: homebrew-tap
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "github-actions[bot]@users.noreply.github.com"
+
+          git add Formula/nsip.rb Formula/nsip-source.rb
+          # Idempotent: with both workflow_run and release triggers wired,
+          # a second firing for the same version must be a no-op.
+          if git diff --staged --quiet; then
+            echo "Formulae already up to date for ${VERSION}; nothing to push"
+          else
+            git commit -m "nsip: update to ${VERSION}"
+            git push
+          fi
+
+      - name: Show formulae (dry run)
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "=== nsip.rb (binary) ==="
+          cat homebrew-tap/Formula/nsip.rb
+          echo "=== nsip-source.rb (source) ==="
+          cat homebrew-tap/Formula/nsip-source.rb
