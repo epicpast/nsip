@@ -8,7 +8,7 @@ name: Release
 # nothing unattested.
 #
 # Dry-run: `workflow_dispatch` from any branch exercises the full
-# build -> attest -> verify chain; the publish job is tag-gated and skipped.
+# build -> attest -> verify chain; the release job is tag-gated and skipped.
 
 "on":
   push:

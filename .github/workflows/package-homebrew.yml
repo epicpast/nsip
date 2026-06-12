@@ -2,9 +2,11 @@
 name: Homebrew Package
 
 "on":
-  # workflow_run is the reliable trigger: releases are authored by
-  # github-actions[bot] (HOMEBREW_TAP_TOKEN is scoped to the tap repo
-  # only), and bot-authored release events do not trigger workflows.
+  # The Release workflow creates the release with the HOMEBREW_TAP_TOKEN
+  # PAT, so the `release: published` event normally fires. workflow_run is
+  # kept as a reliable fallback: if release creation ever reverts to the
+  # bot-authored GITHUB_TOKEN, bot-authored release events do not trigger
+  # workflows. The commit step is idempotent, so double-firing is safe.
   workflow_run:
     workflows: [Release]
     types: [completed]
@@ -20,8 +22,10 @@ name: Homebrew Package
         type: boolean
         default: true
 
+# The tap checkout/push uses HOMEBREW_TAP_TOKEN; the repository
+# GITHUB_TOKEN performs no writes here.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   homebrew:
