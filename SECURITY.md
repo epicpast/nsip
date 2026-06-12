@@ -49,3 +49,29 @@ This project employs several security practices:
 - **Dependabot**: Automated dependency updates for security patches
 - **No unsafe code**: The crate forbids `unsafe` unless explicitly justified
 - **Minimal dependencies**: Only essential dependencies are included
+- **Attested releases**: Every release artifact carries SLSA build provenance and a CycloneDX SBOM attestation, fail-closed verified before publication
+- **SHA-pinned actions**: Every GitHub Actions `uses:` is pinned to a full commit SHA, enforced by a `pin-check` CI gate
+
+## Verifying Release Artifacts
+
+Every release asset is attested with GitHub Artifact Attestations and can be
+verified with the [GitHub CLI](https://cli.github.com/):
+
+```bash
+# SLSA build provenance (replace X.Y.Z and the asset name)
+gh attestation verify nsip-X.Y.Z-linux-amd64 --repo zircote/nsip
+
+# SBOM attestation (binds the asset to its CycloneDX SBOM)
+gh attestation verify nsip-X.Y.Z-linux-amd64 --repo zircote/nsip \
+  --predicate-type https://cyclonedx.org/bom
+
+# Checksums
+sha256sum --check --ignore-missing nsip-X.Y.Z-checksums.txt
+
+# Published crate (byte-identical to the registry copy, attested)
+curl -fsSLO https://static.crates.io/crates/nsip/nsip-X.Y.Z.crate
+gh attestation verify nsip-X.Y.Z.crate --repo zircote/nsip
+```
+
+See [docs/security/SIGNED-RELEASES.md](docs/security/SIGNED-RELEASES.md) for
+the full verification reference.

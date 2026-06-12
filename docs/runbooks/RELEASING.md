@@ -27,8 +27,12 @@ Configure in GitHub repository settings (**Settings > Secrets and variables > Ac
 
 | Secret | Purpose | How to generate |
 |---|---|---|
-| `CARGO_REGISTRY_TOKEN` | Publish to crates.io | https://crates.io/settings/tokens (scope: `publish-update`) |
+| `HOMEBREW_TAP_TOKEN` | Create the release (event propagation) and push tap formulae | Fine-grained PAT with `contents: write` on `zircote/homebrew-tap`; stored in the `copilot` environment |
 | `GITHUB_TOKEN` | Provided automatically | No setup needed |
+
+crates.io publishing uses [Trusted Publishing](https://crates.io/docs/trusted-publishing)
+(OIDC) — configured on crates.io for repo `zircote/nsip`, workflow
+`publish.yml`, environment `copilot`. No registry token is stored.
 
 ### Permissions
 
@@ -107,12 +111,16 @@ Pushing a `v*.*.*` tag triggers these workflows in parallel:
 
 | Workflow | File | What it does |
 |---|---|---|
-| **Release** | `release.yml` | Builds binaries for 5 platform targets, generates changelog via git-cliff, creates a GitHub Release with assets |
+| **Release** | `release.yml` | Builds binaries (5 targets), completions/man pages, and the MCPB bundle; attests everything (provenance + SBOM); fail-closed verifies all attestations; only then creates the GitHub Release with assets, checksums, and a git-cliff changelog |
 | **Changelog** | `changelog.yml` | Regenerates `CHANGELOG.md` and opens a PR into `develop` |
 | **Docker** | `docker.yml` | Builds multi-platform images (linux/amd64, linux/arm64), pushes to `ghcr.io/zircote/nsip` with version + `latest` tags |
-| **Publish** | `publish.yml` | Runs pre-publish checks and publishes to crates.io (if enabled and tag-triggered) |
-| **Signed Releases** | `signed-releases.yml` | Signs all release assets with Sigstore Cosign, generates SHA256/SHA512 checksums |
+| **Publish** | `publish.yml` | Runs pre-publish checks, publishes to crates.io via Trusted Publishing (OIDC), byte-verifies the registry copy, and attests it |
+| **Homebrew** | `package-homebrew.yml` | After the release publishes: regenerates `nsip.rb` and `nsip-source.rb` in `zircote/homebrew-tap` |
 | **Back-merge** | `back-merge.yml` | Automatically opens and auto-merges a `main -> develop` PR so the branches stay in sync after the release (no manual step) |
+
+> **Dry run:** `gh workflow run Release` from any branch exercises the full
+> build → attest → verify chain without publishing (the release job is
+> tag-gated). Use this after any pipeline change.
 
 ---
 
@@ -140,11 +148,12 @@ gh run view <run-id> --log-failed
 
 | Stage | Expected duration | Common failure point |
 |---|---|---|
-| Create Release | ~1 min | git-cliff config issues |
-| Build Binaries | ~5-10 min | Cross-compilation (especially ARM64 Linux) |
+| Build Binaries | ~5-10 min | Platform toolchains, `--locked` drift |
+| Verify Attestations | ~1 min | Missing artifact (count check), attestation API |
+| Create Release | ~1 min | git-cliff config issues, `HOMEBREW_TAP_TOKEN` |
 | Docker Build | ~5-10 min | Buildx multi-platform, registry auth |
-| Publish (crates.io) | ~3 min | Token issues, pre-publish checks |
-| Signed Releases | ~2 min | Cosign signing |
+| Publish (crates.io) | ~3 min | Trusted Publishing config, pre-publish checks |
+| Homebrew | ~2 min | Tap push permissions, asset download |
 
 ---
 
@@ -162,12 +171,19 @@ Run through this after all workflows complete.
   - `nsip-X.Y.Z-macos-amd64`
   - `nsip-X.Y.Z-macos-arm64`
   - `nsip-X.Y.Z-windows-amd64.exe`
-- [ ] **Checksums and signatures** are attached (`SHA256SUMS`, `SHA512SUMS`, `*.sig` files)
+- [ ] **Checksums** are attached (`nsip-X.Y.Z-checksums.txt`)
 - [ ] **Supplementary artifacts** are attached (produced by `release.yml`):
-  - `nsip-X.Y.Z-sbom-spdx.json` + `nsip-X.Y.Z-sbom-spdx.json.sigstore.json` (SBOM, attested)
-  - `nsip-X.Y.Z-completions.tar.gz` + `.sigstore.json` (shell completions: bash, zsh, fish, powershell)
-  - `nsip-X.Y.Z-man-pages.tar.gz` + `.sigstore.json` (man pages)
-  - the MCPB bundle (`nsip-X.Y.Z.mcpb`) + its `.sigstore.json`
+  - `nsip-X.Y.Z-sbom.cdx.json` (CycloneDX SBOM)
+  - `nsip-X.Y.Z-completions.tar.gz` (shell completions: bash, zsh, fish, powershell)
+  - `nsip-X.Y.Z-man-pages.tar.gz` (man pages)
+  - the MCPB bundle (`nsip-X.Y.Z.mcpb`)
+- [ ] **Attestations verify** from a workstation (independent of the pipeline):
+  ```bash
+  gh release download vX.Y.Z --repo zircote/nsip --pattern 'nsip-X.Y.Z-linux-amd64'
+  gh attestation verify nsip-X.Y.Z-linux-amd64 --repo zircote/nsip
+  gh attestation verify nsip-X.Y.Z-linux-amd64 --repo zircote/nsip \
+    --predicate-type https://cyclonedx.org/bom
+  ```
 - [ ] **Release notes** are generated correctly from conventional commits
 - [ ] **Docker image** is available:
   ```bash
@@ -183,6 +199,10 @@ Run through this after all workflows complete.
   ```bash
   cargo install nsip@X.Y.Z
   # Or check: https://crates.io/crates/nsip
+  ```
+- [ ] **Homebrew tap** updated (`zircote/homebrew-tap` `Formula/nsip.rb` and `Formula/nsip-source.rb` show the new version):
+  ```bash
+  brew update && brew info zircote/tap/nsip
   ```
 - [ ] **CHANGELOG.md** PR into `develop` opened by the changelog workflow
 - [ ] Download and test a binary on at least one platform:
@@ -323,7 +343,7 @@ Changelogs are generated automatically by [git-cliff](https://git-cliff.org/) fr
 
 - **URL:** https://github.com/zircote/nsip/releases
 - **Platforms:** Linux (amd64, arm64), macOS (amd64, arm64), Windows (amd64)
-- **Signatures:** Cosign keyless signing + SHA256/SHA512 checksums
+- **Attestations:** SLSA build provenance + CycloneDX SBOM attestation per asset (`gh attestation verify`), SHA-256 checksums file
 
 ### Docker (GHCR)
 
@@ -336,11 +356,19 @@ Changelogs are generated automatically by [git-cliff](https://git-cliff.org/) fr
 ### crates.io
 
 - **Package:** https://crates.io/crates/nsip
-- **Note:** `publish.yml` is active and runs automatically on every `v*.*.*` tag push. It runs pre-publish checks and publishes to crates.io using the `CARGO_REGISTRY_TOKEN` secret. Ensure that secret is configured before tagging.
+- **Note:** `publish.yml` runs automatically on every `v*.*.*` tag push. It runs pre-publish checks, publishes via Trusted Publishing (OIDC — no stored token), byte-verifies the registry copy, and attests it.
+
+### Homebrew
+
+- **Tap:** `zircote/homebrew-tap`
+- **Formulae:** `nsip` (pre-built binaries + completions + man pages), `nsip-source` (build from source)
 
 ### Install Methods
 
 ```bash
+# From Homebrew
+brew install zircote/tap/nsip
+
 # From GitHub release (Linux)
 wget https://github.com/zircote/nsip/releases/download/vX.Y.Z/nsip-X.Y.Z-linux-amd64
 chmod +x nsip-X.Y.Z-linux-amd64
@@ -362,9 +390,12 @@ cargo install --git https://github.com/zircote/nsip
 | Problem | Cause | Fix |
 |---|---|---|
 | Release workflow fails at build | Cargo.toml version doesn't match tag | Ensure `version = "X.Y.Z"` matches tag `vX.Y.Z` |
-| ARM64 Linux build fails | Missing cross-compiler | The workflow installs `gcc-aarch64-linux-gnu`; check the install step |
+| `expected 9 artifacts` in verify | A build/extras/mcpb job failed or uploaded nothing | Check the failing job; the count gate is intentional — never bypass it |
+| Release not created (all jobs green) | Run was a `workflow_dispatch` dry run | Expected — the release job is tag-gated |
 | Docker push fails | Insufficient permissions | Verify workflow permissions include `packages: write` |
-| crates.io publish fails | Missing or expired token | Regenerate `CARGO_REGISTRY_TOKEN` in repo secrets |
+| crates.io publish auth fails | Trusted Publishing config mismatch | On crates.io: crate Settings → Trusted Publishing must list repo `zircote/nsip`, workflow `publish.yml`, environment `copilot` |
+| Registry crate bytes differ | CDN served stale/foreign bytes | Investigate before re-running; this gate exists to catch tampering |
 | Changelog not updated | git-cliff config error | Check `cliff.toml` and the `fetch-depth: 0` checkout |
-| Signing fails | Cosign OIDC issue | Check `id-token: write` permission in `signed-releases.yml` |
+| Attestation fails | `id-token: write`/`attestations: write` missing on a job | Check the job-level permissions in `release.yml` |
+| Homebrew tap not updated | `HOMEBREW_TAP_TOKEN` expired, or release authored with `GITHUB_TOKEN` | Rotate the PAT; ensure the release job uses the PAT |
 | Tag push doesn't trigger workflows | Tag format wrong | Must match `v*.*.*` pattern exactly (e.g., `v1.0.0`, not `1.0.0`) |

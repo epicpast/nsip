@@ -171,7 +171,7 @@ Most workflows use only the automatic `GITHUB_TOKEN`. Optional workflows require
 | Secret | Required for | How to obtain |
 |---|---|---|
 | `GITHUB_TOKEN` | All workflows (CI, releases, etc.) | Automatic -- provided by GitHub Actions |
-| `CARGO_REGISTRY_TOKEN` | Publishing to crates.io (`publish.yml`) | [crates.io account settings](https://crates.io/settings/tokens) |
+| -- (Trusted Publishing) | Publishing to crates.io (`publish.yml`) | crates.io crate Settings → Trusted Publishing (OIDC, no stored secret) |
 | `CODECOV_TOKEN` | Uploading coverage reports (`ci.yml`) | [Codecov dashboard](https://app.codecov.io/) after linking your repo |
 
 > Workflows that reference missing secrets will either skip gracefully or fail with a clear error. You only need to configure a secret when you are ready to use the corresponding feature.

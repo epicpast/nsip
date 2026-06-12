@@ -34,7 +34,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@...
+      - uses: actions/checkout  # pin to a full 40-char SHA
       
       - name: Setup Rust
         uses: ./.github/actions/setup-rust-cached
@@ -78,7 +78,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@...
+      - uses: actions/checkout  # pin to a full 40-char SHA
       
       - name: Install cargo-audit
         uses: ./.github/actions/install-cargo-tool
@@ -95,10 +95,10 @@ jobs:
 ### Before (Problems):
 ```yaml
 # Repeated in approximately 29 places across workflows (estimate)!
-- uses: dtolnay/rust-toolchain@<sha-1>  # Different SHAs
+- uses: dtolnay/rust-toolchain  # pinned to differing SHAs in each copy
   with:
     toolchain: stable
-- uses: actions/cache@<sha-2>
+- uses: actions/cache  # another SHA to keep in sync
   with:
     path: |
       ~/.cargo/registry

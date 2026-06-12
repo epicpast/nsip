@@ -312,7 +312,7 @@ This template includes production-ready workflows:
 - **Publish** (`.github/workflows/publish.yml`) - Automated crates.io publishing
   - Full pre-publish validation
   - Triggered on version tags
-  - Requires `CARGO_REGISTRY_TOKEN` secret
+  - Trusted Publishing (OIDC) — no registry token; the published crate is byte-verified and attested
 
 ### Creating a Release
 

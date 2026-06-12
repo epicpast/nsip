@@ -8,11 +8,17 @@
 
 Download pre-built binaries for your platform:
 
-- **Linux (x86_64)**: `nsip-linux-amd64`
-- **Linux (ARM64)**: `nsip-linux-arm64`
-- **macOS (x86_64)**: `nsip-macos-amd64`
-- **macOS (ARM64)**: `nsip-macos-arm64`
-- **Windows (x86_64)**: `nsip-windows-amd64.exe`
+- **Linux (x86_64)**: `nsip-VERSION-linux-amd64`
+- **Linux (ARM64)**: `nsip-VERSION-linux-arm64`
+- **macOS (x86_64)**: `nsip-VERSION-macos-amd64`
+- **macOS (ARM64)**: `nsip-VERSION-macos-arm64`
+- **Windows (x86_64)**: `nsip-VERSION-windows-amd64.exe`
+
+### Homebrew
+
+```bash
+brew install zircote/tap/nsip
+```
 
 ### Cargo
 
@@ -28,14 +34,22 @@ docker pull ghcr.io/zircote/nsip:VERSION
 
 ## Verification
 
-### Binary Checksums
+### Attestations
 
-Checksums (`SHA256SUMS`, `SHA512SUMS`) and Cosign signatures are generated and
-attached automatically by the `signed-releases.yml` workflow after the release
-publishes. Once attached, verify a downloaded asset against them:
+Every asset carries SLSA build provenance and a CycloneDX SBOM attestation,
+verified fail-closed before this release was published. Re-verify any
+download with the GitHub CLI:
 
 ```bash
-sha256sum --check SHA256SUMS
+gh attestation verify nsip-VERSION-linux-amd64 --repo zircote/nsip
+gh attestation verify nsip-VERSION-linux-amd64 --repo zircote/nsip \
+  --predicate-type https://cyclonedx.org/bom
+```
+
+### Binary Checksums
+
+```bash
+sha256sum --check --ignore-missing nsip-VERSION-checksums.txt
 ```
 
 ### Docker Image

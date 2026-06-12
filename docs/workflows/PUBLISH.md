@@ -6,14 +6,19 @@ diataxis_type: reference
 ## Overview
 
 Runs the full suite of pre-publish checks and publishes the `nsip` crate to
-[crates.io](https://crates.io/crates/nsip) on every `v*.*.*` tag push.
-Manual dispatch runs a dry run by default.
+[crates.io](https://crates.io/crates/nsip) on every `v*.*.*` tag push via
+[Trusted Publishing](https://crates.io/docs/trusted-publishing) (OIDC — no
+stored registry token). After publishing, it downloads the `.crate` the
+registry serves, asserts it is byte-identical to the locally packaged
+crate, and attaches SLSA build provenance to it. Manual dispatch runs a dry
+run (publish steps are tag-gated).
 
 **Workflow:** `.github/workflows/publish.yml`  
 **Trigger:** Push of a `v*.*.*` tag, manual (`workflow_dispatch`)  
-**Required secrets:** `CARGO_REGISTRY_TOKEN` — crates.io API token  
-**Environment:** `copilot` (provides secret access controls)  
-**Permissions:** `contents: read`
+**Required secrets:** none (Trusted Publishing)  
+**Environment:** `copilot` (bound in the crates.io Trusted Publishing config)  
+**Permissions:** `contents: read`; job-level `id-token: write`,
+`attestations: write`
 
 ## Jobs
 
@@ -29,7 +34,10 @@ Runs on `ubuntu-latest`, timeout 30 minutes.
 | Verify package | `cargo package --list` + `cargo package --allow-dirty` |
 | Pre-publish checks | `fmt`, `clippy`, `test`, `doc`, `deny` |
 | Dry run | `cargo publish --dry-run` — always executes |
-| Publish | `cargo publish --token $CARGO_REGISTRY_TOKEN` — only on `refs/tags/v*` |
+| Authenticate | `rust-lang/crates-io-auth-action` mints a short-lived OIDC token — only on `refs/tags/v*` |
+| Publish | `cargo publish` with the minted token — only on `refs/tags/v*` |
+| Byte-verify | Downloads the published `.crate` from `static.crates.io` and asserts SHA-256 equality with the local package |
+| Attest | `actions/attest-build-provenance` over the registry-served `.crate` |
 
 ## Pre-publish Checks
 
@@ -67,14 +75,19 @@ cargo publish --dry-run
 cargo publish --token <your-token>
 ```
 
-## crates.io API Token
+## Trusted Publishing Configuration
 
-Create a crates.io API token:
+One-time setup on crates.io (already done for this crate):
 
-1. Log in to [crates.io](https://crates.io/)
-2. Go to **Account Settings → API Tokens → New Token**
-3. Name it `nsip-publish` and select the `publish-new` and `publish-update` scopes
-4. Add it as the `CARGO_REGISTRY_TOKEN` repository secret
+1. Log in to [crates.io](https://crates.io/) and open the `nsip` crate
+2. Go to **Settings → Trusted Publishing → Add**
+3. GitHub repository `zircote/nsip`, workflow `publish.yml`, environment
+   `copilot`
+
+The workflow exchanges its GitHub OIDC token for a short-lived (~30 min)
+crates.io token at run time. There is no long-lived secret to rotate or
+leak. (For an out-of-band manual publish you still need a personal
+crates.io API token.)
 
 ## Relationship to Release Pipeline
 
@@ -86,7 +99,8 @@ crate to crates.io. Both are triggered by the same version tag.
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| `cargo publish` fails with 403 | Expired or revoked `CARGO_REGISTRY_TOKEN` | Rotate the token on crates.io |
+| Authentication step fails | Trusted Publishing config mismatch | crates.io crate Settings → Trusted Publishing must list repo `zircote/nsip`, workflow `publish.yml`, environment `copilot` |
+| `registry crate bytes differ` | CDN served stale/foreign bytes | Investigate before re-running; this gate exists to catch tampering |
 | Version already published | Tag pushed twice or previous partial publish | Bump the patch version and re-tag |
 | Dry run passes but publish fails | Network error or crates.io outage | Retry after a few minutes |
 | Pre-publish check fails | Lint or test regression | Fix the issue in a patch release |
