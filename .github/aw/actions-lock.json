@@ -1,49 +1,51 @@
 {
   "entries": {
-    "actions/github-script@v8": {
-      "repo": "actions/github-script",
-      "version": "v8",
-      "sha": "ed597411d8f924073f98dfc5c65a23a2325f34cd"
-    },
     "actions/github-script@v9.0.0": {
       "repo": "actions/github-script",
       "version": "v9.0.0",
       "sha": "3a2844b7e9c422d3c10d287c895573f7108da1b3"
     },
-    "github/gh-aw-actions/setup-cli@v0.76.1": {
+    "github/gh-aw-actions/setup-cli@v0.79.8": {
       "repo": "github/gh-aw-actions/setup-cli",
-      "version": "v0.76.1",
-      "sha": "46d564922b082d0db93244972e8005ea6904ee5f"
+      "version": "v0.79.8",
+      "sha": "c0338fef4749d08c21f8f975fb0e37efa17dda47"
     },
-    "github/gh-aw-actions/setup@v0.76.1": {
+    "github/gh-aw-actions/setup@v0.79.8": {
       "repo": "github/gh-aw-actions/setup",
-      "version": "v0.76.1",
-      "sha": "46d564922b082d0db93244972e8005ea6904ee5f"
+      "version": "v0.79.8",
+      "sha": "c0338fef4749d08c21f8f975fb0e37efa17dda47"
     },
-    "github/gh-aw/actions/setup-cli@v0.76.1": {
+    "github/gh-aw/actions/setup-cli@v0.79.8": {
       "repo": "github/gh-aw/actions/setup-cli",
-      "version": "v0.76.1",
-      "sha": "58d1bedbb7200f59c2d224151339e38fd8687d05"
+      "version": "v0.79.8",
+      "sha": "8b02ab336d100a5746e9f53b8bc2b22878278a6f"
     },
-    "github/gh-aw/actions/setup@v0.45.0": {
+    "github/gh-aw/actions/setup@v0.79.8": {
       "repo": "github/gh-aw/actions/setup",
-      "version": "v0.45.0",
-      "sha": "58d1d157fbac0f1204798500faefc4f7461ebe28"
+      "version": "v0.79.8",
+      "sha": "8b02ab336d100a5746e9f53b8bc2b22878278a6f"
+    }
+  },
+  "containers": {
+    "ghcr.io/github/gh-aw-firewall/agent:0.25.55": {
+      "image": "ghcr.io/github/gh-aw-firewall/agent:0.25.55",
+      "digest": "sha256:138c363411decc9a61a5af9b95e8d64c76648b00add0ba06fc7ba786f0e72731",
+      "pinned_image": "ghcr.io/github/gh-aw-firewall/agent:0.25.55@sha256:138c363411decc9a61a5af9b95e8d64c76648b00add0ba06fc7ba786f0e72731"
     },
-    "github/gh-aw/actions/setup@v0.47.1": {
-      "repo": "github/gh-aw/actions/setup",
-      "version": "v0.47.1",
-      "sha": "c94abee3e98890c5ddf4e8f41a74ed3302c56cec"
+    "ghcr.io/github/gh-aw-firewall/api-proxy:0.25.55": {
+      "image": "ghcr.io/github/gh-aw-firewall/api-proxy:0.25.55",
+      "digest": "sha256:4142b873b678cd3279b98dcbe464857d56ea2f2348719b00379cdf35dd843ff3",
+      "pinned_image": "ghcr.io/github/gh-aw-firewall/api-proxy:0.25.55@sha256:4142b873b678cd3279b98dcbe464857d56ea2f2348719b00379cdf35dd843ff3"
     },
-    "github/gh-aw/actions/setup@v0.55.0": {
-      "repo": "github/gh-aw/actions/setup",
-      "version": "v0.55.0",
-      "sha": "e211c855a20aa6cf9297b411466e1c382a8686db"
+    "ghcr.io/github/gh-aw-firewall/squid:0.25.55": {
+      "image": "ghcr.io/github/gh-aw-firewall/squid:0.25.55",
+      "digest": "sha256:74084b704d8d3664a363655986664d70bd9cdb4830532d0b35cd784d867aabca",
+      "pinned_image": "ghcr.io/github/gh-aw-firewall/squid:0.25.55@sha256:74084b704d8d3664a363655986664d70bd9cdb4830532d0b35cd784d867aabca"
     },
-    "github/gh-aw/actions/setup@v0.56.2": {
-      "repo": "github/gh-aw/actions/setup",
-      "version": "v0.56.2",
-      "sha": "f1073c5498ee46fec1530555a7c953445417c69b"
+    "ghcr.io/github/gh-aw-mcpg:v0.3.19": {
+      "image": "ghcr.io/github/gh-aw-mcpg:v0.3.19",
+      "digest": "sha256:a6c890d7c24d7190c9ef97b9c954cc4cffaae6b01c371ced1f959f1370b1f68f",
+      "pinned_image": "ghcr.io/github/gh-aw-mcpg:v0.3.19@sha256:a6c890d7c24d7190c9ef97b9c954cc4cffaae6b01c371ced1f959f1370b1f68f"
     }
   }
 }
