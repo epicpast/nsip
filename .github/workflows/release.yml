@@ -431,7 +431,11 @@ jobs:
       zircote/.github/.github/workflows/reusable-sca-osv.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
     with:
       fail-on-severity: high
+      # --config applies the shared ignore policy (osv-scanner.toml) that
+      # mirrors deny.toml / cargo-audit, so the SCA gate and the RustSec gate
+      # agree on vetted exceptions.
       scan-args: |-
+        --config=osv-scanner.toml
         --lockfile=Cargo.lock
 
   gate-trivy:

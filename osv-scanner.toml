@@ -1,0 +1,8 @@
+# OSV-Scanner configuration.
+#
+# Ignore policy mirrors deny.toml and the cargo-audit invocations in
+# security-audit.yml / release.yml — the gh-attested SCA gate (OSV) must apply
+# the same vetted exceptions as the RustSec gate, or the two disagree.
+[[IgnoredVulns]]
+id = "RUSTSEC-2023-0071"
+reason = "rsa Marvin timing side-channel, transitive via jsonwebtoken's rust_crypto feature. nsip signs JWTs with HMAC-SHA256 only; the RSA code path is never executed. No upstream fix exists. Same exception as deny.toml and cargo-audit --ignore RUSTSEC-2023-0071."

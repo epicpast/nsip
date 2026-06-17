@@ -65,8 +65,10 @@ jobs:
     with:
       fail-on-severity: high
       # Scope OSV to the Rust crate lockfile so the gate characterizes exactly
-      # the dependencies the crate ships.
+      # the dependencies the crate ships; --config applies the shared ignore
+      # policy (osv-scanner.toml) that mirrors deny.toml / cargo-audit.
       scan-args: |-
+        --config=osv-scanner.toml
         --lockfile=Cargo.lock
 
   # Supply-chain posture — OpenSSF Scorecard. Requires the default branch, so
