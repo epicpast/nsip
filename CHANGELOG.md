@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Update CHANGELOG.md for v0.6.0
+- Update CHANGELOG.md for v0.6.1
+- **claude**: Mandate Release PR workflow for releases; forbid hand-rolled release PRs
+
+### Fixed
+
+- **ci**: Base changelog branch on develop and auto-merge it
+- Address PR review feedback
+
+### Miscellaneous
+
+- **deps**: Bump the github-actions group with 3 updates (#267)
+- **deps**: Bump docker/setup-buildx-action
+- **deps**: Bump gitleaks/gitleaks-action
+- **deps**: Bump docker/login-action
+- **deps**: Bump codecov/codecov-action from 6.0.1 to 7.0.0
+- **deps**: Bump the github-actions group with 2 updates (#271)
+- **deps**: Bump docker/login-action
+- **deps**: Adopt actions/checkout v6.0.3 in rewritten release workflows
+- Bump version to 0.6.2
+
+### Ci
+
+- Align release pipeline with rlm-rs attested delivery
 
 ## [0.6.1] - 2026-06-02
 
