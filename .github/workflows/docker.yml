@@ -15,11 +15,12 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+# Least privilege at the top: build-and-push only needs to read the repo and
+# push to GHCR. The id-token/attestations write scopes for signing live on the
+# docker-sign / docker-verify / attest-* reusable-caller jobs below.
 permissions:
   contents: read
   packages: write
-  id-token: write
-  attestations: write
 
 jobs:
   build-and-push:
@@ -66,15 +67,45 @@ jobs:
           build-args: |
             RUST_VERSION=1.92
 
-      - name: Attest image provenance
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          # Keep provenance in GitHub's attestation store instead of pushing a
-          # sha256-<digest> referrer manifest to ghcr, which otherwise shows as
-          # an untagged "version" in the Packages UI. Verify via `gh attestation`.
-          push-to-registry: false
+  # ---------------------------------------------------------------------------
+  # Image signing + attestation (gh-attested) — the central sign-and-attest
+  # reusable (cosign, SLSA Build L3 isolation boundary) signs the image and
+  # attaches provenance; verify-attestation then fail-closed verifies it.
+  # Supersedes the previous inline attest-build-provenance step. Note: cosign
+  # publishes signature referrers to ghcr (visible in the Packages UI), unlike
+  # the prior push-to-registry: false provenance-only approach.
+  # ---------------------------------------------------------------------------
+  docker-sign:
+    name: Sign and Attest Image
+    needs: [build-and-push]
+    permissions:
+      id-token: write
+      attestations: write
+      packages: write
+      contents: read
+    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/sign-and-attest.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+    with:
+      image-name: ghcr.io/${{ github.repository }}
+      image-digest: ${{ needs.build-and-push.outputs.image-digest }}
+
+  docker-verify:
+    name: Verify Image Attestations
+    needs: [build-and-push, docker-sign]
+    permissions:
+      id-token: write
+      attestations: read
+      packages: read
+      contents: read
+    # zircote/.github main @ e8f0dbde (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/verify-attestation.yml@e8f0dbde068cc0701e443e7b8d57ae9917de7da3
+    with:
+      image-ref: >-
+        ghcr.io/${{ github.repository }}@${{
+        needs.build-and-push.outputs.image-digest }}
+      attestation-repo: ${{ github.repository }}
 
   # ---------------------------------------------------------------------------
   # Container vulnerability gate attestation (gh-attested) — Trivy scans the
