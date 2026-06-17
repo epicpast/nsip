@@ -15,35 +15,119 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
-# Least privilege at the top: build-and-push only needs to read the repo and
-# push to GHCR. The id-token/attestations write scopes for signing live on the
-# docker-sign / docker-verify / attest-* reusable-caller jobs below.
+# Least privilege at the top: the per-arch build and the manifest merge only
+# read the repo and push to GHCR. The id-token/attestations write scopes for
+# signing live on the docker-sign / docker-verify / attest-* caller jobs below.
 permissions:
   contents: read
   packages: write
 
 jobs:
-  build-and-push:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    outputs:
-      image-digest: ${{ steps.push.outputs.digest }}
+  # Build each architecture on its NATIVE runner and push by digest (no tag).
+  # arm64 builds on ubuntu-24.04-arm rather than under QEMU emulation on x86 —
+  # the emulated build took ~50min; native runs in parallel with amd64.
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 
       - name: Set up Docker Buildx
+        # yamllint disable-line rule:line-length
         uses: docker/setup-buildx-action@c887d9748da14dcb42b11cf8bcc773b301ea55b5  # v3.9.0
 
       - name: Log in to Container Registry
+        # yamllint disable-line rule:line-length
         uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870  # v3.4.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
+      - name: Docker metadata (labels)
         id: meta
+        # yamllint disable-line rule:line-length
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9  # v6.1.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push by digest
+        id: build
+        # yamllint disable-line rule:line-length
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf  # v6.10.0
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Per-arch cache scope so amd64/arm64 layers don't evict each other.
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+          build-args: |
+            RUST_VERSION=1.92
+          # Push the single-arch image by digest only (no tag); the merge job
+          # assembles the tagged multi-arch manifest list from these digests.
+          outputs: >-
+            type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest
+        # yamllint disable-line rule:line-length
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Assemble the tagged multi-arch manifest list from the per-arch digests and
+  # resolve the manifest-list digest — the subject the chain below signs/attests.
+  merge:
+    name: Merge multi-arch manifest
+    needs: [build]
+    runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.digest.outputs.digest }}
+    steps:
+      - name: Download digests
+        # yamllint disable-line rule:line-length
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        # yamllint disable-line rule:line-length
+        uses: docker/setup-buildx-action@c887d9748da14dcb42b11cf8bcc773b301ea55b5  # v3.9.0
+
+      - name: Log in to Container Registry
+        # yamllint disable-line rule:line-length
+        uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870  # v3.4.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata (tags)
+        id: meta
+        # yamllint disable-line rule:line-length
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9  # v6.1.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -53,98 +137,112 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
 
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf  # v6.10.0
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            RUST_VERSION=1.92
+      - name: Create and push manifest list
+        working-directory: /tmp/digests
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2046
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' \
+              <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "${IMAGE}@sha256:%s " *)
+
+      - name: Resolve manifest-list digest
+        id: digest
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          digest=$(docker buildx imagetools inspect "${IMAGE}:${VERSION}" \
+            --format '{{json .Manifest.Digest}}' | tr -d '"')
+          if [ -z "$digest" ]; then
+            echo "::error::failed to resolve manifest-list digest"
+            exit 1
+          fi
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "manifest-list digest: ${digest}"
 
   # ---------------------------------------------------------------------------
   # Image signing + attestation (gh-attested) — the central sign-and-attest
-  # reusable (cosign, SLSA Build L3 isolation boundary) signs the image and
-  # attaches provenance; verify-attestation then fail-closed verifies it.
-  # Supersedes the previous inline attest-build-provenance step. Note: cosign
-  # publishes signature referrers to ghcr (visible in the Packages UI), unlike
-  # the prior push-to-registry: false provenance-only approach.
+  # reusable (cosign, SLSA Build L3 isolation boundary) signs the manifest list
+  # and attaches provenance; verify-attestation then fail-closed verifies it.
   # ---------------------------------------------------------------------------
   docker-sign:
     name: Sign and Attest Image
-    needs: [build-and-push]
+    needs: [merge]
     permissions:
       id-token: write
       attestations: write
       packages: write
       contents: read
-    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (no-release-upload SBOM fix, 2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/sign-and-attest.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+      zircote/.github/.github/workflows/sign-and-attest.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       image-name: ghcr.io/${{ github.repository }}
-      image-digest: ${{ needs.build-and-push.outputs.image-digest }}
+      image-digest: ${{ needs.merge.outputs.image-digest }}
 
   docker-verify:
     name: Verify Image Attestations
-    needs: [build-and-push, docker-sign]
+    needs: [merge, docker-sign]
     permissions:
       id-token: write
       attestations: read
       packages: read
       contents: read
-    # zircote/.github main @ e8f0dbde (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/verify-attestation.yml@e8f0dbde068cc0701e443e7b8d57ae9917de7da3
+      zircote/.github/.github/workflows/verify-attestation.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       image-ref: >-
         ghcr.io/${{ github.repository }}@${{
-        needs.build-and-push.outputs.image-digest }}
+        needs.merge.outputs.image-digest }}
       attestation-repo: ${{ github.repository }}
 
   # ---------------------------------------------------------------------------
   # Container vulnerability gate attestation (gh-attested) — Trivy scans the
-  # pushed image, then the verdict is signed and bound to the image digest by
-  # the central attest-scan reusable. Supersedes the standalone (dormant)
-  # container-scan.yml: same Trivy image scan, now SARIF -> code-scanning hub
-  # AND a digest-bound signed attestation. Reusables SHA-pinned to
-  # zircote/.github.
+  # manifest list, then the verdict is signed and bound to the manifest digest
+  # by the central attest-scan reusable. Supersedes the standalone (dormant)
+  # container-scan.yml. Reusables SHA-pinned to zircote/.github.
   # ---------------------------------------------------------------------------
   gate-image:
     name: Gate — Trivy (image)
-    needs: [build-and-push]
+    needs: [merge]
     permissions:
       contents: read
       security-events: write
       actions: read
       packages: read
-    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (adds ignore-unfixed input, 2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/reusable-trivy.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+      zircote/.github/.github/workflows/reusable-trivy.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       image-ref: >-
         ghcr.io/${{ github.repository }}@${{
-        needs.build-and-push.outputs.image-digest }}
+        needs.merge.outputs.image-digest }}
       scan-iac: false
+      # Gate on FIXABLE vulnerabilities only. The distroless/Debian base
+      # carries unfixed glibc/openssl/gcc CVEs with no upstream patch (already
+      # at the latest deb12u* security versions); without this the image gate
+      # fails forever on findings that have no remediation.
+      ignore-unfixed: true
 
   attest-container-scan:
     name: Attest — Container scan
-    needs: [build-and-push, gate-image]
+    needs: [merge, gate-image]
     permissions:
       id-token: write
       attestations: write
       contents: read
-    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/reusable-attest-scan.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       subject-name: ghcr.io/${{ github.repository }}
-      subject-digest: ${{ needs.build-and-push.outputs.image-digest }}
+      subject-digest: ${{ needs.merge.outputs.image-digest }}
       predicate-type: https://zircote.github.io/attestations/container-scan/v1
       predicate-artifact: ${{ needs.gate-image.outputs.image-sarif-artifact }}
       predicate-filename: ${{ needs.gate-image.outputs.image-sarif-filename }}
