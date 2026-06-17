@@ -83,9 +83,9 @@ jobs:
       attestations: write
       packages: write
       contents: read
-    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (no-release-upload SBOM fix, 2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/sign-and-attest.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+      zircote/.github/.github/workflows/sign-and-attest.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       image-name: ghcr.io/${{ github.repository }}
       image-digest: ${{ needs.build-and-push.outputs.image-digest }}
@@ -98,9 +98,9 @@ jobs:
       attestations: read
       packages: read
       contents: read
-    # zircote/.github main @ e8f0dbde (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/verify-attestation.yml@e8f0dbde068cc0701e443e7b8d57ae9917de7da3
+      zircote/.github/.github/workflows/verify-attestation.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       image-ref: >-
         ghcr.io/${{ github.repository }}@${{
@@ -123,14 +123,19 @@ jobs:
       security-events: write
       actions: read
       packages: read
-    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (adds ignore-unfixed input, 2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/reusable-trivy.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+      zircote/.github/.github/workflows/reusable-trivy.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       image-ref: >-
         ghcr.io/${{ github.repository }}@${{
         needs.build-and-push.outputs.image-digest }}
       scan-iac: false
+      # Gate on FIXABLE vulnerabilities only. The distroless/Debian base
+      # carries unfixed glibc/openssl/gcc CVEs with no upstream patch (already
+      # at the latest deb12u* security versions); without this the image gate
+      # fails forever on findings that have no remediation.
+      ignore-unfixed: true
 
   attest-container-scan:
     name: Attest — Container scan
@@ -139,9 +144,9 @@ jobs:
       id-token: write
       attestations: write
       contents: read
-    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    # zircote/.github main @ 515a4c76 (2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/reusable-attest-scan.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@515a4c765d9df26954f59d3fe4ab003f56651205
     with:
       subject-name: ghcr.io/${{ github.repository }}
       subject-digest: ${{ needs.build-and-push.outputs.image-digest }}
