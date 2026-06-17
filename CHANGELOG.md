@@ -5,7 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-06-17
+
+### Documentation
+
+- Update CHANGELOG.md for v0.6.2
+
+### Miscellaneous
+
+- **deps**: Bump uuid from 1.23.2 to 1.23.3 (#278)
+- **deps**: Bump chrono from 0.4.44 to 0.4.45 (#279)
+- **deps**: Bump tower-http from 0.6.11 to 0.7.0 (#280)
+- **deps**: Bump the github-actions group with 2 updates (#282)
+- Gh aw upgrade (recompile workflows to v0.79.8)
+- **deps**: Bump gitleaks/gitleaks-action (#285)
+- **deps**: Bump docker/setup-buildx-action (#284)
+- **deps**: Bump docker/login-action (#286)
+- **deps**: Bump regex from 1.12.3 to 1.12.4 (#281)
+- Add /release orchestration skill adapted for nsip (#288)
+- Bump version to 0.7.0 (#289)
+
+### Security
+
+- Add gh-attested merge-time quality-gates caller
+
+### Ci
+
+- Graft gh-attested quality-gate seam into release pipeline
+- Make actionlint pass repo-wide
+- Add gh-attested container-scan attestation, retire container-scan.yml
+- Wire centralized image sign + fail-closed verify (full gh-attested parity)
+- Fix OSV + CodeQL gate failures on first PR run
+
+## [0.6.2] - 2026-06-12
 
 ### Documentation
 
@@ -361,7 +393,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump github/codeql-action from 3 to 4 (#6)
 - **deps**: Bump actions/github-script from 7.0.1 to 8.0.0 (#4)
 
-[unreleased]: https://github.com/zircote/nsip/compare/v0.6.1..HEAD
+[0.7.0]: https://github.com/zircote/nsip/compare/v0.6.2..v0.7.0
+[0.6.2]: https://github.com/zircote/nsip/compare/v0.6.1..v0.6.2
 [0.6.1]: https://github.com/zircote/nsip/compare/v0.6.0..v0.6.1
 [0.6.0]: https://github.com/zircote/nsip/compare/v0.5.1..v0.6.0
 [0.5.1]: https://github.com/zircote/nsip/compare/v0.5.0..v0.5.1
