@@ -308,7 +308,7 @@ jobs:
 
   sbom:
     name: SBOM (generate + attest)
-    needs: [version, build, extras, mcpb]
+    needs: [version, build, extras, mcpb, source]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -320,10 +320,15 @@ jobs:
         # yamllint disable-line rule:line-length
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 
-      - name: Download all artifacts
+      - name: Download release artifacts
         # yamllint disable-line rule:line-length
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
+          # Release artifacts only (nsip-${version}-*): the 5 platform
+          # binaries, completions/man-pages, MCPB bundle, and source snapshot.
+          # Excludes the gate SARIF artifacts, which carry no nsip-${version}
+          # prefix, so the SBOM binds exactly the shipped artifacts.
+          pattern: nsip-${{ needs.version.outputs.version }}-*
           path: dist
           merge-multiple: true
 
@@ -355,33 +360,170 @@ jobs:
           path: nsip-${{ needs.version.outputs.version }}-sbom.cdx.json
           if-no-files-found: error
 
+  # Source snapshot: a reproducible, PUBLISHED tarball that serves as the
+  # verifiable subject for the quality-gate attestations below. Because the
+  # exact bytes ship as a release asset, `gh attestation verify` can run
+  # against it from any workstation.
+  source:
+    name: Source Snapshot
+    needs: [version]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      subject-name: ${{ steps.pack.outputs.name }}
+      subject-digest: ${{ steps.pack.outputs.digest }}
+    steps:
+      - name: Checkout repository
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+
+      - name: Pack source snapshot
+        id: pack
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          NAME="nsip-${VERSION}-source.tar.gz"
+          git archive --format=tar.gz --prefix="nsip-${VERSION}/" \
+            -o "dist/${NAME}" "${GITHUB_SHA}"
+          DIGEST=$(sha256sum "dist/${NAME}" | cut -d' ' -f1)
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "digest=sha256:${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        # yamllint disable-line rule:line-length
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4.1.0
+        with:
+          subject-path: dist/${{ steps.pack.outputs.name }}
+
+      - name: Upload source artifact
+        # yamllint disable-line rule:line-length
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: nsip-${{ needs.version.outputs.version }}-source
+          path: dist/${{ steps.pack.outputs.name }}
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Quality-gate attestation seam — SCA (OSV) and IaC/license (Trivy) verdicts
+  # signed over the published source snapshot, then fail-closed verified in the
+  # verify job before release. These gates are fast and directly characterize
+  # the shipped source/dependencies; SAST (CodeQL) and posture (Scorecard) are
+  # repo/source-level and enforced at merge in quality-gates.yml, so they are
+  # NOT re-run here. Reusables are SHA-pinned to zircote/.github.
+  # ---------------------------------------------------------------------------
+  gate-sca:
+    name: Gate — SCA (OSV)
+    needs: [version]
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      # reusable's (skipped) dependency-review job declares it
+      pull-requests: write
+    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/reusable-sca-osv.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+    with:
+      fail-on-severity: high
+      scan-args: |-
+        --lockfile=Cargo.lock
+
+  gate-trivy:
+    name: Gate — Trivy (IaC/license)
+    needs: [version]
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      # reusable's (skipped) image job declares it
+      packages: read
+    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/reusable-trivy.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+    with:
+      scan-iac: true
+
+  attest-sca:
+    name: Attest — SCA
+    needs: [version, source, gate-sca]
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+    with:
+      subject-name: ${{ needs.source.outputs.subject-name }}
+      subject-digest: ${{ needs.source.outputs.subject-digest }}
+      predicate-type: https://zircote.github.io/attestations/sca/v1
+      predicate-artifact: ${{ needs.gate-sca.outputs.sarif-artifact }}
+      predicate-filename: ${{ needs.gate-sca.outputs.sarif-filename }}
+
+  attest-iac-license:
+    name: Attest — IaC/license
+    needs: [version, source, gate-trivy]
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+    with:
+      subject-name: ${{ needs.source.outputs.subject-name }}
+      subject-digest: ${{ needs.source.outputs.subject-digest }}
+      predicate-type: https://zircote.github.io/attestations/iac-license/v1
+      predicate-artifact: ${{ needs.gate-trivy.outputs.sarif-artifact }}
+      predicate-filename: ${{ needs.gate-trivy.outputs.sarif-filename }}
+
   verify:
     name: Verify Attestations
-    needs: [version, build, extras, mcpb, sbom]
+    needs:
+      - version
+      - build
+      - extras
+      - mcpb
+      - sbom
+      - source
+      - attest-sca
+      - attest-iac-license
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       attestations: read
     steps:
-      - name: Download all artifacts
+      - name: Download release artifacts
         # yamllint disable-line rule:line-length
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
+          # Release artifacts only (nsip-${version}-*): binaries,
+          # completions/man-pages, MCPB bundle, SBOM, and source snapshot.
+          # Excludes the gate SARIF artifacts (no nsip-${version} prefix).
+          pattern: nsip-${{ needs.version.outputs.version }}-*
           path: dist
           merge-multiple: true
 
       - name: Fail-closed attestation verification
         env:
           GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          SEAM: zircote/.github/.github/workflows/reusable-attest-scan.yml
         run: |
           set -euo pipefail
           shopt -s nullglob
           files=(dist/*)
           # 5 platform binaries + completions + man pages + MCPB bundle +
-          # SBOM. A partial set must never reach the release.
-          if [ "${#files[@]}" -ne 9 ]; then
-            echo "::error::expected 9 artifacts, found ${#files[@]}"
+          # SBOM + source snapshot. A partial set must never reach the release.
+          if [ "${#files[@]}" -ne 10 ]; then
+            echo "::error::expected 10 artifacts, found ${#files[@]}"
             printf '%s\n' "${files[@]}"
             exit 1
           fi
@@ -394,6 +536,19 @@ jobs:
             echo "Verifying SBOM attestation: ${f}"
             gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" \
               --predicate-type https://cyclonedx.org/bom
+            case "$f" in
+              *-source.tar.gz)
+                # Source snapshot also carries the seam-signed gate verdicts
+                # (SCA + IaC/license), signed by the central attest-scan
+                # reusable. Fail closed if either is missing.
+                for pt in sca iac-license; do
+                  echo "Verifying gate (${pt}): ${f}"
+                  gh attestation verify "$f" --owner "$OWNER" \
+                    --signer-workflow "$SEAM" \
+                    --predicate-type \
+                    "https://zircote.github.io/attestations/${pt}/v1"
+                done ;;
+            esac
           done
 
   release:
@@ -412,10 +567,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download all artifacts
+      - name: Download release artifacts
         # yamllint disable-line rule:line-length
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
+          # Release artifacts only (nsip-${version}-*); excludes the gate
+          # SARIF artifacts so they never land as release assets.
+          pattern: nsip-${{ needs.version.outputs.version }}-*
           path: dist
           merge-multiple: true
 
