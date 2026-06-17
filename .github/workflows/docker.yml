@@ -25,6 +25,8 @@ jobs:
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.push.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
@@ -73,3 +75,45 @@ jobs:
           # sha256-<digest> referrer manifest to ghcr, which otherwise shows as
           # an untagged "version" in the Packages UI. Verify via `gh attestation`.
           push-to-registry: false
+
+  # ---------------------------------------------------------------------------
+  # Container vulnerability gate attestation (gh-attested) — Trivy scans the
+  # pushed image, then the verdict is signed and bound to the image digest by
+  # the central attest-scan reusable. Supersedes the standalone (dormant)
+  # container-scan.yml: same Trivy image scan, now SARIF -> code-scanning hub
+  # AND a digest-bound signed attestation. Reusables SHA-pinned to
+  # zircote/.github.
+  # ---------------------------------------------------------------------------
+  gate-image:
+    name: Gate — Trivy (image)
+    needs: [build-and-push]
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      packages: read
+    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/reusable-trivy.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+    with:
+      image-ref: >-
+        ghcr.io/${{ github.repository }}@${{
+        needs.build-and-push.outputs.image-digest }}
+      scan-iac: false
+
+  attest-container-scan:
+    name: Attest — Container scan
+    needs: [build-and-push, gate-image]
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    # zircote/.github main @ 77a87549 (merged 2026-06-16)
+    uses: >-
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+    with:
+      subject-name: ghcr.io/${{ github.repository }}
+      subject-digest: ${{ needs.build-and-push.outputs.image-digest }}
+      predicate-type: https://zircote.github.io/attestations/container-scan/v1
+      predicate-artifact: ${{ needs.gate-image.outputs.image-sarif-artifact }}
+      predicate-filename: ${{ needs.gate-image.outputs.image-sarif-filename }}
