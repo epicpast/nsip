@@ -21,22 +21,29 @@ jobs:
 
       - name: Generate contributors
         run: |
-          echo "# Contributors" > CONTRIBUTORS.md
-          echo "" >> CONTRIBUTORS.md
-          echo "Thank you to all our contributors!" >> CONTRIBUTORS.md
-          echo "" >> CONTRIBUTORS.md
-          
-          git log --format='%aN <%aE>' | sort -u | grep -v 'github-actions\|dependabot' | while read line; do
+          {
+            echo "# Contributors"
+            echo ""
+            echo "Thank you to all our contributors!"
+            echo ""
+          } > CONTRIBUTORS.md
+
+          git log --format='%aN <%aE>' | sort -u \
+            | grep -v 'github-actions\|dependabot' | while read -r line; do
             echo "- $line" >> CONTRIBUTORS.md
           done
-          
-          echo "" >> CONTRIBUTORS.md
-          echo "## Statistics" >> CONTRIBUTORS.md
-          echo "" >> CONTRIBUTORS.md
-          echo "- Total contributors: $(git log --format='%aN' | sort -u | grep -v 'github-actions\|dependabot' | wc -l)" >> CONTRIBUTORS.md
-          echo "- Total commits: $(git rev-list --count HEAD)" >> CONTRIBUTORS.md
-          echo "- First commit: $(git log --reverse --format='%ai' | head -1)" >> CONTRIBUTORS.md
-          echo "- Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> CONTRIBUTORS.md
+
+          total_contributors=$(git log --format='%aN' | sort -u \
+            | grep -cv 'github-actions\|dependabot')
+          {
+            echo ""
+            echo "## Statistics"
+            echo ""
+            echo "- Total contributors: ${total_contributors}"
+            echo "- Total commits: $(git rev-list --count HEAD)"
+            echo "- First commit: $(git log --reverse --format='%ai' | head -1)"
+            echo "- Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          } >> CONTRIBUTORS.md
 
       - name: Commit changes
         run: |
