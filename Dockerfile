@@ -1,12 +1,22 @@
-# Build stage
-FROM rust:1.92-slim AS builder
+# syntax=docker/dockerfile:1
+# Build stage — Alpine is musl-native, so `cargo build` targets the musl triple
+# and produces a fully STATIC binary (no glibc). That lets the runtime stage be
+# distroless/static (no glibc/openssl/libstdc++), eliminating the base-image
+# OS-package CVEs that a glibc image (distroless/cc) otherwise carries.
+ARG RUST_VERSION=1.92
+FROM rust:${RUST_VERSION}-alpine AS builder
+
+# musl-dev + build-base provide the C toolchain/assembler that ring (rustls'
+# crypto backend) compiles against; the musl target links it statically.
+RUN apk add --no-cache musl-dev build-base
 
 WORKDIR /app
 
 # Copy manifests
 COPY Cargo.toml Cargo.lock ./
 
-# Create dummy source to cache dependencies
+# Create dummy source to cache dependencies (build.rs is intentionally NOT
+# present yet — the dependency build needs no build script).
 RUN mkdir -p crates && \
     echo "fn main() {}" > crates/main.rs && \
     echo "" > crates/lib.rs
@@ -29,13 +39,16 @@ RUN rm -f target/release/deps/libnsip* \
          target/release/nsip && \
     cargo build --release
 
-# Runtime stage - use distroless for minimal attack surface
-FROM gcr.io/distroless/cc-debian12:latest
+# Runtime stage — distroless/static (no glibc/openssl) for a static musl binary.
+# TLS roots are bundled in the binary (reqwest rustls-tls -> webpki-roots), so
+# no system CA certs are required; the base still ships ca-certificates +
+# tzdata + a nonroot user for robustness.
+FROM gcr.io/distroless/static-debian12:nonroot
 
-# Copy binary from builder
+# Copy the statically-linked binary from builder
 COPY --from=builder /app/target/release/nsip /usr/local/bin/nsip
 
-# Set non-root user
+# Run as the distroless nonroot user (uid 65532)
 USER nonroot:nonroot
 
 # Health check
