@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Update CHANGELOG.md for v0.7.1
+
+### Miscellaneous
+
+- Bump version to 0.7.2 (#301)
+
+### Ci
+
+- **docker**: Static musl binary on distroless/static (root-cause CVE fix) (#300)
+
+## [0.7.1] - 2026-06-17
+
+### Documentation
+
 - Update CHANGELOG.md for v0.7.0
 - **release skill**: Don't hand-edit CHANGELOG — changelog.yml owns it (#293)
 
@@ -409,7 +423,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump github/codeql-action from 3 to 4 (#6)
 - **deps**: Bump actions/github-script from 7.0.1 to 8.0.0 (#4)
 
-[unreleased]: https://github.com/zircote/nsip/compare/v0.7.0..HEAD
+[unreleased]: https://github.com/zircote/nsip/compare/v0.7.1..HEAD
+[0.7.1]: https://github.com/zircote/nsip/compare/v0.7.0..v0.7.1
 [0.7.0]: https://github.com/zircote/nsip/compare/v0.6.2..v0.7.0
 [0.6.2]: https://github.com/zircote/nsip/compare/v0.6.1..v0.6.2
 [0.6.1]: https://github.com/zircote/nsip/compare/v0.6.0..v0.6.1
