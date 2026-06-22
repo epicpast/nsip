@@ -97,6 +97,6 @@ jobs:
       packages: read
     # zircote/.github main @ 77a87549 (resolved 2026-06-16)
     uses: >-
-      zircote/.github/.github/workflows/reusable-trivy.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+      zircote/.github/.github/workflows/reusable-trivy.yml@75667179b994ac4b1f07db4fa0cee8012f3ea115
     with:
       scan-iac: true
