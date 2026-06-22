@@ -239,7 +239,7 @@ jobs:
       contents: read
     # zircote/.github main @ 515a4c76 (2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/reusable-attest-scan.yml@515a4c765d9df26954f59d3fe4ab003f56651205
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@75667179b994ac4b1f07db4fa0cee8012f3ea115
     with:
       subject-name: ghcr.io/${{ github.repository }}
       subject-digest: ${{ needs.merge.outputs.image-digest }}
