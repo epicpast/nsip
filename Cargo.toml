@@ -74,7 +74,7 @@ clap_complete = "4.6"
 clap_mangen = "0.3"
 
 # MCP server
-rmcp = { version = "1.7", features = [
+rmcp = { version = "2.0", features = [
     "server",
     "transport-io",
     "transport-streamable-http-server",
