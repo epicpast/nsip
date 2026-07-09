@@ -218,7 +218,7 @@ jobs:
       packages: read
     # zircote/.github main @ 515a4c76 (adds ignore-unfixed input, 2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/reusable-trivy.yml@515a4c765d9df26954f59d3fe4ab003f56651205
+      zircote/.github/.github/workflows/reusable-trivy.yml@5a805176eb4f3f22cba7bb0a25d46dc7306872e3
     with:
       image-ref: >-
         ghcr.io/${{ github.repository }}@${{
