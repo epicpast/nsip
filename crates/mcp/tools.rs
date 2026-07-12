@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use rmcp::{
     ErrorData as McpError,
     handler::server::wrapper::Parameters,
-    model::{CallToolResult, Content},
+    model::{CallToolResult, ContentBlock},
     schemars, tool, tool_router,
 };
 
@@ -192,7 +192,7 @@ pub struct BreedIdParams {
 fn json_result(value: &impl serde::Serialize) -> Result<CallToolResult, McpError> {
     let json = serde_json::to_string_pretty(value)
         .map_err(|e| internal_err("Serialization failed", &e))?;
-    Ok(CallToolResult::success(vec![Content::text(json)]))
+    Ok(CallToolResult::success(vec![ContentBlock::text(json)]))
 }
 
 /// Map a crate-level [`crate::Error`] into an MCP error with the RFC 9457
@@ -389,7 +389,7 @@ impl super::NsipServer {
                      valid breed IDs.",
                     params.breed_id
                 );
-                return Ok(CallToolResult::success(vec![Content::text(msg)]));
+                return Ok(CallToolResult::success(vec![ContentBlock::text(msg)]));
             },
             Err(e) => return Err(api_err("Failed to fetch trait ranges", &e)),
         };
@@ -1175,7 +1175,7 @@ mod tests {
             assert!(!result.is_error.unwrap_or(false));
             let text = &result.content[0];
             let json: serde_json::Value =
-                serde_json::from_str(&text.raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&text.as_text().unwrap().text).unwrap();
             assert_eq!(json["total_count"], 2);
         }
 
@@ -1266,7 +1266,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["lpn_id"], "LPN1");
             assert_eq!(json["gender"], "Male");
         }
@@ -1293,7 +1293,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["subject"]["lpn_id"], "LPN1");
         }
 
@@ -1327,7 +1327,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["total_count"], 5);
             assert_eq!(json["animals"].as_array().unwrap().len(), 2);
         }
@@ -1395,7 +1395,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["details"]["lpn_id"], "LPN1");
         }
 
@@ -1424,7 +1424,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json[0]["id"], 61);
             assert_eq!(json[0]["breeds"][0]["name"], "Katahdin");
         }
@@ -1452,7 +1452,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert!(json["rangeBWT"]["min"].is_number());
         }
 
@@ -1473,7 +1473,7 @@ mod tests {
                 .unwrap();
 
             assert!(!result.is_error.unwrap_or(false));
-            let text = &result.content[0].raw.as_text().unwrap().text;
+            let text = &result.content[0].as_text().unwrap().text;
             assert!(text.contains("No trait range data available for breed 25"));
             assert!(text.contains("breed_groups"));
         }
@@ -1530,7 +1530,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["animal_count"], 2);
         }
 
@@ -1565,7 +1565,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             // Only BWT should appear in traits
             let traits = &json["animals"][0]["traits"];
             assert!(traits.get("BWT").is_some());
@@ -1638,7 +1638,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             // top_n = 2, so only 2 results
             assert_eq!(json.as_array().unwrap().len(), 2);
         }
@@ -1715,7 +1715,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["coefficient"], 0.0);
             assert_eq!(json["rating"], "Green");
         }
@@ -1775,7 +1775,7 @@ mod tests {
                 .unwrap();
 
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert!(json["coefficient"].as_f64().unwrap() > 0.0);
             assert!(!json["shared_ancestors"].as_array().unwrap().is_empty());
         }
@@ -1839,7 +1839,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             let recs = json.as_array().unwrap();
             assert_eq!(recs.len(), 1);
             assert_eq!(recs[0]["mate_lpn_id"], "EWE1");
@@ -1923,7 +1923,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["flock_id"], "FLOCK1");
             assert_eq!(json["sample_size"], 3);
             assert_eq!(json["males"], 1);
@@ -1950,7 +1950,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["total_count"], 0);
             assert_eq!(json["sample_size"], 0);
         }
@@ -1981,7 +1981,7 @@ mod tests {
 
             assert!(!result.is_error.unwrap_or(false));
             let json: serde_json::Value =
-                serde_json::from_str(&result.content[0].raw.as_text().unwrap().text).unwrap();
+                serde_json::from_str(&result.content[0].as_text().unwrap().text).unwrap();
             assert_eq!(json["last_updated"], "2024-12-15");
             assert_eq!(json["statuses"].as_array().unwrap().len(), 3);
         }

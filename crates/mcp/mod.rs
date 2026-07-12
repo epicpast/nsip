@@ -17,6 +17,7 @@ mod transport;
 
 use std::collections::HashMap;
 
+#[allow(deprecated)] // SetLevelRequestParams: SEP-2577, see #323
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     handler::server::router::tool::ToolRouter,
@@ -129,6 +130,9 @@ impl Default for NsipServer {
 
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for NsipServer {
+    // Logging is deprecated by SEP-2577 and slated for removal from rmcp;
+    // tracked in #323 for a deliberate follow-up decision on dropping it.
+    #[allow(deprecated)]
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(
             ServerCapabilities::builder()
@@ -150,7 +154,8 @@ impl ServerHandler for NsipServer {
     }
 
     // -- Logging ---------------------------------------------------------------
-
+    // Deprecated by SEP-2577; see #323.
+    #[allow(deprecated)]
     async fn set_level(
         &self,
         request: SetLevelRequestParams,
@@ -350,6 +355,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)] // caps.logging: SEP-2577, see #323
     fn capabilities_include_all_protocol_features() {
         let server = NsipServer::new();
         let info = server.get_info();
