@@ -82,7 +82,7 @@ jobs:
       actions: read
     # zircote/.github main @ 77a87549 (resolved 2026-06-16)
     uses: >-
-      zircote/.github/.github/workflows/reusable-scorecard.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+      zircote/.github/.github/workflows/reusable-scorecard.yml@5a805176eb4f3f22cba7bb0a25d46dc7306872e3
 
   # IaC + license — Trivy filesystem scan (Dockerfile, manifests, licenses).
   # No image-ref here: the container image is scanned + attested on the release
