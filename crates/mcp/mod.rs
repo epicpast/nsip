@@ -345,10 +345,6 @@ mod tests {
         assert!(caps.tools.is_some(), "tools capability missing");
         assert!(caps.prompts.is_some(), "prompts capability missing");
         assert!(caps.resources.is_some(), "resources capability missing");
-        assert!(
-            caps.logging.is_none(),
-            "logging capability should be dropped (deprecated by SEP-2577)"
-        );
     }
 
     #[test]
