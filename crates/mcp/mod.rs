@@ -17,15 +17,14 @@ mod transport;
 
 use std::collections::HashMap;
 
-#[allow(deprecated)] // SetLevelRequestParams: SEP-2577, see #323
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     handler::server::router::tool::ToolRouter,
     model::{
         GetPromptRequestParams, GetPromptResult, ListPromptsResult, ListResourceTemplatesResult,
         ListResourcesResult, PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams,
-        ReadResourceResult, ServerCapabilities, ServerInfo, SetLevelRequestParams,
-        SubscribeRequestParams, UnsubscribeRequestParams,
+        ReadResourceResult, ServerCapabilities, ServerInfo, SubscribeRequestParams,
+        UnsubscribeRequestParams,
     },
     service::{NotificationContext, RequestContext},
     tool_handler,
@@ -130,9 +129,6 @@ impl Default for NsipServer {
 
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for NsipServer {
-    // Logging is deprecated by SEP-2577 and slated for removal from rmcp;
-    // tracked in #323 for a deliberate follow-up decision on dropping it.
-    #[allow(deprecated)]
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(
             ServerCapabilities::builder()
@@ -142,7 +138,6 @@ impl ServerHandler for NsipServer {
                 .enable_prompts_list_changed()
                 .enable_resources()
                 .enable_resources_list_changed()
-                .enable_logging()
                 .build(),
         )
         .with_server_info(rmcp::model::Implementation::new(
@@ -151,18 +146,6 @@ impl ServerHandler for NsipServer {
         ))
         .with_protocol_version(ProtocolVersion::LATEST)
         .with_instructions(instructions::build_instructions(&self.enabled_tools))
-    }
-
-    // -- Logging ---------------------------------------------------------------
-    // Deprecated by SEP-2577; see #323.
-    #[allow(deprecated)]
-    async fn set_level(
-        &self,
-        request: SetLevelRequestParams,
-        _context: RequestContext<rmcp::service::RoleServer>,
-    ) -> Result<(), McpError> {
-        tracing::info!(level = ?request.level, "client set logging level");
-        Ok(())
     }
 
     // -- Prompts ---------------------------------------------------------------
@@ -355,7 +338,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)] // caps.logging: SEP-2577, see #323
     fn capabilities_include_all_protocol_features() {
         let server = NsipServer::new();
         let info = server.get_info();
@@ -363,7 +345,10 @@ mod tests {
         assert!(caps.tools.is_some(), "tools capability missing");
         assert!(caps.prompts.is_some(), "prompts capability missing");
         assert!(caps.resources.is_some(), "resources capability missing");
-        assert!(caps.logging.is_some(), "logging capability missing");
+        assert!(
+            caps.logging.is_none(),
+            "logging capability should be dropped (deprecated by SEP-2577)"
+        );
     }
 
     #[test]
