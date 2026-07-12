@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Update CHANGELOG.md for v0.7.2
+
+### Fixed
+
+- **deps**: Resolve RUSTSEC-2026-0190 and RUSTSEC-2026-0185
+- **mcp**: Drop deprecated logging capability (SEP-2577) (#324)
+
+### Miscellaneous
+
+- **deps**: Bump the github-actions group with 4 updates (#305)
+- **deps**: Bump uuid from 1.23.3 to 1.23.4 (#311)
+- **deps**: Bump clap_complete from 4.6.5 to 4.6.7 (#313)
+- **deps**: Bump rand from 0.10.1 to 0.10.2 (#315)
+- **deps**: Bump zircote/.github/.github/workflows/reusable-scorecard.yml (#321)
+- **deps**: Update zircote/.github/.github/workflows/reusable-attest-scan.yml requirement to 5a805176eb4f3f22cba7bb0a25d46dc7306872e3 (#320)
+- **deps**: Bump zircote/.github/.github/workflows/pin-check.yml (#319)
+- **deps**: Bump regex from 1.12.4 to 1.13.0 (#316)
+- **deps**: Bump rmcp from 1.7.0 to 2.2.0 (#317)
+- **deps**: Update zircote/.github/.github/workflows/reusable-trivy.yml requirement to 5a805176eb4f3f22cba7bb0a25d46dc7306872e3 (#318)
+- **deps**: Bump actions/checkout from 6.0.3 to 7.0.0 (#307)
+- Bump version to 0.7.3 (#325)
+
+## [0.7.2] - 2026-06-18
+
+### Documentation
+
 - Update CHANGELOG.md for v0.7.1
 
 ### Miscellaneous
@@ -423,7 +449,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: Bump github/codeql-action from 3 to 4 (#6)
 - **deps**: Bump actions/github-script from 7.0.1 to 8.0.0 (#4)
 
-[unreleased]: https://github.com/zircote/nsip/compare/v0.7.1..HEAD
+[unreleased]: https://github.com/zircote/nsip/compare/v0.7.2..HEAD
+[0.7.2]: https://github.com/zircote/nsip/compare/v0.7.1..v0.7.2
 [0.7.1]: https://github.com/zircote/nsip/compare/v0.7.0..v0.7.1
 [0.7.0]: https://github.com/zircote/nsip/compare/v0.6.2..v0.7.0
 [0.6.2]: https://github.com/zircote/nsip/compare/v0.6.1..v0.6.2
