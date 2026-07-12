@@ -4,8 +4,8 @@
 //! dynamic resources backed by the NSIP API.
 
 use rmcp::model::{
-    AnnotateAble, ListResourceTemplatesResult, ListResourcesResult, RawResource,
-    RawResourceTemplate, ReadResourceRequestParams, ReadResourceResult, ResourceContents, Role,
+    Annotations, ListResourceTemplatesResult, ListResourcesResult, ReadResourceRequestParams,
+    ReadResourceResult, Resource, ResourceContents, ResourceTemplate, Role,
 };
 
 use crate::NsipClient;
@@ -167,78 +167,55 @@ pub fn list_resources() -> ListResourcesResult {
     let audience = vec![Role::User, Role::Assistant];
 
     let resources = vec![
-        RawResource {
-            uri: "nsip://glossary".to_string(),
-            name: "EBV Trait Glossary".to_string(),
-            title: Some("EBV Trait Glossary".to_string()),
-            description: Some(
-                "Definitions of all 16 NSIP EBV traits with units, interpretation, and selection direction"
-                    .to_string(),
+        Resource::new("nsip://glossary", "EBV Trait Glossary")
+            .with_title("EBV Trait Glossary")
+            .with_description(
+                "Definitions of all 16 NSIP EBV traits with units, interpretation, and selection direction",
+            )
+            .with_mime_type("text/markdown")
+            .with_annotations(
+                Annotations::default()
+                    .with_priority(0.8)
+                    .with_audience(audience.clone()),
             ),
-            mime_type: Some("text/markdown".to_string()),
-            size: None,
-            icons: None,
-            meta: None,
-        }
-        .with_priority(0.8)
-        .with_audience(audience.clone()),
-        RawResource {
-            uri: "nsip://breeds".to_string(),
-            name: "Breed Directory".to_string(),
-            title: Some("Breed Directory".to_string()),
-            description: Some(
-                "Live directory of all breed groups and breeds from the NSIP database".to_string(),
+        Resource::new("nsip://breeds", "Breed Directory")
+            .with_title("Breed Directory")
+            .with_description("Live directory of all breed groups and breeds from the NSIP database")
+            .with_mime_type("application/json")
+            .with_annotations(
+                Annotations::default()
+                    .with_priority(0.7)
+                    .with_audience(audience.clone()),
             ),
-            mime_type: Some("application/json".to_string()),
-            size: None,
-            icons: None,
-            meta: None,
-        }
-        .with_priority(0.7)
-        .with_audience(audience.clone()),
-        RawResource {
-            uri: "nsip://guide/selection".to_string(),
-            name: "Selection Guide".to_string(),
-            title: Some("Selection Guide".to_string()),
-            description: Some(
-                "How to use EBVs for breeding decisions — selection steps, objectives, and trade-offs"
-                    .to_string(),
+        Resource::new("nsip://guide/selection", "Selection Guide")
+            .with_title("Selection Guide")
+            .with_description(
+                "How to use EBVs for breeding decisions — selection steps, objectives, and trade-offs",
+            )
+            .with_mime_type("text/markdown")
+            .with_annotations(
+                Annotations::default()
+                    .with_priority(0.8)
+                    .with_audience(audience.clone()),
             ),
-            mime_type: Some("text/markdown".to_string()),
-            size: None,
-            icons: None,
-            meta: None,
-        }
-        .with_priority(0.8)
-        .with_audience(audience.clone()),
-        RawResource {
-            uri: "nsip://guide/inbreeding".to_string(),
-            name: "Inbreeding Guide".to_string(),
-            title: Some("Inbreeding Guide".to_string()),
-            description: Some(
-                "COI thresholds, inbreeding depression effects, and avoidance strategies".to_string(),
+        Resource::new("nsip://guide/inbreeding", "Inbreeding Guide")
+            .with_title("Inbreeding Guide")
+            .with_description("COI thresholds, inbreeding depression effects, and avoidance strategies")
+            .with_mime_type("text/markdown")
+            .with_annotations(
+                Annotations::default()
+                    .with_priority(0.8)
+                    .with_audience(audience.clone()),
             ),
-            mime_type: Some("text/markdown".to_string()),
-            size: None,
-            icons: None,
-            meta: None,
-        }
-        .with_priority(0.8)
-        .with_audience(audience.clone()),
-        RawResource {
-            uri: "nsip://status".to_string(),
-            name: "Database Status".to_string(),
-            title: Some("Database Status".to_string()),
-            description: Some(
-                "Live status of the NSIP database including last update date".to_string(),
+        Resource::new("nsip://status", "Database Status")
+            .with_title("Database Status")
+            .with_description("Live status of the NSIP database including last update date")
+            .with_mime_type("application/json")
+            .with_annotations(
+                Annotations::default()
+                    .with_priority(0.5)
+                    .with_audience(audience),
             ),
-            mime_type: Some("application/json".to_string()),
-            size: None,
-            icons: None,
-            meta: None,
-        }
-        .with_priority(0.5)
-        .with_audience(audience),
     ];
 
     ListResourcesResult {
@@ -252,45 +229,24 @@ pub fn list_resources() -> ListResourcesResult {
 #[must_use]
 pub fn list_resource_templates() -> ListResourceTemplatesResult {
     let templates = vec![
-        RawResourceTemplate {
-            uri_template: "nsip://animal/{lpn_id}".to_string(),
-            name: "Animal Profile".to_string(),
-            title: Some("Animal Profile".to_string()),
-            description: Some(
-                "Full profile for a specific animal by LPN ID (details, lineage, progeny)"
-                    .to_string(),
-            ),
-            mime_type: Some("application/json".to_string()),
-            icons: None,
-        }
-        .no_annotation(),
-        RawResourceTemplate {
-            uri_template: "nsip://animal/{lpn_id}/pedigree".to_string(),
-            name: "Animal Pedigree".to_string(),
-            title: Some("Animal Pedigree".to_string()),
-            description: Some("Pedigree / lineage tree for a specific animal".to_string()),
-            mime_type: Some("application/json".to_string()),
-            icons: None,
-        }
-        .no_annotation(),
-        RawResourceTemplate {
-            uri_template: "nsip://animal/{lpn_id}/progeny".to_string(),
-            name: "Animal Progeny".to_string(),
-            title: Some("Animal Progeny".to_string()),
-            description: Some("Offspring list for a specific animal".to_string()),
-            mime_type: Some("application/json".to_string()),
-            icons: None,
-        }
-        .no_annotation(),
-        RawResourceTemplate {
-            uri_template: "nsip://breed/{breed_id}/ranges".to_string(),
-            name: "Breed Trait Ranges".to_string(),
-            title: Some("Breed Trait Ranges".to_string()),
-            description: Some("Min/max trait value ranges for a specific breed".to_string()),
-            mime_type: Some("application/json".to_string()),
-            icons: None,
-        }
-        .no_annotation(),
+        ResourceTemplate::new("nsip://animal/{lpn_id}", "Animal Profile")
+            .with_title("Animal Profile")
+            .with_description(
+                "Full profile for a specific animal by LPN ID (details, lineage, progeny)",
+            )
+            .with_mime_type("application/json"),
+        ResourceTemplate::new("nsip://animal/{lpn_id}/pedigree", "Animal Pedigree")
+            .with_title("Animal Pedigree")
+            .with_description("Pedigree / lineage tree for a specific animal")
+            .with_mime_type("application/json"),
+        ResourceTemplate::new("nsip://animal/{lpn_id}/progeny", "Animal Progeny")
+            .with_title("Animal Progeny")
+            .with_description("Offspring list for a specific animal")
+            .with_mime_type("application/json"),
+        ResourceTemplate::new("nsip://breed/{breed_id}/ranges", "Breed Trait Ranges")
+            .with_title("Breed Trait Ranges")
+            .with_description("Min/max trait value ranges for a specific breed")
+            .with_mime_type("application/json"),
     ];
 
     ListResourceTemplatesResult {
@@ -582,11 +538,7 @@ mod tests {
     #[test]
     fn static_resources_have_correct_uris() {
         let result = list_resources();
-        let uris: Vec<&str> = result
-            .resources
-            .iter()
-            .map(|r| r.raw.uri.as_str())
-            .collect();
+        let uris: Vec<&str> = result.resources.iter().map(|r| r.uri.as_str()).collect();
         assert!(uris.contains(&"nsip://glossary"));
         assert!(uris.contains(&"nsip://breeds"));
         assert!(uris.contains(&"nsip://guide/selection"));
@@ -598,11 +550,11 @@ mod tests {
     fn static_resources_have_names_and_descriptions() {
         let result = list_resources();
         for r in &result.resources {
-            assert!(!r.raw.name.is_empty(), "Resource missing name");
+            assert!(!r.name.is_empty(), "Resource missing name");
             assert!(
-                r.raw.description.is_some(),
+                r.description.is_some(),
                 "Resource {} missing description",
-                r.raw.name
+                r.name
             );
         }
     }
@@ -612,9 +564,9 @@ mod tests {
         let result = list_resources();
         for r in &result.resources {
             assert!(
-                r.raw.mime_type.is_some(),
+                r.mime_type.is_some(),
                 "Resource {} missing mime_type",
-                r.raw.name
+                r.name
             );
         }
     }
@@ -628,12 +580,12 @@ mod tests {
             "nsip://guide/inbreeding",
         ];
         for r in &result.resources {
-            if markdown_uris.contains(&r.raw.uri.as_str()) {
+            if markdown_uris.contains(&r.uri.as_str()) {
                 assert_eq!(
-                    r.raw.mime_type.as_deref(),
+                    r.mime_type.as_deref(),
                     Some("text/markdown"),
                     "Resource {} should be text/markdown",
-                    r.raw.uri
+                    r.uri
                 );
             }
         }
@@ -644,12 +596,12 @@ mod tests {
         let result = list_resources();
         let json_uris = ["nsip://breeds", "nsip://status"];
         for r in &result.resources {
-            if json_uris.contains(&r.raw.uri.as_str()) {
+            if json_uris.contains(&r.uri.as_str()) {
                 assert_eq!(
-                    r.raw.mime_type.as_deref(),
+                    r.mime_type.as_deref(),
                     Some("application/json"),
                     "Resource {} should be application/json",
-                    r.raw.uri
+                    r.uri
                 );
             }
         }
@@ -677,7 +629,7 @@ mod tests {
         let uris: Vec<&str> = result
             .resource_templates
             .iter()
-            .map(|t| t.raw.uri_template.as_str())
+            .map(|t| t.uri_template.as_str())
             .collect();
         assert!(uris.contains(&"nsip://animal/{lpn_id}"));
         assert!(uris.contains(&"nsip://animal/{lpn_id}/pedigree"));
@@ -689,11 +641,11 @@ mod tests {
     fn resource_templates_have_names_and_descriptions() {
         let result = list_resource_templates();
         for t in &result.resource_templates {
-            assert!(!t.raw.name.is_empty(), "Template missing name");
+            assert!(!t.name.is_empty(), "Template missing name");
             assert!(
-                t.raw.description.is_some(),
+                t.description.is_some(),
                 "Template {} missing description",
-                t.raw.name
+                t.name
             );
         }
     }
@@ -703,10 +655,10 @@ mod tests {
         let result = list_resource_templates();
         for t in &result.resource_templates {
             assert_eq!(
-                t.raw.mime_type.as_deref(),
+                t.mime_type.as_deref(),
                 Some("application/json"),
                 "Template {} should be application/json",
-                t.raw.name
+                t.name
             );
         }
     }
@@ -818,6 +770,7 @@ mod tests {
             ResourceContents::BlobResourceContents { .. } => {
                 unreachable!("Expected TextResourceContents, got BlobResourceContents")
             },
+            _ => unreachable!("Expected TextResourceContents, got an unknown variant"),
         }
     }
 

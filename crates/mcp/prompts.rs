@@ -7,7 +7,7 @@
 use std::{fmt::Write, hash::BuildHasher};
 
 use rmcp::model::{
-    GetPromptResult, ListPromptsResult, Prompt, PromptArgument, PromptMessage, PromptMessageRole,
+    GetPromptResult, ListPromptsResult, Prompt, PromptArgument, PromptMessage, Role,
 };
 
 use crate::NsipClient;
@@ -250,8 +250,8 @@ async fn evaluate_animal<S: BuildHasher + Sync>(
     );
 
     Ok(GetPromptResult::new(vec![
-        PromptMessage::new_text(PromptMessageRole::User, system_msg),
-        PromptMessage::new_text(PromptMessageRole::User, user_msg),
+        PromptMessage::new_text(Role::User, system_msg),
+        PromptMessage::new_text(Role::User, user_msg),
     ])
     .with_description(format!("Breeding evaluation for {type_name} {lpn_id}")))
 }
@@ -305,11 +305,10 @@ async fn compare_breeding_stock<S: BuildHasher + Sync>(
         ids.len()
     );
 
-    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
-        PromptMessageRole::User,
-        system_msg,
-    )])
-    .with_description(format!("Comparison of {} breeding animals", ids.len())))
+    Ok(
+        GetPromptResult::new(vec![PromptMessage::new_text(Role::User, system_msg)])
+            .with_description(format!("Comparison of {} breeding animals", ids.len())),
+    )
 }
 
 /// Plan a specific mating.
@@ -372,11 +371,10 @@ async fn plan_mating<S: BuildHasher + Sync>(
          ## Mating Analysis Data\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
-        PromptMessageRole::User,
-        system_msg,
-    )])
-    .with_description(format!("Mating plan: {sire_id} x {dam_id}")))
+    Ok(
+        GetPromptResult::new(vec![PromptMessage::new_text(Role::User, system_msg)])
+            .with_description(format!("Mating plan: {sire_id} x {dam_id}")),
+    )
 }
 
 /// Analyze a breed or flock for improvement opportunities.
@@ -442,11 +440,10 @@ async fn flock_improvement<S: BuildHasher + Sync>(
          ## Flock/Breed Analysis Data\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
-        PromptMessageRole::User,
-        system_msg,
-    )])
-    .with_description(format!("Flock improvement analysis for {scope}")))
+    Ok(
+        GetPromptResult::new(vec![PromptMessage::new_text(Role::User, system_msg)])
+            .with_description(format!("Flock improvement analysis for {scope}")),
+    )
 }
 
 /// Find top replacement candidates.
@@ -513,11 +510,10 @@ async fn select_replacement<S: BuildHasher + Sync>(
          ## Replacement Candidates\n\n```json\n{data_json}\n```"
     );
 
-    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
-        PromptMessageRole::User,
-        system_msg,
-    )])
-    .with_description(format!("Replacement {gender} selection for {target_trait}")))
+    Ok(
+        GetPromptResult::new(vec![PromptMessage::new_text(Role::User, system_msg)])
+            .with_description(format!("Replacement {gender} selection for {target_trait}")),
+    )
 }
 
 /// Plain-language EBV interpretation.
@@ -555,11 +551,10 @@ async fn interpret_ebvs<S: BuildHasher + Sync>(
          Summarize what this animal would contribute to a breeding program."
     );
 
-    Ok(GetPromptResult::new(vec![PromptMessage::new_text(
-        PromptMessageRole::User,
-        system_msg,
-    )])
-    .with_description(format!("EBV interpretation for {lpn_id}")))
+    Ok(
+        GetPromptResult::new(vec![PromptMessage::new_text(Role::User, system_msg)])
+            .with_description(format!("EBV interpretation for {lpn_id}")),
+    )
 }
 
 // ---------------------------------------------------------------------------

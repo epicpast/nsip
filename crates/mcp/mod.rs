@@ -23,8 +23,8 @@ use rmcp::{
     model::{
         GetPromptRequestParams, GetPromptResult, ListPromptsResult, ListResourceTemplatesResult,
         ListResourcesResult, PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams,
-        ReadResourceResult, ServerCapabilities, ServerInfo, SetLevelRequestParams,
-        SubscribeRequestParams, UnsubscribeRequestParams,
+        ReadResourceResult, ServerCapabilities, ServerInfo, SubscribeRequestParams,
+        UnsubscribeRequestParams,
     },
     service::{NotificationContext, RequestContext},
     tool_handler,
@@ -138,7 +138,6 @@ impl ServerHandler for NsipServer {
                 .enable_prompts_list_changed()
                 .enable_resources()
                 .enable_resources_list_changed()
-                .enable_logging()
                 .build(),
         )
         .with_server_info(rmcp::model::Implementation::new(
@@ -147,17 +146,6 @@ impl ServerHandler for NsipServer {
         ))
         .with_protocol_version(ProtocolVersion::LATEST)
         .with_instructions(instructions::build_instructions(&self.enabled_tools))
-    }
-
-    // -- Logging ---------------------------------------------------------------
-
-    async fn set_level(
-        &self,
-        request: SetLevelRequestParams,
-        _context: RequestContext<rmcp::service::RoleServer>,
-    ) -> Result<(), McpError> {
-        tracing::info!(level = ?request.level, "client set logging level");
-        Ok(())
     }
 
     // -- Prompts ---------------------------------------------------------------
@@ -357,7 +345,6 @@ mod tests {
         assert!(caps.tools.is_some(), "tools capability missing");
         assert!(caps.prompts.is_some(), "prompts capability missing");
         assert!(caps.resources.is_some(), "resources capability missing");
-        assert!(caps.logging.is_some(), "logging capability missing");
     }
 
     #[test]

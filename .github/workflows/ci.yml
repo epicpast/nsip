@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -72,7 +72,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -92,7 +92,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -110,7 +110,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Install cargo-deny
         # yamllint disable-line rule:line-length
@@ -128,7 +128,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Assert every error slug has a catalog page
         run: |
@@ -172,7 +172,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -191,7 +191,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -232,7 +232,7 @@ jobs:
     permissions:
       contents: read
     # yamllint disable-line rule:line-length
-    uses: zircote/.github/.github/workflows/pin-check.yml@e8f0dbde068cc0701e443e7b8d57ae9917de7da3  # main
+    uses: zircote/.github/.github/workflows/pin-check.yml@5a805176eb4f3f22cba7bb0a25d46dc7306872e3  # main
 
   all-checks-pass:
     name: All Checks Pass

@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Get version from tag or Cargo.toml
         id: get_version
@@ -55,7 +55,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -73,7 +73,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Install cargo-audit
         uses: ./.github/actions/install-cargo-tool
@@ -124,7 +124,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -181,7 +181,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Setup Rust with caching
         uses: ./.github/actions/setup-rust-cached
@@ -243,7 +243,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Download platform binaries
         # yamllint disable-line rule:line-length
@@ -318,7 +318,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Download release artifacts
         # yamllint disable-line rule:line-length
@@ -379,7 +379,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Pack source snapshot
         id: pack
@@ -449,7 +449,7 @@ jobs:
       packages: read
     # zircote/.github main @ 77a87549 (merged 2026-06-16)
     uses: >-
-      zircote/.github/.github/workflows/reusable-trivy.yml@77a87549a65c6c978a0e87efe0168ed3517f7ca4
+      zircote/.github/.github/workflows/reusable-trivy.yml@5a805176eb4f3f22cba7bb0a25d46dc7306872e3
     with:
       scan-iac: true
 
@@ -462,7 +462,7 @@ jobs:
       contents: read
     # zircote/.github main @ 77a87549 (merged 2026-06-16)
     uses: >-
-      zircote/.github/.github/workflows/reusable-attest-scan.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@5a805176eb4f3f22cba7bb0a25d46dc7306872e3
     with:
       subject-name: ${{ needs.source.outputs.subject-name }}
       subject-digest: ${{ needs.source.outputs.subject-digest }}
@@ -479,7 +479,7 @@ jobs:
       contents: read
     # zircote/.github main @ 77a87549 (merged 2026-06-16)
     uses: >-
-      zircote/.github/.github/workflows/reusable-attest-scan.yml@740cb8efb57af0187f88e9b4f939355b871a5895
+      zircote/.github/.github/workflows/reusable-attest-scan.yml@5a805176eb4f3f22cba7bb0a25d46dc7306872e3
     with:
       subject-name: ${{ needs.source.outputs.subject-name }}
       subject-digest: ${{ needs.source.outputs.subject-digest }}
@@ -567,7 +567,7 @@ jobs:
     steps:
       - name: Checkout repository
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
 
@@ -601,7 +601,7 @@ jobs:
 
       - name: Create GitHub Release
         # yamllint disable-line rule:line-length
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda  # v3.0.0
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b  # v3.0.1
         with:
           tag_name: ${{ github.ref }}
           name: Release ${{ needs.version.outputs.version }}

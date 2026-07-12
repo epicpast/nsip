@@ -1,6 +1,6 @@
 [package]
 name = "nsip"
-version = "0.7.2"
+version = "0.7.3"
 edition = "2024"
 rust-version = "1.92"
 description = "NSIP Search API client for nsipsearch.nsip.org/api"
@@ -74,7 +74,7 @@ clap_complete = "4.6"
 clap_mangen = "0.3"
 
 # MCP server
-rmcp = { version = "1.7", features = [
+rmcp = { version = "2.2", features = [
     "server",
     "transport-io",
     "transport-streamable-http-server",
