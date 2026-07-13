@@ -180,7 +180,7 @@ jobs:
       contents: read
     # zircote/.github main @ 515a4c76 (no-release-upload SBOM fix, 2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/sign-and-attest.yml@515a4c765d9df26954f59d3fe4ab003f56651205
+      zircote/.github/.github/workflows/sign-and-attest.yml@98cdea888a91e42874418e7173a265d6a546bc27
     with:
       image-name: ghcr.io/${{ github.repository }}
       image-digest: ${{ needs.merge.outputs.image-digest }}
