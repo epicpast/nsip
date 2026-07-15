@@ -45,7 +45,7 @@ jobs:
 
       - name: Set up Docker Buildx
         # yamllint disable-line rule:line-length
-        uses: docker/setup-buildx-action@c887d9748da14dcb42b11cf8bcc773b301ea55b5  # v3.9.0
+        uses: docker/setup-buildx-action@5b9cf3909b54a280b6df6eee035755eb1f2fd611  # v3.9.0
 
       - name: Log in to Container Registry
         # yamllint disable-line rule:line-length
@@ -115,7 +115,7 @@ jobs:
 
       - name: Set up Docker Buildx
         # yamllint disable-line rule:line-length
-        uses: docker/setup-buildx-action@c887d9748da14dcb42b11cf8bcc773b301ea55b5  # v3.9.0
+        uses: docker/setup-buildx-action@5b9cf3909b54a280b6df6eee035755eb1f2fd611  # v3.9.0
 
       - name: Log in to Container Registry
         # yamllint disable-line rule:line-length
