@@ -195,7 +195,7 @@ jobs:
       contents: read
     # zircote/.github main @ 515a4c76 (2026-06-17)
     uses: >-
-      zircote/.github/.github/workflows/verify-attestation.yml@515a4c765d9df26954f59d3fe4ab003f56651205
+      zircote/.github/.github/workflows/verify-attestation.yml@98cdea888a91e42874418e7173a265d6a546bc27
     with:
       image-ref: >-
         ghcr.io/${{ github.repository }}@${{
