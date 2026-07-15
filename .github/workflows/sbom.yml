@@ -21,13 +21,13 @@ jobs:
 
       - name: Install Rust toolchain
         # master
-        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: stable
 
       - name: Install cargo-sbom
         # v2.67.18
-        uses: taiki-e/install-action@9e1e5806d4a4822de933115878265be9aaa786d9
+        uses: taiki-e/install-action@43aecc8d72668fbcfe75c31400bc4f890f1c5853
         with:
           tool: cargo-sbom
 

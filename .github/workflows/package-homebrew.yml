@@ -46,7 +46,9 @@ jobs:
         # yamllint disable-line rule:line-length
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
-          repository: ${{ github.repository_owner }}/homebrew-tap
+          # Hardcoded: the tap lives under the personal zircote account and
+          # does not follow nsip's own repository owner (epicpast org).
+          repository: zircote/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
 
