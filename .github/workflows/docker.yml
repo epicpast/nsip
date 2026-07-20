@@ -49,7 +49,7 @@ jobs:
 
       - name: Log in to Container Registry
         # yamllint disable-line rule:line-length
-        uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870  # v3.4.0
+        uses: docker/login-action@c66a8fcb2472d4283042d726b2a061b43b3f49ab  # v3.4.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -119,7 +119,7 @@ jobs:
 
       - name: Log in to Container Registry
         # yamllint disable-line rule:line-length
-        uses: docker/login-action@3864d6aed8ff134b2ed894ce00c87695c709c870  # v3.4.0
+        uses: docker/login-action@c66a8fcb2472d4283042d726b2a061b43b3f49ab  # v3.4.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
