@@ -102,7 +102,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # OpenTelemetry (optional, behind `telemetry` feature)
-opentelemetry = { version = "0.32", optional = true }
+opentelemetry = { version = "0.33", optional = true }
 opentelemetry_sdk = { version = "0.32", optional = true }
 tracing-opentelemetry = { version = "0.33", optional = true }
 
