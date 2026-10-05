@@ -104,7 +104,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # OpenTelemetry (optional, behind `telemetry` feature)
 opentelemetry = { version = "0.33", optional = true }
 opentelemetry_sdk = { version = "0.33", optional = true }
-tracing-opentelemetry = { version = "0.33", optional = true }
+tracing-opentelemetry = { version = "0.34", optional = true }
 
 [build-dependencies]
 # Parse [package.metadata.nsip] from Cargo.toml in build.rs. Build-only — does
