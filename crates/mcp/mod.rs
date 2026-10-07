@@ -23,7 +23,7 @@ use rmcp::{
     model::{
         GetPromptRequestParams, GetPromptResponse, ListPromptsResult, ListResourceTemplatesResult,
         ListResourcesResult, PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams,
-        ReadResourceResponse, ServerCapabilities, ServerInfo, SubscribeRequestParams,
+        ReadResourceResponse, ServerCapabilities, ServerConfig, SubscribeRequestParams,
         UnsubscribeRequestParams,
     },
     service::{NotificationContext, RequestContext},
@@ -129,8 +129,8 @@ impl Default for NsipServer {
 
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for NsipServer {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(
+    fn get_info(&self) -> ServerConfig {
+        ServerConfig::new(
             ServerCapabilities::builder()
                 .enable_tools()
                 .enable_tool_list_changed()
