@@ -6,6 +6,8 @@
 
 use std::fmt::Write as _;
 
+use unicode_width::UnicodeWidthStr;
+
 use nsip::{
     AnimalDetails, AnimalProfile, BreedGroup, Lineage, LineageAnimal, Progeny, SearchResults, Trait,
 };
@@ -37,11 +39,11 @@ impl Table {
         let mut widths = vec![0usize; col_count];
 
         for (i, h) in self.headers.iter().enumerate() {
-            widths[i] = widths[i].max(h.len());
+            widths[i] = widths[i].max(h.width());
         }
         for row in &self.rows {
             for (i, cell) in row.iter().take(col_count).enumerate() {
-                widths[i] = widths[i].max(cell.len());
+                widths[i] = widths[i].max(cell.width());
             }
         }
 
@@ -78,7 +80,8 @@ fn format_row(cells: &[String], widths: &[usize]) -> String {
     let mut s = String::from("|");
     for (i, w) in widths.iter().enumerate() {
         let cell = cells.get(i).map_or("", String::as_str);
-        let _ = write!(s, " {cell:<w$} |", w = *w);
+        let padding = w.saturating_sub(cell.width());
+        let _ = write!(s, " {cell}{:padding$} |", "");
     }
     s
 }
@@ -749,6 +752,27 @@ mod tests {
         let rendered = table.render();
         // Column should be wide enough for "LongValue" (9 chars)
         assert!(rendered.contains("| LongValue |"));
+    }
+
+    #[test]
+    fn table_aligns_unicode_cells_by_display_width() {
+        let mut table = Table::new(vec!["牧場".into(), "ID".into()]);
+        for name in ["é", "e\u{301}", "羊", "abcde"] {
+            table.add_row(vec![name.into(), "1".into()]);
+        }
+        assert_eq!(
+            table.render(),
+            concat!(
+                "+-------+----+\n",
+                "| 牧場  | ID |\n",
+                "+-------+----+\n",
+                "| é     | 1  |\n",
+                "| e\u{301}     | 1  |\n",
+                "| 羊    | 1  |\n",
+                "| abcde | 1  |\n",
+                "+-------+----+",
+            )
+        );
     }
 
     #[test]
