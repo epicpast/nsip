@@ -130,7 +130,11 @@ fn collect_sorted_trait_names<'a>(
             }
         }
     }
-    names.sort_by_key(|a| trait_sort_key(a));
+    names.sort_by(|a, b| {
+        trait_sort_key(a)
+            .cmp(&trait_sort_key(b))
+            .then_with(|| a.cmp(b))
+    });
     names
 }
 
@@ -860,6 +864,19 @@ mod tests {
         ];
         let names = collect_sorted_trait_names(maps.iter().map(|m| m.keys()));
         assert_eq!(names, vec!["BWT", "WWT", "NLB"]);
+    }
+
+    #[test]
+    fn collect_sorted_trait_names_orders_extras_independently_of_input() {
+        let forward: Vec<String> = ["Z_EXTRA", "WWT", "A_EXTRA", "BWT", "M_EXTRA", "A_EXTRA"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+        let reverse: Vec<String> = forward.iter().rev().cloned().collect();
+        for names in [&forward, &reverse] {
+            let sorted = collect_sorted_trait_names(std::iter::once(names.iter()));
+            assert_eq!(sorted, ["BWT", "WWT", "A_EXTRA", "M_EXTRA", "Z_EXTRA"]);
+        }
     }
 
     #[test]
